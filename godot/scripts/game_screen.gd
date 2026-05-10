@@ -18,9 +18,12 @@ var _is_running := false
 
 @onready var _playfield: Control = $Playfield
 @onready var _debug_label: Label = $Hud/DebugLabel
-@onready var _title_label: Label = $Hud/TopBar/Margin/VBox/SpeciesLabel
-@onready var _meta_label: Label = $Hud/TopBar/Margin/VBox/MetaLabel
-@onready var _danger_label: Label = $Hud/TopBar/Margin/VBox/DangerLabel
+@onready var _title_label: Label = $Hud/CharaNameLabel
+@onready var _meta_label: Label = $Hud/LevelLabel
+@onready var _danger_label: RichTextLabel = $Hud/ConditionLabel
+@onready var _day_label: Label = $Hud/DayLabel
+@onready var _brush_name_label: Label = $Hud/BrushNameLabel
+@onready var _brush_spec_label: Label = $Hud/BrushSpecLabel
 @onready var _finish_progress: ProgressBar = $Hud/FinishProgress
 @onready var _day_finish_label: Label = $Hud/DayStats/Margin/FinishCount
 @onready var _end_day_button: Button = $Hud/Controls/EndDayButton
@@ -74,14 +77,11 @@ func _process(delta: float) -> void:
 
 func setup_species(species: Dictionary) -> void:
 	_species = species.duplicate(true)
-	_title_label.text = "%s Pair Conditioning" % str(_species.get("name", "Slime"))
+	_title_label.text = str(_species.get("name", "Slime"))
 	_left_slime.apply_species(_species, "L")
 	_right_slime.apply_species(_species, "R")
-	_meta_label.text = "Lv.%d   Total Finish %d   Pain Fail %d" % [
-		int(_species.get("level", 1)),
-		int(_species.get("finish_total", 0)),
-		int(_species.get("pain_fail_total", 0))
-	]
+	_meta_label.text = "LV %d" % int(_species.get("level", 1))
+	_day_label.text = "1 Day"
 	reset_day()
 
 func reset_day() -> void:
@@ -140,13 +140,13 @@ func _update_gauges() -> void:
 	_day_finish_label.text = "Today Finish: %d" % _day_finish_count
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
 	if peak_pain >= 80.0:
-		_danger_label.text = "Pain critical"
+		_danger_label.text = "[b]Condition[/b]\nPain critical"
 		_danger_label.modulate = Color(1.0, 0.45, 0.45, 1.0)
 	elif peak_pain >= 55.0:
-		_danger_label.text = "Pain rising"
+		_danger_label.text = "[b]Condition[/b]\nPain rising"
 		_danger_label.modulate = Color(1.0, 0.82, 0.45, 1.0)
 	else:
-		_danger_label.text = "Pain stable"
+		_danger_label.text = "[b]Condition[/b]\nPain stable"
 		_danger_label.modulate = Color(0.75, 0.92, 0.85, 1.0)
 
 func _set_gauge(gauge_id: String, current: float) -> void:
@@ -155,7 +155,7 @@ func _set_gauge(gauge_id: String, current: float) -> void:
 		gauge.set_gauge_value(current, 100.0)
 
 func _refresh_debug_text() -> void:
-	_debug_label.text = "Drag brushes to reposition them. Toggle each brush independently.\nCombined polish: %d / %d" % [
+	_debug_label.text = "log\nDrag brushes to reposition them.\nCombined polish: %d / %d\nPain state updates live." % [
 		int(round(_get_combined_polish())),
 		int(round(finish_threshold))
 	]
@@ -189,6 +189,14 @@ func _update_brush_controls() -> void:
 	if brush_b != null:
 		_brush_b_toggle.text = "Brush B: ON" if brush_b.is_active else "Brush B: OFF"
 		_brush_b_special.text = "Brush B Special*" if brush_b.is_special_active() else "Brush B Special"
+	var selected_brush: Brush = _held_brush if _held_brush != null else brush_a
+	if selected_brush != null:
+		_brush_name_label.text = selected_brush.brush_id.capitalize().replace("-", " ")
+		_brush_spec_label.text = "Polish %d / Pain %d / Size %d" % [
+			int(round(selected_brush.polish_gain_per_sec)),
+			int(round(selected_brush.pain_gain_per_sec)),
+			int(round(selected_brush.hit_radius))
+		]
 
 func _get_combined_polish() -> float:
 	return float(_slime_state["left"]["polish"]) + float(_slime_state["right"]["polish"])
