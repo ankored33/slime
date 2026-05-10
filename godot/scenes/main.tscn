@@ -1,0 +1,45 @@
+[gd_scene load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/game_screen.tscn" id="2"]
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="GameScreen" parent="." instance=ExtResource("2")]
+
+[node name="Overlay" type="CanvasLayer" parent="."]
+
+[node name="Panel" type="PanelContainer" parent="Overlay"]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 428.0
+offset_bottom = 248.0
+
+[node name="Margin" type="MarginContainer" parent="Overlay/Panel"]
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 16
+
+[node name="VBox" type="VBoxContainer" parent="Overlay/Panel/Margin"]
+theme_override_constants/separation = 12
+
+[node name="Title" type="Label" parent="Overlay/Panel/Margin/VBox"]
+theme_override_font_sizes/font_size = 24
+text = "Migration Notes"
+
+[node name="Summary" type="RichTextLabel" parent="Overlay/Panel/Margin/VBox"]
+custom_minimum_size = Vector2(0, 130)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="ToggleButton" type="Button" parent="Overlay/Panel/Margin/VBox"]
+text = "Hide Game"

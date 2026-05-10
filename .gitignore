@@ -1,0 +1,16 @@
+.agents/
+.codex/
+
+# Godot local/cache files
+.godot/
+godot/.godot/
+*.import
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Build/export outputs
+bin/
+build/
+dist/

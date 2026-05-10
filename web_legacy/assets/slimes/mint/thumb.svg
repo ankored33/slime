@@ -1,0 +1,5 @@
+﻿<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <rect width="256" height="256" rx="30" fill="#16324b"/>
+  <circle cx="128" cy="128" r="86" fill="#82f4cf"/>
+  <text x="128" y="140" text-anchor="middle" font-size="36" fill="#11425d" font-family="Segoe UI">M</text>
+</svg>

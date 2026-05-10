@@ -1,0 +1,208 @@
+﻿:root {
+  --game-width: 1600px;
+  --game-height: 900px;
+  --text: #f4f7ff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 20% 10%, #2f3f8a, #1e274f 35%, #0f1430 100%);
+  overflow: auto;
+  font-family: "Segoe UI", sans-serif;
+  color: var(--text);
+}
+
+#app {
+  width: var(--game-width);
+  height: var(--game-height);
+}
+
+#game-canvas {
+  display: block;
+  width: var(--game-width);
+  height: var(--game-height);
+  border: 0;
+  outline: none;
+  image-rendering: auto;
+  touch-action: none;
+}
+
+.screen-manager-bar {
+  position: fixed;
+  top: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(9, 12, 22, 0.9);
+  color: #f4f7ff;
+}
+
+.screen-manager-label {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.screen-manager-select,
+.screen-manager-input {
+  border-radius: 8px;
+  border: 1px solid rgba(186, 214, 255, 0.55);
+  background: #121d34;
+  color: #f4f7ff;
+  padding: 6px 8px;
+}
+
+.screen-manager-input {
+  width: 140px;
+}
+
+.screen-manager-add {
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #f4f7ff;
+  cursor: pointer;
+}
+
+.layout-editor {
+  position: fixed;
+  top: 12px;
+  right: 12px;
+  width: 280px;
+  max-height: calc(100vh - 24px);
+  overflow: auto;
+  padding: 10px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.24);
+  background: rgba(9, 12, 22, 0.9);
+  color: #f4f7ff;
+  z-index: 50;
+  display: none;
+}
+
+.layout-editor.visible {
+  display: block;
+}
+
+.brush-editor {
+  left: 12px;
+  right: auto;
+  z-index: 55;
+}
+
+.layout-title {
+  font-size: 14px;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.layout-select {
+  width: 100%;
+  margin-bottom: 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(186, 214, 255, 0.55);
+  background: #121d34;
+  color: #f4f7ff;
+  padding: 6px 8px;
+}
+
+.layout-select option {
+  background: #101a2f;
+  color: #f4f7ff;
+}
+
+.layout-fields {
+  display: grid;
+  gap: 6px;
+}
+
+.layout-shapes {
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+.layout-row {
+  display: grid;
+  grid-template-columns: 1fr 92px;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.layout-row input {
+  width: 100%;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.26);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f4f7ff;
+  padding: 4px 6px;
+}
+
+.layout-row-wide {
+  grid-template-columns: 1fr;
+}
+
+.layout-row-wide span {
+  font-size: 12px;
+  opacity: 0.8;
+}
+
+.layout-row-wide input,
+.layout-select-inline {
+  margin-top: 4px;
+}
+
+.layout-shape-empty {
+  padding: 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.layout-actions {
+  margin-top: 10px;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.layout-actions button {
+  flex: 1 1 calc(50% - 8px);
+  border: 0;
+  border-radius: 8px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.16);
+  color: #f4f7ff;
+  cursor: pointer;
+}
+
+.layout-actions button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.layout-actions button.active {
+  background: rgba(243, 183, 63, 0.9);
+  color: #1e1810;
+  font-weight: 700;
+}
