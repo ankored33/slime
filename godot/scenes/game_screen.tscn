@@ -22,7 +22,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.109804, 0.14902, 0.196078, 1)
+color = Color(0.0823529, 0.105882, 0.145098, 1)
 
 [node name="Hud" type="Control" parent="."]
 layout_mode = 1
@@ -33,51 +33,129 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
+[node name="TopBar" type="PanelContainer" parent="Hud"]
+offset_left = 486.0
+offset_top = 24.0
+offset_right = 1248.0
+offset_bottom = 116.0
+
+[node name="Margin" type="MarginContainer" parent="Hud/TopBar"]
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Hud/TopBar/Margin"]
+theme_override_constants/separation = 5
+
+[node name="SpeciesLabel" type="Label" parent="Hud/TopBar/Margin/VBox"]
+theme_override_font_sizes/font_size = 24
+text = "Species Pair"
+
+[node name="MetaLabel" type="Label" parent="Hud/TopBar/Margin/VBox"]
+theme_override_font_sizes/font_size = 15
+text = "Lv.1"
+
+[node name="DangerLabel" type="Label" parent="Hud/TopBar/Margin/VBox"]
+theme_override_font_sizes/font_size = 15
+text = "Pain stable"
+
 [node name="PolishL" parent="Hud" instance=ExtResource("2")]
 layout_mode = 0
-offset_left = 96.0
-offset_top = 88.0
-offset_right = 516.0
-offset_bottom = 118.0
+offset_left = 516.0
+offset_top = 148.0
+offset_right = 912.0
+offset_bottom = 178.0
 gauge_id = "polish-L"
 caption = "POLISH L"
 
 [node name="PainL" parent="Hud" instance=ExtResource("2")]
 layout_mode = 0
-offset_left = 96.0
-offset_top = 128.0
-offset_right = 516.0
-offset_bottom = 154.0
+offset_left = 516.0
+offset_top = 188.0
+offset_right = 912.0
+offset_bottom = 214.0
 gauge_id = "pain-L"
 caption = "PAIN L"
 
 [node name="PolishR" parent="Hud" instance=ExtResource("2")]
 layout_mode = 0
-offset_left = 764.0
-offset_top = 88.0
-offset_right = 1184.0
-offset_bottom = 118.0
+offset_left = 516.0
+offset_top = 260.0
+offset_right = 912.0
+offset_bottom = 290.0
 gauge_id = "polish-R"
 caption = "POLISH R"
 
 [node name="PainR" parent="Hud" instance=ExtResource("2")]
 layout_mode = 0
-offset_left = 764.0
-offset_top = 128.0
-offset_right = 1184.0
-offset_bottom = 154.0
+offset_left = 516.0
+offset_top = 300.0
+offset_right = 912.0
+offset_bottom = 326.0
 gauge_id = "pain-R"
 caption = "PAIN R"
 
-[node name="DebugLabel" type="Label" parent="Hud"]
-layout_mode = 0
-offset_left = 24.0
-offset_top = 672.0
-offset_right = 637.0
-offset_bottom = 713.0
+[node name="FinishProgress" type="ProgressBar" parent="Hud"]
+offset_left = 516.0
+offset_top = 372.0
+offset_right = 912.0
+offset_bottom = 404.0
+show_percentage = false
+
+[node name="DayStats" type="PanelContainer" parent="Hud"]
+offset_left = 516.0
+offset_top = 430.0
+offset_right = 912.0
+offset_bottom = 508.0
+
+[node name="Margin" type="MarginContainer" parent="Hud/DayStats"]
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="FinishCount" type="Label" parent="Hud/DayStats/Margin"]
 theme_override_font_sizes/font_size = 18
+text = "Today Finish: 0"
+
+[node name="Controls" type="VBoxContainer" parent="Hud"]
+offset_left = 516.0
+offset_top = 534.0
+offset_right = 912.0
+offset_bottom = 684.0
+theme_override_constants/separation = 10
+
+[node name="BrushAToggle" type="Button" parent="Hud/Controls"]
+text = "Brush A: OFF"
+
+[node name="BrushASpecial" type="Button" parent="Hud/Controls"]
+text = "Brush A Special"
+
+[node name="BrushBToggle" type="Button" parent="Hud/Controls"]
+text = "Brush B: OFF"
+
+[node name="BrushBSpecial" type="Button" parent="Hud/Controls"]
+text = "Brush B Special"
+
+[node name="EndDayButton" type="Button" parent="Hud/Controls"]
+text = "Cash Out Day"
+
+[node name="DebugLabel" type="Label" parent="Hud"]
+offset_left = 956.0
+offset_top = 624.0
+offset_right = 1248.0
+offset_bottom = 704.0
+theme_override_font_sizes/font_size = 15
 
 [node name="Playfield" type="Control" parent="."]
+layout_mode = 0
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 476.0
+offset_bottom = 696.0
+
+[node name="Arena" type="Panel" parent="Playfield"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -86,34 +164,36 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="LeftSlime" parent="Playfield" instance=ExtResource("3")]
-position = Vector2(360, 360)
+position = Vector2(150, 242)
 side = "left"
 slime_id = "mint"
 display_name = "Left Slime"
+radius = 92.0
 fill_color = Color(0.454902, 1, 0.8, 0.92)
 
 [node name="RightSlime" parent="Playfield" instance=ExtResource("3")]
-position = Vector2(920, 360)
+position = Vector2(308, 418)
 side = "right"
-slime_id = "peach"
+slime_id = "mint"
 display_name = "Right Slime"
-fill_color = Color(1, 0.713726, 0.776471, 0.92)
+radius = 92.0
+fill_color = Color(0.454902, 1, 0.8, 0.92)
 
 [node name="TopWall" parent="Playfield" instance=ExtResource("4")]
-position = Vector2(640, 202)
-size = Vector2(760, 48)
+position = Vector2(228, 106)
+size = Vector2(320, 34)
 
 [node name="BottomWall" parent="Playfield" instance=ExtResource("4")]
-position = Vector2(640, 520)
-size = Vector2(760, 48)
+position = Vector2(228, 556)
+size = Vector2(320, 34)
 
 [node name="BrushA" parent="Playfield" instance=ExtResource("5")]
-position = Vector2(1080, 180)
+position = Vector2(362, 124)
 brush_id = "brush-a"
 hit_radius = 26.0
 
 [node name="BrushB" parent="Playfield" instance=ExtResource("5")]
-position = Vector2(1140, 280)
+position = Vector2(398, 566)
 brush_id = "brush-b"
 hit_radius = 22.0
 polish_gain_per_sec = 24.0

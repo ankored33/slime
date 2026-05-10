@@ -33,6 +33,13 @@ func _ready() -> void:
 func get_hit_radius() -> float:
 	return radius
 
+func apply_species(species: Dictionary, side_label: String) -> void:
+	slime_id = str(species.get("id", ""))
+	display_name = "%s %s" % [str(species.get("name", "Slime")), side_label]
+	radius = float(species.get("radius", radius))
+	fill_color = species.get("color", fill_color)
+	_sync_visuals()
+
 func _sync_visuals() -> void:
 	if not is_node_ready():
 		return
