@@ -1,12 +1,12 @@
-[gd_scene load_steps=6 format=3]
+[gd_scene format=3 uid="uid://c2m8olmrkcnbb"]
 
-[ext_resource type="Script" path="res://scripts/game_screen.gd" id="1"]
+[ext_resource type="Script" uid="uid://bl2ooh8a5mpwe" path="res://scripts/game_screen.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/named_gauge.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/slime_target.tscn" id="3"]
-[ext_resource type="PackedScene" path="res://scenes/wall_zone.tscn" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/brush.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/wall_zone.tscn" id="6"]
 
-[node name="GameScreen" type="Control"]
+[node name="GameScreen" type="Control" unique_id=900794395]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -15,7 +15,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=1162675693]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -24,7 +24,21 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.0823529, 0.105882, 0.145098, 1)
 
-[node name="Hud" type="Control" parent="."]
+[node name="SideLeft" type="Panel" parent="." unique_id=102986981]
+self_modulate = Color(0.219608, 0.0941176, 0.0980392, 0.88)
+layout_mode = 0
+offset_right = 325.0
+offset_bottom = 725.0
+
+[node name="SideRight" type="Panel" parent="." unique_id=989335127]
+self_modulate = Color(0.415686, 0.0980392, 0.0901961, 0.88)
+layout_mode = 0
+offset_left = 962.0
+offset_top = -8.0
+offset_right = 1291.0
+offset_bottom = 720.0
+
+[node name="Hud" type="Control" parent="." unique_id=1008816429]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -33,53 +47,57 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TopBar" type="PanelContainer" parent="Hud"]
+[node name="TopBar" type="PanelContainer" parent="Hud" unique_id=1491293964]
+visible = false
+layout_mode = 0
 offset_left = 26.0
 offset_top = 18.0
 offset_right = 288.0
 offset_bottom = 124.0
-visible = false
 
-[node name="Margin" type="MarginContainer" parent="Hud/TopBar"]
+[node name="Margin" type="MarginContainer" parent="Hud/TopBar" unique_id=1836204730]
+layout_mode = 2
 theme_override_constants/margin_left = 16
 theme_override_constants/margin_top = 12
 theme_override_constants/margin_right = 16
 theme_override_constants/margin_bottom = 12
 
-[node name="VBox" type="VBoxContainer" parent="Hud/TopBar/Margin"]
+[node name="VBox" type="VBoxContainer" parent="Hud/TopBar/Margin" unique_id=1119957183]
+layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="SpeciesLabel" type="Label" parent="Hud/TopBar/Margin/VBox"]
+[node name="SpeciesLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1892668349]
+layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Species Pair"
 
-[node name="MetaLabel" type="Label" parent="Hud/TopBar/Margin/VBox"]
+[node name="MetaLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1205237299]
+layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "Lv.1"
 
-[node name="DangerLabel" type="Label" parent="Hud/TopBar/Margin/VBox"]
+[node name="DangerLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1363708631]
+layout_mode = 2
 theme_override_font_sizes/font_size = 15
 text = "Pain stable"
 
-[node name="PolishL" parent="Hud" instance=ExtResource("2")]
+[node name="PolishL" parent="Hud" unique_id=1734165133 instance=ExtResource("2")]
 layout_mode = 0
-offset_left = 0.0
 offset_top = 615.0
 offset_right = 300.0
 offset_bottom = 630.0
 gauge_id = "polish-L"
 caption = "POLISH L"
 
-[node name="PainL" parent="Hud" instance=ExtResource("2")]
+[node name="PainL" parent="Hud" unique_id=1519828551 instance=ExtResource("2")]
 layout_mode = 0
-offset_left = 0.0
 offset_top = 655.0
 offset_right = 300.0
 offset_bottom = 670.0
 gauge_id = "pain-L"
 caption = "PAIN L"
 
-[node name="PolishR" parent="Hud" instance=ExtResource("2")]
+[node name="PolishR" parent="Hud" unique_id=1842442508 instance=ExtResource("2")]
 layout_mode = 0
 offset_left = 980.0
 offset_top = 615.0
@@ -88,7 +106,7 @@ offset_bottom = 630.0
 gauge_id = "polish-R"
 caption = "POLISH R"
 
-[node name="PainR" parent="Hud" instance=ExtResource("2")]
+[node name="PainR" parent="Hud" unique_id=807932175 instance=ExtResource("2")]
 layout_mode = 0
 offset_left = 980.0
 offset_top = 655.0
@@ -97,52 +115,63 @@ offset_bottom = 670.0
 gauge_id = "pain-R"
 caption = "PAIN R"
 
-[node name="FinishProgress" type="ProgressBar" parent="Hud"]
+[node name="FinishProgress" type="ProgressBar" parent="Hud" unique_id=1323510636]
+layout_mode = 0
 offset_left = 89.0
 offset_top = 700.0
 offset_right = 1205.0
 offset_bottom = 718.0
 show_percentage = false
 
-[node name="DayStats" type="PanelContainer" parent="Hud"]
+[node name="DayStats" type="PanelContainer" parent="Hud" unique_id=936402762]
+layout_mode = 0
 offset_left = 983.0
 offset_top = 330.0
 offset_right = 1240.0
 offset_bottom = 384.0
 
-[node name="Margin" type="MarginContainer" parent="Hud/DayStats"]
+[node name="Margin" type="MarginContainer" parent="Hud/DayStats" unique_id=1184699040]
+layout_mode = 2
 theme_override_constants/margin_left = 14
 theme_override_constants/margin_top = 10
 theme_override_constants/margin_right = 14
 theme_override_constants/margin_bottom = 10
 
-[node name="FinishCount" type="Label" parent="Hud/DayStats/Margin"]
+[node name="FinishCount" type="Label" parent="Hud/DayStats/Margin" unique_id=1648917955]
+layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Today Finish: 0"
 
-[node name="Controls" type="VBoxContainer" parent="Hud"]
+[node name="Controls" type="VBoxContainer" parent="Hud" unique_id=1312439738]
+layout_mode = 0
 offset_left = 1036.0
 offset_top = 394.0
 offset_right = 1266.0
 offset_bottom = 678.0
 theme_override_constants/separation = 10
 
-[node name="BrushAToggle" type="Button" parent="Hud/Controls"]
+[node name="BrushAToggle" type="Button" parent="Hud/Controls" unique_id=1775050072]
+layout_mode = 2
 text = "Brush A: OFF"
 
-[node name="BrushASpecial" type="Button" parent="Hud/Controls"]
+[node name="BrushASpecial" type="Button" parent="Hud/Controls" unique_id=1153918083]
+layout_mode = 2
 text = "Brush A Special"
 
-[node name="BrushBToggle" type="Button" parent="Hud/Controls"]
+[node name="BrushBToggle" type="Button" parent="Hud/Controls" unique_id=153784150]
+layout_mode = 2
 text = "Brush B: OFF"
 
-[node name="BrushBSpecial" type="Button" parent="Hud/Controls"]
+[node name="BrushBSpecial" type="Button" parent="Hud/Controls" unique_id=458990346]
+layout_mode = 2
 text = "Brush B Special"
 
-[node name="EndDayButton" type="Button" parent="Hud/Controls"]
+[node name="EndDayButton" type="Button" parent="Hud/Controls" unique_id=1017712887]
+layout_mode = 2
 text = "Cash Out Day"
 
-[node name="DebugLabel" type="Label" parent="Hud"]
+[node name="DebugLabel" type="Label" parent="Hud" unique_id=2081223899]
+layout_mode = 0
 offset_left = 983.0
 offset_top = 105.0
 offset_right = 1169.0
@@ -150,7 +179,8 @@ offset_bottom = 318.0
 theme_override_font_sizes/font_size = 15
 autowrap_mode = 3
 
-[node name="CharaNameLabel" type="Label" parent="Hud"]
+[node name="CharaNameLabel" type="Label" parent="Hud" unique_id=1875689029]
+layout_mode = 0
 offset_left = 20.0
 offset_top = 13.0
 offset_right = 185.0
@@ -158,7 +188,8 @@ offset_bottom = 63.0
 theme_override_font_sizes/font_size = 29
 text = "Character"
 
-[node name="DayLabel" type="Label" parent="Hud"]
+[node name="DayLabel" type="Label" parent="Hud" unique_id=1048220396]
+layout_mode = 0
 offset_left = 215.0
 offset_top = 15.0
 offset_right = 303.0
@@ -166,7 +197,8 @@ offset_bottom = 65.0
 theme_override_font_sizes/font_size = 29
 text = "1 Day"
 
-[node name="LevelLabel" type="Label" parent="Hud"]
+[node name="LevelLabel" type="Label" parent="Hud" unique_id=1176691606]
+layout_mode = 0
 offset_left = 23.0
 offset_top = 81.0
 offset_right = 188.0
@@ -174,7 +206,8 @@ offset_bottom = 131.0
 theme_override_font_sizes/font_size = 29
 text = "LV 1"
 
-[node name="ConditionLabel" type="RichTextLabel" parent="Hud"]
+[node name="ConditionLabel" type="RichTextLabel" parent="Hud" unique_id=1310823897]
+layout_mode = 0
 offset_left = 26.0
 offset_top = 147.0
 offset_right = 288.0
@@ -183,7 +216,8 @@ bbcode_enabled = true
 fit_content = true
 scroll_active = false
 
-[node name="BrushNameLabel" type="Label" parent="Hud"]
+[node name="BrushNameLabel" type="Label" parent="Hud" unique_id=1086628338]
+layout_mode = 0
 offset_left = 980.0
 offset_top = 17.0
 offset_right = 1163.0
@@ -191,7 +225,8 @@ offset_bottom = 51.0
 theme_override_font_sizes/font_size = 22
 text = "Brush Name"
 
-[node name="BrushSpecLabel" type="Label" parent="Hud"]
+[node name="BrushSpecLabel" type="Label" parent="Hud" unique_id=1652540892]
+layout_mode = 0
 offset_left = 976.0
 offset_top = 54.0
 offset_right = 1168.0
@@ -199,7 +234,7 @@ offset_bottom = 88.0
 theme_override_font_sizes/font_size = 22
 text = "Spec"
 
-[node name="Playfield" type="Control" parent="."]
+[node name="Playfield" type="Control" parent="." unique_id=480552896]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -207,7 +242,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Arena" type="Panel" parent="Playfield"]
+[node name="Arena" type="Panel" parent="Playfield" unique_id=666241528]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -215,63 +250,50 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="SideLeft" type="Panel" parent="Playfield"]
-offset_right = 325.0
-offset_bottom = 725.0
-self_modulate = Color(0.219608, 0.0941176, 0.0980392, 0.88)
-
-[node name="SideRight" type="Panel" parent="Playfield"]
-offset_left = 962.0
-offset_top = -8.0
-offset_right = 1291.0
-offset_bottom = 720.0
-self_modulate = Color(0.415686, 0.0980392, 0.0901961, 0.88)
-
-[node name="ZoomLeft" type="Panel" parent="Playfield"]
+[node name="ZoomLeft" type="Panel" parent="Playfield" unique_id=1791844975]
+self_modulate = Color(0.866667, 0.866667, 1, 0.75)
+layout_mode = 0
 offset_left = 128.0
 offset_top = 339.0
 offset_right = 388.0
 offset_bottom = 599.0
-self_modulate = Color(0.866667, 0.866667, 1, 0.75)
 
-[node name="ZoomRight" type="Panel" parent="Playfield"]
+[node name="ZoomRight" type="Panel" parent="Playfield" unique_id=1891600091]
+self_modulate = Color(0.866667, 0.866667, 1, 0.75)
+layout_mode = 0
 offset_left = 919.0
 offset_top = 338.0
 offset_right = 1179.0
 offset_bottom = 598.0
-self_modulate = Color(0.866667, 0.866667, 1, 0.75)
 
-[node name="LeftSlime" parent="Playfield" instance=ExtResource("3")]
-position = Vector2(552.5, 480.0)
-side = "left"
+[node name="WallLeft" parent="Playfield" unique_id=451992112 instance=ExtResource("6")]
+position = Vector2(402, 480)
+size = Vector2(180, 420)
+
+[node name="WallRight" parent="Playfield" unique_id=1709260184 instance=ExtResource("6")]
+position = Vector2(904, 480)
+size = Vector2(180, 420)
+
+[node name="LeftSlime" parent="Playfield" unique_id=687335192 instance=ExtResource("3")]
+position = Vector2(552.5, 480)
 slime_id = "mint"
 display_name = "Left Slime"
-radius = 96.0
-fill_color = Color(0.454902, 1, 0.8, 0.92)
+radius = 20.0
 
-[node name="RightSlime" parent="Playfield" instance=ExtResource("3")]
-position = Vector2(753.5, 477.0)
+[node name="RightSlime" parent="Playfield" unique_id=1098827226 instance=ExtResource("3")]
+position = Vector2(753.5, 477)
 side = "right"
 slime_id = "mint"
 display_name = "Right Slime"
-radius = 96.0
-fill_color = Color(0.454902, 1, 0.8, 0.92)
+radius = 20.0
 
-[node name="TopWall" parent="Playfield" instance=ExtResource("4")]
-position = Vector2(640, 86)
-size = Vector2(420, 36)
-
-[node name="BottomWall" parent="Playfield" instance=ExtResource("4")]
-position = Vector2(640, 566)
-size = Vector2(420, 36)
-
-[node name="BrushA" parent="Playfield" instance=ExtResource("5")]
-position = Vector2(171, 390)
+[node name="BrushA" parent="Playfield" unique_id=1919971458 instance=ExtResource("5")]
+position = Vector2(1047, 148)
 brush_id = "brush-a"
 hit_radius = 26.0
 
-[node name="BrushB" parent="Playfield" instance=ExtResource("5")]
-position = Vector2(171, 468)
+[node name="BrushB" parent="Playfield" unique_id=886467796 instance=ExtResource("5")]
+position = Vector2(1104, 159)
 brush_id = "brush-b"
 hit_radius = 22.0
 polish_gain_per_sec = 24.0

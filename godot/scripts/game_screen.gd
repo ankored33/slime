@@ -8,6 +8,7 @@ signal day_finished(result: Dictionary)
 var _held_brush: Brush
 var _gauge_map: Dictionary = {}
 var _brush_map: Dictionary = {}
+var _wall_zones: Array[WallZone] = []
 var _slime_state := {
 	"left": {"polish": 0.0, "pain": 0.0},
 	"right": {"polish": 0.0, "pain": 0.0}
@@ -37,6 +38,7 @@ var _is_running := false
 func _ready() -> void:
 	_collect_gauges()
 	_collect_brushes()
+	_collect_walls()
 	_end_day_button.pressed.connect(_on_end_day_pressed)
 	_brush_a_toggle.pressed.connect(_on_brush_toggle_pressed.bind("brush-a"))
 	_brush_b_toggle.pressed.connect(_on_brush_toggle_pressed.bind("brush-b"))
@@ -56,19 +58,24 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_held_brush = null
 	elif event is InputEventMouseMotion and _held_brush != null:
-		_held_brush.position = _to_playfield_local(event.position)
+		_held_brush.position = _clamp_brush_to_playfield(_to_playfield_local(event.position), _held_brush)
 
 func _process(delta: float) -> void:
 	if not _is_running:
 		return
 	if _held_brush != null:
 		var local_mouse := _to_playfield_local(get_global_mouse_position())
-		_held_brush.position = _held_brush.position.lerp(local_mouse, min(1.0, follow_speed * delta))
+		_held_brush.position = _held_brush.position.lerp(
+			_clamp_brush_to_playfield(local_mouse, _held_brush),
+			min(1.0, follow_speed * delta)
+		)
 	for brush in _brush_map.values():
 		if brush.is_active:
 			_apply_brush_effects(brush, delta)
 	if _held_brush != null and not _held_brush.is_active:
 		_apply_brush_effects(_held_brush, delta * 0.3)
+	_resolve_brush_overlaps()
+	_apply_wall_push_out()
 	_check_finish()
 	_check_failure()
 	_update_gauges()
@@ -106,6 +113,11 @@ func _collect_gauges() -> void:
 func _collect_brushes() -> void:
 	for brush in get_tree().get_nodes_in_group("brushes"):
 		_brush_map[brush.brush_id] = brush
+
+func _collect_walls() -> void:
+	_wall_zones.clear()
+	for wall: WallZone in get_tree().get_nodes_in_group("wall_zones"):
+		_wall_zones.append(wall)
 
 func _pick_brush(mouse_position: Vector2) -> void:
 	var local_mouse := _to_playfield_local(mouse_position)
@@ -155,7 +167,7 @@ func _set_gauge(gauge_id: String, current: float) -> void:
 		gauge.set_gauge_value(current, 100.0)
 
 func _refresh_debug_text() -> void:
-	_debug_label.text = "log\nDrag brushes to reposition them.\nCombined polish: %d / %d\nPain state updates live." % [
+	_debug_label.text = "Status\nDrag brushes to reposition.\nCombined polish: %d / %d\nPain updates in real time." % [
 		int(round(_get_combined_polish())),
 		int(round(finish_threshold))
 	]
@@ -216,6 +228,65 @@ func _check_failure() -> void:
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
 	if peak_pain >= 100.0:
 		_finish_day(true)
+
+func _resolve_brush_overlaps() -> void:
+	var brushes: Array[Brush] = []
+	for brush: Brush in _brush_map.values():
+		brushes.append(brush)
+	for i in range(brushes.size()):
+		for j in range(i + 1, brushes.size()):
+			var a := brushes[i]
+			var b := brushes[j]
+			var delta := b.position - a.position
+			var distance := delta.length()
+			var min_dist := a.hit_radius + b.hit_radius
+			if distance <= 0.0001:
+				delta = Vector2.RIGHT
+				distance = 1.0
+			if distance < min_dist:
+				var push := delta.normalized() * ((min_dist - distance) * 0.5)
+				a.position = _clamp_brush_to_playfield(a.position - push, a)
+				b.position = _clamp_brush_to_playfield(b.position + push, b)
+
+func _apply_wall_push_out() -> void:
+	if _wall_zones.is_empty():
+		return
+	for brush: Brush in _brush_map.values():
+		for wall in _wall_zones:
+			brush.position = _push_out_from_rect(brush.position, brush.hit_radius, wall.get_rect())
+
+func _push_out_from_rect(center: Vector2, radius: float, rect: Rect2) -> Vector2:
+	var nearest := Vector2(
+		clampf(center.x, rect.position.x, rect.position.x + rect.size.x),
+		clampf(center.y, rect.position.y, rect.position.y + rect.size.y)
+	)
+	var delta := center - nearest
+	var distance := delta.length()
+	if distance >= radius:
+		return center
+	if distance > 0.0001:
+		return center + delta.normalized() * (radius - distance)
+
+	# Exact overlap on rect edge or inside; escape through the shortest axis.
+	var left_gap := absf(center.x - rect.position.x)
+	var right_gap := absf((rect.position.x + rect.size.x) - center.x)
+	var top_gap := absf(center.y - rect.position.y)
+	var bottom_gap := absf((rect.position.y + rect.size.y) - center.y)
+	var min_gap := minf(minf(left_gap, right_gap), minf(top_gap, bottom_gap))
+	if min_gap == left_gap:
+		return Vector2(rect.position.x - radius, center.y)
+	if min_gap == right_gap:
+		return Vector2(rect.position.x + rect.size.x + radius, center.y)
+	if min_gap == top_gap:
+		return Vector2(center.x, rect.position.y - radius)
+	return Vector2(center.x, rect.position.y + rect.size.y + radius)
+
+func _clamp_brush_to_playfield(local_pos: Vector2, brush: Brush) -> Vector2:
+	var play_rect := Rect2(Vector2.ZERO, _playfield.size)
+	return Vector2(
+		clampf(local_pos.x, play_rect.position.x + brush.hit_radius, play_rect.end.x - brush.hit_radius),
+		clampf(local_pos.y, play_rect.position.y + brush.hit_radius, play_rect.end.y - brush.hit_radius)
+	)
 
 func _finish_day(failed_by_pain: bool) -> void:
 	if not _is_running:

@@ -1,44 +1,38 @@
-# Godot migration scaffold
-
-This directory now contains the first concrete replacement for `layout.js` concepts using Godot scenes and exported node data.
+# Godot gameplay migration
 
 ## Current structure
 
 - `scenes/game_screen.tscn`
-  - The `game` screen is authored directly as a Godot scene.
+  - Play screen authored directly in Godot.
 - `scenes/slime_target.tscn`
-  - Replaces `object` elements with `role=slime`.
+  - Slime target node with species-driven radius/color.
 - `scenes/wall_zone.tscn`
-  - Replaces `object` elements with `role=wall`.
+  - Wall collision zones for brush push-out.
 - `scenes/named_gauge.tscn`
-  - Replaces named `gauge` elements such as `polish-L`.
+  - Named gauge widget (`polish-L`, `pain-R`, etc.).
 - `scenes/brush.tscn`
-  - Carries brush tuning as exported properties.
+  - Brush node with on/off and temporary special boost tuning.
 
-## Mapping from the web editor model
+## Implemented scope (non-editor)
 
-- `type=object`, `role=slime`
-  - Use a `SlimeTarget` scene instance.
-- `type=object`, `role=wall`
-  - Use a `WallZone` scene instance.
-- `type=gauge`, `name=polish-L`
-  - Use a `NamedGauge` instance and set `gauge_id`.
-- `x`, `y`, `w`, `h`, `anchor`
-  - Use node transforms and Control layout directly in the Godot editor.
-- `imagePath`, `fit`, extra metadata
-  - Move to exported fields on purpose-built scene scripts only when needed.
+- Select -> Play -> Result flow is running in `main.gd`.
+- Species-level progression (`finish_total`, `pain_fail_total`, level-up) is active.
+- Day loop rules are active:
+  - Voluntary end day
+  - Forced fail at pain >= 100%
+  - Fail penalty = banked finish halved
+  - FINISH threshold + post-finish polish retention by level
+- Brushes can be dragged, toggled independently, and special-triggered.
+- Brush overlap resolution and wall push-out are active in play.
+- Progress is saved/loaded via `user://slime_save_v1.json`.
 
-## Direction
+## Explicitly out of scope
 
-The important change is architectural:
+- Runtime layout editor from `web_legacy/layout.js`
+- Generic runtime-authored JSON layout workflow
 
-1. Stop treating the screen as generic runtime-authored JSON.
-2. Treat the screen as a Godot-authored scene.
-3. Keep only game-specific metadata as exported properties on nodes.
-4. Add runtime debug tools later only if tuning actually needs them.
+## Remaining before deleting `web_legacy`
 
-## Next useful steps
-
-- Port the real brush collision and push-out logic from `js/gameplay.js`.
-- Attach actual slime sprites and wall art to the placeholder nodes.
-- Add a small save layer in `user://` only for tunable gameplay values, not full layout authoring.
+- If visual parity is required, port final art/audio assets to Godot scenes/resources.
+- Verify gameplay constants against desired balance targets.
+- Run a final QA pass in Godot and freeze legacy-independent behavior.

@@ -2,6 +2,7 @@ extends Control
 
 const MAX_LEVEL := 8
 const LEVEL_STEP := 3
+const SAVE_PATH := "user://slime_save_v1.json"
 
 var _species_list: Array[Dictionary] = [
 	{
@@ -52,6 +53,7 @@ func _ready() -> void:
 	_start_button.pressed.connect(_on_start_pressed)
 	_return_button.pressed.connect(_on_return_pressed)
 	_game_screen.day_finished.connect(_on_day_finished)
+	_load_progress()
 	_refresh_species_list()
 	_show_select_screen()
 
@@ -126,6 +128,7 @@ func _on_day_finished(result: Dictionary) -> void:
 		species["pain_fail_total"] = int(species["pain_fail_total"]) + 1
 	species["level"] = min(MAX_LEVEL, 1 + int(species["finish_total"]) / LEVEL_STEP)
 	_species_list[_selected_species_index] = species
+	_save_progress()
 	_show_result_screen()
 
 func _render_result() -> void:
@@ -154,3 +157,53 @@ func _render_result() -> void:
 		int(species["finish_total"]),
 		int(species["pain_fail_total"])
 	]
+
+func _save_progress() -> void:
+	var payload := {
+		"version": 1,
+		"species": []
+	}
+	for species: Dictionary in _species_list:
+		payload["species"].append({
+			"id": str(species.get("id", "")),
+			"level": int(species.get("level", 1)),
+			"finish_total": int(species.get("finish_total", 0)),
+			"pain_fail_total": int(species.get("pain_fail_total", 0))
+		})
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		push_warning("Failed to save progress to %s" % SAVE_PATH)
+		return
+	file.store_string(JSON.stringify(payload))
+	file.close()
+
+func _load_progress() -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("Failed to open save file: %s" % SAVE_PATH)
+		return
+	var raw := file.get_as_text()
+	file.close()
+	var parsed: Variant = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		push_warning("Save format is invalid; ignoring save file.")
+		return
+	var loaded_species: Array = parsed.get("species", [])
+	var by_id: Dictionary = {}
+	for entry in loaded_species:
+		if typeof(entry) == TYPE_DICTIONARY:
+			by_id[str(entry.get("id", ""))] = entry
+	for index in range(_species_list.size()):
+		var species: Dictionary = _species_list[index]
+		var sid := str(species.get("id", ""))
+		if not by_id.has(sid):
+			continue
+		var saved: Dictionary = by_id[sid]
+		species["finish_total"] = max(0, int(saved.get("finish_total", 0)))
+		species["pain_fail_total"] = max(0, int(saved.get("pain_fail_total", 0)))
+		var derived_level := 1 + int(species["finish_total"]) / LEVEL_STEP
+		var saved_level := int(saved.get("level", derived_level))
+		species["level"] = min(MAX_LEVEL, max(1, max(saved_level, derived_level)))
+		_species_list[index] = species
