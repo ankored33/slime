@@ -36,6 +36,7 @@ var _is_running := false
 @onready var _right_slime: SlimeTarget = $Playfield/RightSlime
 
 func _ready() -> void:
+	_configure_mouse_filters()
 	_collect_gauges()
 	_collect_brushes()
 	_collect_walls()
@@ -49,16 +50,57 @@ func _ready() -> void:
 	_refresh_debug_text()
 	reset_day()
 
-func _unhandled_input(event: InputEvent) -> void:
+func _configure_mouse_filters() -> void:
+	# Keep only actionable controls (buttons) consuming mouse input.
+	var interactive_controls: Array[Control] = [
+		_end_day_button,
+		_brush_a_toggle,
+		_brush_b_toggle,
+		_brush_a_special,
+		_brush_b_special
+	]
+	var interactive_set: Dictionary = {}
+	for node in interactive_controls:
+		interactive_set[node] = true
+	for node in _find_control_descendants(self):
+		if interactive_set.has(node):
+			node.mouse_filter = Control.MOUSE_FILTER_STOP
+		else:
+			node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+func _find_control_descendants(root: Node) -> Array[Control]:
+	var out: Array[Control] = []
+	for child in root.get_children():
+		if child is Control:
+			out.append(child)
+		out.append_array(_find_control_descendants(child))
+	return out
+
+func _input(event: InputEvent) -> void:
 	if not _is_running:
 		return
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if _is_over_interactive_ui(event.position):
+			return
 		if event.pressed:
 			_pick_brush(event.position)
 		else:
 			_held_brush = null
 	elif event is InputEventMouseMotion and _held_brush != null:
 		_held_brush.position = _clamp_brush_to_playfield(_to_playfield_local(event.position), _held_brush)
+
+func _is_over_interactive_ui(global_pos: Vector2) -> bool:
+	var interactive_controls: Array[Control] = [
+		_end_day_button,
+		_brush_a_toggle,
+		_brush_b_toggle,
+		_brush_a_special,
+		_brush_b_special
+	]
+	for node in interactive_controls:
+		if node != null and node.get_global_rect().has_point(global_pos):
+			return true
+	return false
 
 func _process(delta: float) -> void:
 	if not _is_running:
@@ -85,11 +127,20 @@ func _process(delta: float) -> void:
 func setup_species(species: Dictionary) -> void:
 	_species = species.duplicate(true)
 	_title_label.text = str(_species.get("name", "Slime"))
-	_left_slime.apply_species(_species, "L")
-	_right_slime.apply_species(_species, "R")
+	var left_config: Dictionary = _species.get("left", {})
+	var right_config: Dictionary = _species.get("right", {})
+	_apply_slime_layout(_left_slime, left_config)
+	_apply_slime_layout(_right_slime, right_config)
+	_left_slime.apply_species(_species, "L", left_config)
+	_right_slime.apply_species(_species, "R", right_config)
 	_meta_label.text = "LV %d" % int(_species.get("level", 1))
 	_day_label.text = "1 Day"
 	reset_day()
+
+func _apply_slime_layout(slime: SlimeTarget, cfg: Dictionary) -> void:
+	var pos_variant: Variant = cfg.get("position", null)
+	if pos_variant is Vector2:
+		slime.position = pos_variant
 
 func reset_day() -> void:
 	_day_finish_count = 0

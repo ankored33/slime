@@ -8,8 +8,17 @@ var _species_list: Array[Dictionary] = [
 	{
 		"id": "mint",
 		"name": "Mint Slime",
-		"radius": 110.0,
 		"color": Color(0.45, 1.0, 0.8, 0.92),
+		"left": {
+			"position": Vector2(552.5, 480.0),
+			"radius": 110.0,
+			"image": ""
+		},
+		"right": {
+			"position": Vector2(753.5, 477.0),
+			"radius": 110.0,
+			"image": ""
+		},
 		"level": 1,
 		"finish_total": 0,
 		"pain_fail_total": 0
@@ -17,8 +26,17 @@ var _species_list: Array[Dictionary] = [
 	{
 		"id": "peach",
 		"name": "Peach Slime",
-		"radius": 124.0,
 		"color": Color(1.0, 0.71, 0.78, 0.92),
+		"left": {
+			"position": Vector2(540.0, 485.0),
+			"radius": 124.0,
+			"image": ""
+		},
+		"right": {
+			"position": Vector2(766.0, 482.0),
+			"radius": 124.0,
+			"image": ""
+		},
 		"level": 1,
 		"finish_total": 0,
 		"pain_fail_total": 0
@@ -26,8 +44,17 @@ var _species_list: Array[Dictionary] = [
 	{
 		"id": "azure",
 		"name": "Azure Slime",
-		"radius": 98.0,
 		"color": Color(0.47, 0.73, 1.0, 0.92),
+		"left": {
+			"position": Vector2(560.0, 474.0),
+			"radius": 98.0,
+			"image": ""
+		},
+		"right": {
+			"position": Vector2(746.0, 471.0),
+			"radius": 98.0,
+			"image": ""
+		},
 		"level": 1,
 		"finish_total": 0,
 		"pain_fail_total": 0
@@ -66,6 +93,8 @@ func _refresh_species_list() -> void:
 
 func _refresh_species_detail() -> void:
 	var species: Dictionary = _species_list[_selected_species_index]
+	var left_cfg: Dictionary = species.get("left", {})
+	var left_radius := float(left_cfg.get("radius", 100.0))
 	_species_detail.text = (
 		"[b]%s[/b]\n"
 		+ "Level: %d / %d\n"
@@ -82,7 +111,7 @@ func _refresh_species_detail() -> void:
 		MAX_LEVEL,
 		species["finish_total"],
 		species["pain_fail_total"],
-		int(round(float(species["radius"])))
+		int(round(left_radius))
 	]
 
 func _show_select_screen() -> void:

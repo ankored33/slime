@@ -24,6 +24,7 @@ extends Area2D
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _body: Polygon2D = $Body
 @onready var _outline: Line2D = $Outline
+@onready var _sprite: Sprite2D = $Sprite2D
 @onready var _label: Label = $Label
 
 func _ready() -> void:
@@ -33,11 +34,20 @@ func _ready() -> void:
 func get_hit_radius() -> float:
 	return radius
 
-func apply_species(species: Dictionary, side_label: String) -> void:
+func apply_species(species: Dictionary, side_label: String, side_config: Dictionary = {}) -> void:
 	slime_id = str(species.get("id", ""))
 	display_name = "%s %s" % [str(species.get("name", "Slime")), side_label]
-	radius = float(species.get("radius", radius))
+	var side_radius: Variant = side_config.get("radius", null)
+	if side_radius != null:
+		radius = float(side_radius)
 	fill_color = species.get("color", fill_color)
+	var image_path := str(side_config.get("image", ""))
+	if image_path != "":
+		var texture := load(image_path)
+		if texture is Texture2D:
+			_sprite.texture = texture
+	else:
+		_sprite.texture = null
 	_sync_visuals()
 
 func _sync_visuals() -> void:
@@ -62,6 +72,20 @@ func _sync_visuals() -> void:
 	_outline.points = outline_points
 	_outline.default_color = outline_color
 	_outline.width = 4.0
+	if _sprite.texture != null:
+		var tex_size := _sprite.texture.get_size()
+		if tex_size.x > 0.0 and tex_size.y > 0.0:
+			var target_diameter := radius * 2.0
+			var scale_x := target_diameter / tex_size.x
+			var scale_y := target_diameter / tex_size.y
+			_sprite.scale = Vector2(scale_x, scale_y)
+		_sprite.visible = true
+		_body.visible = false
+		_outline.visible = false
+	else:
+		_sprite.visible = false
+		_body.visible = true
+		_outline.visible = true
 	_label.text = display_name
 	_label.position = Vector2(-radius, radius + 12.0)
 	_label.size = Vector2(radius * 2.0, 28.0)

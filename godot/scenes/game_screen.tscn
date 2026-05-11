@@ -4,7 +4,6 @@
 [ext_resource type="PackedScene" path="res://scenes/named_gauge.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/slime_target.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/brush.tscn" id="5"]
-[ext_resource type="PackedScene" path="res://scenes/wall_zone.tscn" id="6"]
 
 [node name="GameScreen" type="Control" unique_id=900794395]
 layout_mode = 3
@@ -266,34 +265,26 @@ offset_top = 338.0
 offset_right = 1179.0
 offset_bottom = 598.0
 
-[node name="WallLeft" parent="Playfield" unique_id=451992112 instance=ExtResource("6")]
-position = Vector2(402, 480)
-size = Vector2(180, 420)
-
-[node name="WallRight" parent="Playfield" unique_id=1709260184 instance=ExtResource("6")]
-position = Vector2(904, 480)
-size = Vector2(180, 420)
-
 [node name="LeftSlime" parent="Playfield" unique_id=687335192 instance=ExtResource("3")]
-position = Vector2(552.5, 480)
+position = Vector2(504, 481)
 slime_id = "mint"
 display_name = "Left Slime"
 radius = 20.0
 
 [node name="RightSlime" parent="Playfield" unique_id=1098827226 instance=ExtResource("3")]
-position = Vector2(753.5, 477)
+position = Vector2(794, 481)
 side = "right"
 slime_id = "mint"
 display_name = "Right Slime"
 radius = 20.0
 
 [node name="BrushA" parent="Playfield" unique_id=1919971458 instance=ExtResource("5")]
-position = Vector2(1047, 148)
+position = Vector2(692, 217)
 brush_id = "brush-a"
 hit_radius = 26.0
 
 [node name="BrushB" parent="Playfield" unique_id=886467796 instance=ExtResource("5")]
-position = Vector2(1104, 159)
+position = Vector2(777, 204)
 brush_id = "brush-b"
 hit_radius = 22.0
 polish_gain_per_sec = 24.0

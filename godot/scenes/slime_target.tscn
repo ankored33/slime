@@ -12,5 +12,7 @@ script = ExtResource("1")
 [node name="Outline" type="Line2D" parent="."]
 closed = false
 
+[node name="Sprite2D" type="Sprite2D" parent="."]
+
 [node name="Label" type="Label" parent="."]
 horizontal_alignment = 1
