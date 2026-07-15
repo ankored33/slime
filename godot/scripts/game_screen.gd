@@ -117,6 +117,7 @@ func _process(delta: float) -> void:
 	_update_slime_squish(delta)
 	_resolve_brush_overlaps()
 	_apply_wall_push_out()
+	_apply_slime_push_out()
 	_check_finish()
 	_check_failure()
 	_update_gauges()
@@ -154,6 +155,7 @@ func reset_day() -> void:
 		brush.special_time_left = 0.0
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		slime.reset_pressure()
+		slime.set_hearts_active(false)
 	_update_gauges()
 	_update_brush_controls()
 	_refresh_debug_text()
@@ -186,10 +188,16 @@ func _update_slime_squish(delta: float) -> void:
 	# Pressure depth uses the base radius so the spring has a stable input.
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		var deepest := 0.0
+		var touched_by_active := false
 		for brush: Brush in _brush_map.values():
 			var overlap: float = brush.hit_radius + slime.radius - brush.global_position.distance_to(slime.global_position)
 			deepest = maxf(deepest, overlap)
+			if brush.is_active and overlap > 0.0:
+				touched_by_active = true
 		slime.apply_pressure(deepest, delta)
+		var state: Dictionary = _slime_state.get(String(slime.side), {})
+		var polish_winning: bool = float(state.get("polish", 0.0)) > float(state.get("pain", 0.0))
+		slime.set_hearts_active(touched_by_active and polish_winning)
 
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
@@ -324,6 +332,22 @@ func _apply_wall_push_out() -> void:
 		for wall in _wall_zones:
 			brush.position = GameRules.push_out_from_rect(brush.position, brush.hit_radius, wall.get_rect())
 
+func _apply_slime_push_out() -> void:
+	# Brushes can sink into the squished radius but never pass through.
+	for brush: Brush in _brush_map.values():
+		for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+			var min_dist: float = brush.hit_radius + slime.get_hit_radius()
+			var delta_vec: Vector2 = brush.position - slime.position
+			var dist := delta_vec.length()
+			if dist >= min_dist:
+				continue
+			if dist <= 0.0001:
+				delta_vec = Vector2.RIGHT
+			brush.position = _clamp_brush_to_playfield(
+				slime.position + delta_vec.normalized() * min_dist,
+				brush
+			)
+
 func _clamp_brush_to_playfield(local_pos: Vector2, brush: Brush) -> Vector2:
 	var play_rect := Rect2(Vector2.ZERO, _playfield.size)
 	return Vector2(
@@ -335,6 +359,8 @@ func _finish_day(failed_by_pain: bool) -> void:
 	if not _is_running:
 		return
 	_is_running = false
+	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+		slime.set_hearts_active(false)
 	var banked_finish := GameRules.banked_finish(_day_finish_count, failed_by_pain)
 	day_finished.emit({
 		"species_id": str(_species.get("id", "")),

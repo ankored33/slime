@@ -27,9 +27,42 @@ extends Area2D
 @onready var _sprite: Sprite2D = $Sprite2D
 @onready var _label: Label = $Label
 
+var _hearts: CPUParticles2D
+
 func _ready() -> void:
 	add_to_group("slime_targets")
+	if not Engine.is_editor_hint():
+		_setup_heart_particles()
 	_sync_visuals()
+
+func _setup_heart_particles() -> void:
+	_hearts = CPUParticles2D.new()
+	_hearts.name = "HeartParticles"
+	_hearts.emitting = false
+	_hearts.amount = 24
+	_hearts.lifetime = 1.2
+	_hearts.local_coords = false
+	_hearts.texture = FxTextures.heart()
+	_hearts.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	_hearts.direction = Vector2.UP
+	_hearts.spread = 25.0
+	_hearts.initial_velocity_min = 60.0
+	_hearts.initial_velocity_max = 120.0
+	_hearts.gravity = Vector2(0.0, -40.0)
+	_hearts.scale_amount_min = 0.6
+	_hearts.scale_amount_max = 1.2
+	_hearts.angular_velocity_min = -90.0
+	_hearts.angular_velocity_max = 90.0
+	_hearts.color = Color(1.0, 0.5, 0.65, 1.0)
+	var fade := Gradient.new()
+	fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	_hearts.color_ramp = fade
+	add_child(_hearts)
+
+func set_hearts_active(on: bool) -> void:
+	if _hearts != null:
+		_hearts.emitting = on
 
 const SQUISH_STIFFNESS := 70.0
 const SQUISH_DAMPING := 5.0
@@ -109,6 +142,9 @@ func _sync_visuals() -> void:
 		_sprite.visible = false
 		_body.visible = true
 		_outline.visible = true
+	if _hearts != null:
+		_hearts.emission_sphere_radius = radius * 0.6
+		_hearts.position = Vector2(0.0, -radius * 0.3)
 	_label.text = display_name
 	_label.position = Vector2(-radius, radius + 12.0)
 	_label.size = Vector2(radius * 2.0, 28.0)
