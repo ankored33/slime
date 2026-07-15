@@ -4,8 +4,10 @@ signal day_finished(result: Dictionary)
 
 @export var follow_speed := 16.0
 @export var finish_threshold := 160.0
+@export var finish_fx_duration := 5.0
 
 var _held_brush: Brush
+var _finish_fx_time_left := 0.0
 var _gauge_map: Dictionary = {}
 var _brush_map: Dictionary = {}
 var _wall_zones: Array[WallZone] = []
@@ -26,6 +28,7 @@ var _is_running := false
 @onready var _brush_name_label: Label = $Hud/BrushNameLabel
 @onready var _brush_spec_label: Label = $Hud/BrushSpecLabel
 @onready var _finish_progress: ProgressBar = $Hud/FinishProgress
+@onready var _finish_label: Label = $Hud/FinishLabel
 @onready var _day_finish_label: Label = $Hud/DayStats/Margin/FinishCount
 @onready var _end_day_button: Button = $Hud/Controls/EndDayButton
 @onready var _brush_a_toggle: Button = $Hud/Controls/BrushAToggle
@@ -111,15 +114,18 @@ func _process(delta: float) -> void:
 			_clamp_brush_to_playfield(local_mouse, _held_brush),
 			min(1.0, follow_speed * delta)
 		)
-	for brush in _brush_map.values():
-		if brush.is_active:
-			_apply_brush_effects(brush, delta)
+	_update_finish_fx(delta)
+	if not _is_finish_fx_active():
+		for brush in _brush_map.values():
+			if brush.is_active:
+				_apply_brush_effects(brush, delta)
 	_update_slime_squish(delta)
 	_resolve_brush_overlaps()
 	_apply_wall_push_out()
 	_apply_slime_push_out()
-	_check_finish()
-	_check_failure()
+	if not _is_finish_fx_active():
+		_check_finish()
+		_check_failure()
 	_update_gauges()
 	_update_brush_controls()
 	_refresh_debug_text()
@@ -142,10 +148,27 @@ func _apply_slime_layout(slime: SlimeTarget, cfg: Dictionary) -> void:
 	if pos_variant is Vector2:
 		slime.position = pos_variant
 
+func _is_finish_fx_active() -> bool:
+	return _finish_fx_time_left > 0.0
+
+func _start_finish_fx() -> void:
+	# Foundation for the FINISH celebration; real presentation plugs in here.
+	_finish_fx_time_left = finish_fx_duration
+	_finish_label.visible = true
+
+func _update_finish_fx(delta: float) -> void:
+	if _finish_fx_time_left <= 0.0:
+		return
+	_finish_fx_time_left = maxf(0.0, _finish_fx_time_left - delta)
+	if _finish_fx_time_left == 0.0:
+		_finish_label.visible = false
+
 func reset_day() -> void:
 	_day_finish_count = 0
 	_is_running = true
 	_held_brush = null
+	_finish_fx_time_left = 0.0
+	_finish_label.visible = false
 	_slime_state = {
 		"left": {"polish": 0.0, "pain": 0.0},
 		"right": {"polish": 0.0, "pain": 0.0}
@@ -300,6 +323,7 @@ func _check_finish() -> void:
 		var state: Dictionary = _slime_state[side]
 		state["polish"] = float(state["polish"]) * retention_ratio
 		_slime_state[side] = state
+	_start_finish_fx()
 
 func _check_failure() -> void:
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
