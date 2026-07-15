@@ -1,7 +1,5 @@
 extends Control
 
-const MAX_LEVEL := 8
-const LEVEL_STEP := 3
 const SAVE_PATH := "user://slime_save_v1.json"
 
 var _species_list: Array[Dictionary] = [
@@ -108,7 +106,7 @@ func _refresh_species_detail() -> void:
 	) % [
 		species["name"],
 		species["level"],
-		MAX_LEVEL,
+		GameRules.MAX_LEVEL,
 		species["finish_total"],
 		species["pain_fail_total"],
 		int(round(left_radius))
@@ -155,7 +153,7 @@ func _on_day_finished(result: Dictionary) -> void:
 	species["finish_total"] = int(species["finish_total"]) + int(result.get("banked_finish_count", 0))
 	if bool(result.get("failed_by_pain", false)):
 		species["pain_fail_total"] = int(species["pain_fail_total"]) + 1
-	species["level"] = min(MAX_LEVEL, 1 + int(species["finish_total"]) / LEVEL_STEP)
+	species["level"] = GameRules.level_for_finish_total(int(species["finish_total"]))
 	_species_list[_selected_species_index] = species
 	_save_progress()
 	_show_result_screen()
@@ -182,7 +180,7 @@ func _render_result() -> void:
 		int(_last_result.get("day_finish_count", 0)),
 		int(_last_result.get("banked_finish_count", 0)),
 		int(species["level"]),
-		MAX_LEVEL,
+		GameRules.MAX_LEVEL,
 		int(species["finish_total"]),
 		int(species["pain_fail_total"])
 	]
@@ -232,7 +230,6 @@ func _load_progress() -> void:
 		var saved: Dictionary = by_id[sid]
 		species["finish_total"] = max(0, int(saved.get("finish_total", 0)))
 		species["pain_fail_total"] = max(0, int(saved.get("pain_fail_total", 0)))
-		var derived_level := 1 + int(species["finish_total"]) / LEVEL_STEP
-		var saved_level := int(saved.get("level", derived_level))
-		species["level"] = min(MAX_LEVEL, max(1, max(saved_level, derived_level)))
+		var saved_level := int(saved.get("level", 1))
+		species["level"] = GameRules.level_for_finish_total(int(species["finish_total"]), saved_level)
 		_species_list[index] = species

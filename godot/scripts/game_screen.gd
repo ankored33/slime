@@ -187,8 +187,8 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 			var side := String(slime.side)
 			var state: Dictionary = _slime_state.get(side, {})
 			var level := int(_species.get("level", 1))
-			var polish_bonus: float = 1.0 + float(max(0, level - 1)) * 0.08
-			var pain_resist: float = maxf(0.45, 1.0 - float(max(0, level - 1)) * 0.04)
+			var polish_bonus := GameRules.polish_bonus(level)
+			var pain_resist := GameRules.pain_resist(level)
 			state["polish"] = clamp(float(state.get("polish", 0.0)) + brush.get_effective_polish_gain() * polish_bonus * delta, 0.0, 100.0)
 			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * delta * 0.35, 0.0, 100.0)
 			_slime_state[side] = state
@@ -269,7 +269,7 @@ func _check_finish() -> void:
 		return
 	_day_finish_count += 1
 	var level := int(_species.get("level", 1))
-	var retention_ratio: float = minf(0.6, float(max(0, level - 1)) * 0.08)
+	var retention_ratio := GameRules.retention_ratio(level)
 	for side in ["left", "right"]:
 		var state: Dictionary = _slime_state[side]
 		state["polish"] = float(state["polish"]) * retention_ratio
@@ -277,7 +277,7 @@ func _check_finish() -> void:
 
 func _check_failure() -> void:
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
-	if peak_pain >= 100.0:
+	if peak_pain >= GameRules.PAIN_LIMIT:
 		_finish_day(true)
 
 func _resolve_brush_overlaps() -> void:
@@ -304,33 +304,7 @@ func _apply_wall_push_out() -> void:
 		return
 	for brush: Brush in _brush_map.values():
 		for wall in _wall_zones:
-			brush.position = _push_out_from_rect(brush.position, brush.hit_radius, wall.get_rect())
-
-func _push_out_from_rect(center: Vector2, radius: float, rect: Rect2) -> Vector2:
-	var nearest := Vector2(
-		clampf(center.x, rect.position.x, rect.position.x + rect.size.x),
-		clampf(center.y, rect.position.y, rect.position.y + rect.size.y)
-	)
-	var delta := center - nearest
-	var distance := delta.length()
-	if distance >= radius:
-		return center
-	if distance > 0.0001:
-		return center + delta.normalized() * (radius - distance)
-
-	# Exact overlap on rect edge or inside; escape through the shortest axis.
-	var left_gap := absf(center.x - rect.position.x)
-	var right_gap := absf((rect.position.x + rect.size.x) - center.x)
-	var top_gap := absf(center.y - rect.position.y)
-	var bottom_gap := absf((rect.position.y + rect.size.y) - center.y)
-	var min_gap := minf(minf(left_gap, right_gap), minf(top_gap, bottom_gap))
-	if min_gap == left_gap:
-		return Vector2(rect.position.x - radius, center.y)
-	if min_gap == right_gap:
-		return Vector2(rect.position.x + rect.size.x + radius, center.y)
-	if min_gap == top_gap:
-		return Vector2(center.x, rect.position.y - radius)
-	return Vector2(center.x, rect.position.y + rect.size.y + radius)
+			brush.position = GameRules.push_out_from_rect(brush.position, brush.hit_radius, wall.get_rect())
 
 func _clamp_brush_to_playfield(local_pos: Vector2, brush: Brush) -> Vector2:
 	var play_rect := Rect2(Vector2.ZERO, _playfield.size)
@@ -343,9 +317,7 @@ func _finish_day(failed_by_pain: bool) -> void:
 	if not _is_running:
 		return
 	_is_running = false
-	var banked_finish := _day_finish_count
-	if failed_by_pain:
-		banked_finish = int(floor(float(_day_finish_count) * 0.5))
+	var banked_finish := GameRules.banked_finish(_day_finish_count, failed_by_pain)
 	day_finished.emit({
 		"species_id": str(_species.get("id", "")),
 		"species_name": str(_species.get("name", "Slime")),
