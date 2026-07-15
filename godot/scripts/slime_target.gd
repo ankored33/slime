@@ -31,8 +31,31 @@ func _ready() -> void:
 	add_to_group("slime_targets")
 	_sync_visuals()
 
+const SQUISH_STIFFNESS := 70.0
+const SQUISH_DAMPING := 5.0
+const MAX_SQUISH_RATIO := 0.25
+const PRESS_RESPONSE := 10.0
+
+var _squish := 0.0
+var _squish_velocity := 0.0
+
 func get_hit_radius() -> float:
-	return radius
+	# Squishy hitbox: compressed while pressed, briefly overshoots on release.
+	return clampf(radius - _squish, radius * (1.0 - MAX_SQUISH_RATIO), radius * (1.0 + MAX_SQUISH_RATIO * 0.5))
+
+func apply_pressure(depth: float, delta: float) -> void:
+	if depth > 0.0:
+		var target := minf(depth * 0.6, radius * MAX_SQUISH_RATIO)
+		_squish = lerpf(_squish, target, minf(1.0, PRESS_RESPONSE * delta))
+		_squish_velocity = 0.0
+	else:
+		var accel := -SQUISH_STIFFNESS * _squish - SQUISH_DAMPING * _squish_velocity
+		_squish_velocity += accel * delta
+		_squish += _squish_velocity * delta
+
+func reset_pressure() -> void:
+	_squish = 0.0
+	_squish_velocity = 0.0
 
 func apply_species(species: Dictionary, side_label: String, side_config: Dictionary = {}) -> void:
 	slime_id = str(species.get("id", ""))

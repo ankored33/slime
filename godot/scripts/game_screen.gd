@@ -114,8 +114,7 @@ func _process(delta: float) -> void:
 	for brush in _brush_map.values():
 		if brush.is_active:
 			_apply_brush_effects(brush, delta)
-	if _held_brush != null and not _held_brush.is_active:
-		_apply_brush_effects(_held_brush, delta * 0.3)
+	_update_slime_squish(delta)
 	_resolve_brush_overlaps()
 	_apply_wall_push_out()
 	_check_finish()
@@ -153,6 +152,8 @@ func reset_day() -> void:
 	for brush in _brush_map.values():
 		brush.is_active = false
 		brush.special_time_left = 0.0
+	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+		slime.reset_pressure()
 	_update_gauges()
 	_update_brush_controls()
 	_refresh_debug_text()
@@ -180,6 +181,15 @@ func _pick_brush(mouse_position: Vector2) -> void:
 			nearest = brush
 			nearest_distance = distance
 	_held_brush = nearest
+
+func _update_slime_squish(delta: float) -> void:
+	# Pressure depth uses the base radius so the spring has a stable input.
+	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+		var deepest := 0.0
+		for brush: Brush in _brush_map.values():
+			var overlap: float = brush.hit_radius + slime.radius - brush.global_position.distance_to(slime.global_position)
+			deepest = maxf(deepest, overlap)
+		slime.apply_pressure(deepest, delta)
 
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
