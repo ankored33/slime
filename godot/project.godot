@@ -19,3 +19,7 @@ config/features=PackedStringArray("4.6")
 window/size/viewport_width=1280
 window/size/viewport_height=720
 window/stretch/mode="canvas_items"
+
+[gui]
+
+theme/custom="res://theme/main_theme.tres"

@@ -46,12 +46,12 @@ theme_override_constants/separation = 6
 
 [node name="ScreenTitle" type="Label" parent="CanvasLayer/Frame/Margin/VBox/Header"]
 theme_override_font_sizes/font_size = 30
-text = "Slime Select"
+text = "スライム選択"
 
 [node name="ScreenSubtitle" type="Label" parent="CanvasLayer/Frame/Margin/VBox/Header"]
 theme_override_font_sizes/font_size = 15
 modulate = Color(0.8, 0.84, 0.9, 0.92)
-text = "Choose a species pair to condition for the day."
+text = "今日お手入れするスライムの種を選ぼう。"
 
 [node name="SelectScreen" type="VBoxContainer" parent="CanvasLayer/Frame/Margin/VBox"]
 theme_override_constants/separation = 16
@@ -82,7 +82,7 @@ scroll_active = false
 theme_override_constants/separation = 12
 
 [node name="StartButton" type="Button" parent="CanvasLayer/Frame/Margin/VBox/SelectScreen/Actions"]
-text = "Start Day"
+text = "1日をはじめる"
 
 [node name="ResultScreen" type="VBoxContainer" parent="CanvasLayer/Frame/Margin/VBox"]
 visible = false
@@ -106,4 +106,4 @@ scroll_active = false
 theme_override_constants/separation = 12
 
 [node name="ReturnButton" type="Button" parent="CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions"]
-text = "Back To Select"
+text = "選択画面へ戻る"

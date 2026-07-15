@@ -126,7 +126,7 @@ func _process(delta: float) -> void:
 
 func setup_species(species: Dictionary) -> void:
 	_species = species.duplicate(true)
-	_title_label.text = str(_species.get("name", "Slime"))
+	_title_label.text = str(_species.get("name", "スライム"))
 	var left_config: Dictionary = _species.get("left", {})
 	var right_config: Dictionary = _species.get("right", {})
 	_apply_slime_layout(_left_slime, left_config)
@@ -134,7 +134,7 @@ func setup_species(species: Dictionary) -> void:
 	_left_slime.apply_species(_species, "L", left_config)
 	_right_slime.apply_species(_species, "R", right_config)
 	_meta_label.text = "LV %d" % int(_species.get("level", 1))
-	_day_label.text = "1 Day"
+	_day_label.text = "1日目"
 	reset_day()
 
 func _apply_slime_layout(slime: SlimeTarget, cfg: Dictionary) -> void:
@@ -200,16 +200,16 @@ func _update_gauges() -> void:
 	_set_gauge("pain-R", _slime_state["right"]["pain"])
 	_finish_progress.max_value = finish_threshold
 	_finish_progress.value = _get_combined_polish()
-	_day_finish_label.text = "Today Finish: %d" % _day_finish_count
+	_day_finish_label.text = "本日のFINISH: %d" % _day_finish_count
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
 	if peak_pain >= 80.0:
-		_danger_label.text = "[b]Condition[/b]\nPain critical"
+		_danger_label.text = "[b]状態[/b]\n痛み：限界寸前"
 		_danger_label.modulate = Color(1.0, 0.45, 0.45, 1.0)
 	elif peak_pain >= 55.0:
-		_danger_label.text = "[b]Condition[/b]\nPain rising"
+		_danger_label.text = "[b]状態[/b]\n痛み：上昇中"
 		_danger_label.modulate = Color(1.0, 0.82, 0.45, 1.0)
 	else:
-		_danger_label.text = "[b]Condition[/b]\nPain stable"
+		_danger_label.text = "[b]状態[/b]\n痛み：安定"
 		_danger_label.modulate = Color(0.75, 0.92, 0.85, 1.0)
 
 func _set_gauge(gauge_id: String, current: float) -> void:
@@ -218,7 +218,7 @@ func _set_gauge(gauge_id: String, current: float) -> void:
 		gauge.set_gauge_value(current, 100.0)
 
 func _refresh_debug_text() -> void:
-	_debug_label.text = "Status\nDrag brushes to reposition.\nCombined polish: %d / %d\nPain updates in real time." % [
+	_debug_label.text = "操作ガイド\nブラシはドラッグで移動。\n合計快感: %d / %d\n痛みはリアルタイムで変化する。" % [
 		int(round(_get_combined_polish())),
 		int(round(finish_threshold))
 	]
@@ -247,19 +247,27 @@ func _update_brush_controls() -> void:
 	var brush_a: Brush = _brush_map.get("brush-a")
 	var brush_b: Brush = _brush_map.get("brush-b")
 	if brush_a != null:
-		_brush_a_toggle.text = "Brush A: ON" if brush_a.is_active else "Brush A: OFF"
-		_brush_a_special.text = "Brush A Special*" if brush_a.is_special_active() else "Brush A Special"
+		_brush_a_toggle.text = "ブラシA: ON" if brush_a.is_active else "ブラシA: OFF"
+		_brush_a_special.text = "ブラシA 特殊技*" if brush_a.is_special_active() else "ブラシA 特殊技"
 	if brush_b != null:
-		_brush_b_toggle.text = "Brush B: ON" if brush_b.is_active else "Brush B: OFF"
-		_brush_b_special.text = "Brush B Special*" if brush_b.is_special_active() else "Brush B Special"
+		_brush_b_toggle.text = "ブラシB: ON" if brush_b.is_active else "ブラシB: OFF"
+		_brush_b_special.text = "ブラシB 特殊技*" if brush_b.is_special_active() else "ブラシB 特殊技"
 	var selected_brush: Brush = _held_brush if _held_brush != null else brush_a
 	if selected_brush != null:
-		_brush_name_label.text = selected_brush.brush_id.capitalize().replace("-", " ")
-		_brush_spec_label.text = "Polish %d / Pain %d / Size %d" % [
+		_brush_name_label.text = _brush_display_name(selected_brush.brush_id)
+		_brush_spec_label.text = "快感 %d / 痛み %d / サイズ %d" % [
 			int(round(selected_brush.polish_gain_per_sec)),
 			int(round(selected_brush.pain_gain_per_sec)),
 			int(round(selected_brush.hit_radius))
 		]
+
+func _brush_display_name(brush_id: String) -> String:
+	match brush_id:
+		"brush-a":
+			return "ブラシA"
+		"brush-b":
+			return "ブラシB"
+	return brush_id.capitalize().replace("-", " ")
 
 func _get_combined_polish() -> float:
 	return float(_slime_state["left"]["polish"]) + float(_slime_state["right"]["polish"])

@@ -37,202 +37,6 @@ offset_top = -8.0
 offset_right = 1291.0
 offset_bottom = 720.0
 
-[node name="Hud" type="Control" parent="." unique_id=1008816429]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="TopBar" type="PanelContainer" parent="Hud" unique_id=1491293964]
-visible = false
-layout_mode = 0
-offset_left = 26.0
-offset_top = 18.0
-offset_right = 288.0
-offset_bottom = 124.0
-
-[node name="Margin" type="MarginContainer" parent="Hud/TopBar" unique_id=1836204730]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 12
-
-[node name="VBox" type="VBoxContainer" parent="Hud/TopBar/Margin" unique_id=1119957183]
-layout_mode = 2
-theme_override_constants/separation = 5
-
-[node name="SpeciesLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1892668349]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "Species Pair"
-
-[node name="MetaLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1205237299]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Lv.1"
-
-[node name="DangerLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1363708631]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Pain stable"
-
-[node name="PolishL" parent="Hud" unique_id=1734165133 instance=ExtResource("2")]
-layout_mode = 0
-offset_top = 615.0
-offset_right = 300.0
-offset_bottom = 630.0
-gauge_id = "polish-L"
-caption = "POLISH L"
-
-[node name="PainL" parent="Hud" unique_id=1519828551 instance=ExtResource("2")]
-layout_mode = 0
-offset_top = 655.0
-offset_right = 300.0
-offset_bottom = 670.0
-gauge_id = "pain-L"
-caption = "PAIN L"
-
-[node name="PolishR" parent="Hud" unique_id=1842442508 instance=ExtResource("2")]
-layout_mode = 0
-offset_left = 980.0
-offset_top = 615.0
-offset_right = 1280.0
-offset_bottom = 630.0
-gauge_id = "polish-R"
-caption = "POLISH R"
-
-[node name="PainR" parent="Hud" unique_id=807932175 instance=ExtResource("2")]
-layout_mode = 0
-offset_left = 980.0
-offset_top = 655.0
-offset_right = 1280.0
-offset_bottom = 670.0
-gauge_id = "pain-R"
-caption = "PAIN R"
-
-[node name="FinishProgress" type="ProgressBar" parent="Hud" unique_id=1323510636]
-layout_mode = 0
-offset_left = 89.0
-offset_top = 700.0
-offset_right = 1205.0
-offset_bottom = 718.0
-show_percentage = false
-
-[node name="DayStats" type="PanelContainer" parent="Hud" unique_id=936402762]
-layout_mode = 0
-offset_left = 983.0
-offset_top = 330.0
-offset_right = 1240.0
-offset_bottom = 384.0
-
-[node name="Margin" type="MarginContainer" parent="Hud/DayStats" unique_id=1184699040]
-layout_mode = 2
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 10
-
-[node name="FinishCount" type="Label" parent="Hud/DayStats/Margin" unique_id=1648917955]
-layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Today Finish: 0"
-
-[node name="Controls" type="VBoxContainer" parent="Hud" unique_id=1312439738]
-layout_mode = 0
-offset_left = 1036.0
-offset_top = 394.0
-offset_right = 1266.0
-offset_bottom = 678.0
-theme_override_constants/separation = 10
-
-[node name="BrushAToggle" type="Button" parent="Hud/Controls" unique_id=1775050072]
-layout_mode = 2
-text = "Brush A: OFF"
-
-[node name="BrushASpecial" type="Button" parent="Hud/Controls" unique_id=1153918083]
-layout_mode = 2
-text = "Brush A Special"
-
-[node name="BrushBToggle" type="Button" parent="Hud/Controls" unique_id=153784150]
-layout_mode = 2
-text = "Brush B: OFF"
-
-[node name="BrushBSpecial" type="Button" parent="Hud/Controls" unique_id=458990346]
-layout_mode = 2
-text = "Brush B Special"
-
-[node name="EndDayButton" type="Button" parent="Hud/Controls" unique_id=1017712887]
-layout_mode = 2
-text = "Cash Out Day"
-
-[node name="DebugLabel" type="Label" parent="Hud" unique_id=2081223899]
-layout_mode = 0
-offset_left = 983.0
-offset_top = 105.0
-offset_right = 1169.0
-offset_bottom = 318.0
-theme_override_font_sizes/font_size = 15
-autowrap_mode = 3
-
-[node name="CharaNameLabel" type="Label" parent="Hud" unique_id=1875689029]
-layout_mode = 0
-offset_left = 20.0
-offset_top = 13.0
-offset_right = 185.0
-offset_bottom = 63.0
-theme_override_font_sizes/font_size = 29
-text = "Character"
-
-[node name="DayLabel" type="Label" parent="Hud" unique_id=1048220396]
-layout_mode = 0
-offset_left = 215.0
-offset_top = 15.0
-offset_right = 303.0
-offset_bottom = 65.0
-theme_override_font_sizes/font_size = 29
-text = "1 Day"
-
-[node name="LevelLabel" type="Label" parent="Hud" unique_id=1176691606]
-layout_mode = 0
-offset_left = 23.0
-offset_top = 81.0
-offset_right = 188.0
-offset_bottom = 131.0
-theme_override_font_sizes/font_size = 29
-text = "LV 1"
-
-[node name="ConditionLabel" type="RichTextLabel" parent="Hud" unique_id=1310823897]
-layout_mode = 0
-offset_left = 26.0
-offset_top = 147.0
-offset_right = 288.0
-offset_bottom = 317.0
-bbcode_enabled = true
-fit_content = true
-scroll_active = false
-
-[node name="BrushNameLabel" type="Label" parent="Hud" unique_id=1086628338]
-layout_mode = 0
-offset_left = 980.0
-offset_top = 17.0
-offset_right = 1163.0
-offset_bottom = 51.0
-theme_override_font_sizes/font_size = 22
-text = "Brush Name"
-
-[node name="BrushSpecLabel" type="Label" parent="Hud" unique_id=1652540892]
-layout_mode = 0
-offset_left = 976.0
-offset_top = 54.0
-offset_right = 1168.0
-offset_bottom = 88.0
-theme_override_font_sizes/font_size = 22
-text = "Spec"
-
 [node name="Playfield" type="Control" parent="." unique_id=480552896]
 layout_mode = 1
 anchors_preset = 15
@@ -268,18 +72,18 @@ offset_bottom = 598.0
 [node name="LeftSlime" parent="Playfield" unique_id=687335192 instance=ExtResource("3")]
 position = Vector2(504, 481)
 slime_id = "mint"
-display_name = "Left Slime"
+display_name = "左スライム"
 radius = 20.0
 
 [node name="RightSlime" parent="Playfield" unique_id=1098827226 instance=ExtResource("3")]
 position = Vector2(794, 481)
 side = "right"
 slime_id = "mint"
-display_name = "Right Slime"
+display_name = "右スライム"
 radius = 20.0
 
 [node name="BrushA" parent="Playfield" unique_id=1919971458 instance=ExtResource("5")]
-position = Vector2(692, 217)
+position = Vector2(577, 446)
 brush_id = "brush-a"
 hit_radius = 26.0
 
@@ -290,3 +94,199 @@ hit_radius = 22.0
 polish_gain_per_sec = 24.0
 pain_gain_per_sec = 11.0
 fill_color = Color(1, 0.560784, 0.4, 0.95)
+
+[node name="Hud" type="Control" parent="." unique_id=1008816429]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TopBar" type="PanelContainer" parent="Hud" unique_id=1491293964]
+visible = false
+layout_mode = 0
+offset_left = 26.0
+offset_top = 18.0
+offset_right = 288.0
+offset_bottom = 124.0
+
+[node name="Margin" type="MarginContainer" parent="Hud/TopBar" unique_id=1836204730]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="VBox" type="VBoxContainer" parent="Hud/TopBar/Margin" unique_id=1119957183]
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="SpeciesLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1892668349]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "スライムペア"
+
+[node name="MetaLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1205237299]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "Lv.1"
+
+[node name="DangerLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1363708631]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+text = "痛み：安定"
+
+[node name="PolishL" parent="Hud" unique_id=1734165133 instance=ExtResource("2")]
+layout_mode = 0
+offset_top = 615.0
+offset_right = 300.0
+offset_bottom = 630.0
+gauge_id = "polish-L"
+caption = "快感 L"
+
+[node name="PainL" parent="Hud" unique_id=1519828551 instance=ExtResource("2")]
+layout_mode = 0
+offset_top = 655.0
+offset_right = 300.0
+offset_bottom = 670.0
+gauge_id = "pain-L"
+caption = "痛み L"
+
+[node name="PolishR" parent="Hud" unique_id=1842442508 instance=ExtResource("2")]
+layout_mode = 0
+offset_left = 980.0
+offset_top = 615.0
+offset_right = 1280.0
+offset_bottom = 630.0
+gauge_id = "polish-R"
+caption = "快感 R"
+
+[node name="PainR" parent="Hud" unique_id=807932175 instance=ExtResource("2")]
+layout_mode = 0
+offset_left = 980.0
+offset_top = 655.0
+offset_right = 1280.0
+offset_bottom = 670.0
+gauge_id = "pain-R"
+caption = "痛み R"
+
+[node name="FinishProgress" type="ProgressBar" parent="Hud" unique_id=1323510636]
+layout_mode = 0
+offset_left = 89.0
+offset_top = 700.0
+offset_right = 1205.0
+offset_bottom = 718.0
+show_percentage = false
+
+[node name="DayStats" type="PanelContainer" parent="Hud" unique_id=936402762]
+layout_mode = 0
+offset_left = 983.0
+offset_top = 330.0
+offset_right = 1240.0
+offset_bottom = 384.0
+
+[node name="Margin" type="MarginContainer" parent="Hud/DayStats" unique_id=1184699040]
+layout_mode = 2
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 10
+
+[node name="FinishCount" type="Label" parent="Hud/DayStats/Margin" unique_id=1648917955]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "本日のFINISH: 0"
+
+[node name="Controls" type="VBoxContainer" parent="Hud" unique_id=1312439738]
+layout_mode = 0
+offset_left = 1036.0
+offset_top = 394.0
+offset_right = 1266.0
+offset_bottom = 678.0
+theme_override_constants/separation = 10
+
+[node name="BrushAToggle" type="Button" parent="Hud/Controls" unique_id=1775050072]
+layout_mode = 2
+text = "ブラシA: OFF"
+
+[node name="BrushASpecial" type="Button" parent="Hud/Controls" unique_id=1153918083]
+layout_mode = 2
+text = "ブラシA 特殊技"
+
+[node name="BrushBToggle" type="Button" parent="Hud/Controls" unique_id=153784150]
+layout_mode = 2
+text = "ブラシB: OFF"
+
+[node name="BrushBSpecial" type="Button" parent="Hud/Controls" unique_id=458990346]
+layout_mode = 2
+text = "ブラシB 特殊技"
+
+[node name="EndDayButton" type="Button" parent="Hud/Controls" unique_id=1017712887]
+layout_mode = 2
+text = "1日を終える"
+
+[node name="DebugLabel" type="Label" parent="Hud" unique_id=2081223899]
+layout_mode = 0
+offset_left = 983.0
+offset_top = 105.0
+offset_right = 1169.0
+offset_bottom = 318.0
+theme_override_font_sizes/font_size = 15
+autowrap_mode = 3
+
+[node name="CharaNameLabel" type="Label" parent="Hud" unique_id=1875689029]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 13.0
+offset_right = 185.0
+offset_bottom = 63.0
+theme_override_font_sizes/font_size = 29
+text = "キャラ名"
+
+[node name="DayLabel" type="Label" parent="Hud" unique_id=1048220396]
+layout_mode = 0
+offset_left = 215.0
+offset_top = 15.0
+offset_right = 303.0
+offset_bottom = 65.0
+theme_override_font_sizes/font_size = 29
+text = "1日目"
+
+[node name="LevelLabel" type="Label" parent="Hud" unique_id=1176691606]
+layout_mode = 0
+offset_left = 23.0
+offset_top = 81.0
+offset_right = 188.0
+offset_bottom = 131.0
+theme_override_font_sizes/font_size = 29
+text = "LV 1"
+
+[node name="ConditionLabel" type="RichTextLabel" parent="Hud" unique_id=1310823897]
+layout_mode = 0
+offset_left = 26.0
+offset_top = 147.0
+offset_right = 288.0
+offset_bottom = 317.0
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="BrushNameLabel" type="Label" parent="Hud" unique_id=1086628338]
+layout_mode = 0
+offset_left = 980.0
+offset_top = 17.0
+offset_right = 1163.0
+offset_bottom = 51.0
+theme_override_font_sizes/font_size = 22
+text = "ブラシ名"
+
+[node name="BrushSpecLabel" type="Label" parent="Hud" unique_id=1652540892]
+layout_mode = 0
+offset_left = 976.0
+offset_top = 54.0
+offset_right = 1168.0
+offset_bottom = 88.0
+theme_override_font_sizes/font_size = 22
+text = "性能"

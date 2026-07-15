@@ -5,7 +5,7 @@ const SAVE_PATH := "user://slime_save_v1.json"
 var _species_list: Array[Dictionary] = [
 	{
 		"id": "mint",
-		"name": "Mint Slime",
+		"name": "ミントスライム",
 		"color": Color(0.45, 1.0, 0.8, 0.92),
 		"left": {
 			"position": Vector2(552.5, 480.0),
@@ -23,7 +23,7 @@ var _species_list: Array[Dictionary] = [
 	},
 	{
 		"id": "peach",
-		"name": "Peach Slime",
+		"name": "ピーチスライム",
 		"color": Color(1.0, 0.71, 0.78, 0.92),
 		"left": {
 			"position": Vector2(540.0, 485.0),
@@ -41,7 +41,7 @@ var _species_list: Array[Dictionary] = [
 	},
 	{
 		"id": "azure",
-		"name": "Azure Slime",
+		"name": "アジュールスライム",
 		"color": Color(0.47, 0.73, 1.0, 0.92),
 		"left": {
 			"position": Vector2(560.0, 474.0),
@@ -62,6 +62,7 @@ var _species_list: Array[Dictionary] = [
 var _selected_species_index := 0
 var _last_result: Dictionary = {}
 
+@onready var _frame: Control = $CanvasLayer/Frame
 @onready var _screen_title: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenTitle
 @onready var _screen_subtitle: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenSubtitle
 @onready var _select_screen: Control = $CanvasLayer/Frame/Margin/VBox/SelectScreen
@@ -95,14 +96,14 @@ func _refresh_species_detail() -> void:
 	var left_radius := float(left_cfg.get("radius", 100.0))
 	_species_detail.text = (
 		"[b]%s[/b]\n"
-		+ "Level: %d / %d\n"
-		+ "Total Finish: %d\n"
-		+ "Pain Failures: %d\n"
-		+ "Hitbox Radius: %d\n\n"
-		+ "Growth:\n"
-		+ "- Higher polish gain\n"
-		+ "- Better pain tolerance\n"
-		+ "- More retained polish after FINISH"
+		+ "レベル: %d / %d\n"
+		+ "累計FINISH: %d\n"
+		+ "痛み失敗: %d\n"
+		+ "当たり判定半径: %d\n\n"
+		+ "成長で伸びるもの:\n"
+		+ "- 快感の上がりやすさ\n"
+		+ "- 痛みへの耐性\n"
+		+ "- FINISH後に残る快感量"
 	) % [
 		species["name"],
 		species["level"],
@@ -113,23 +114,25 @@ func _refresh_species_detail() -> void:
 	]
 
 func _show_select_screen() -> void:
-	_screen_title.text = "Slime Select"
-	_screen_subtitle.text = "Choose a species pair to condition for the day."
+	_screen_title.text = "スライム選択"
+	_screen_subtitle.text = "今日お手入れするスライムの種を選ぼう。"
+	_frame.visible = true
 	_select_screen.visible = true
 	_game_screen.visible = false
 	_result_screen.visible = false
 	_refresh_species_list()
 
 func _show_game_screen() -> void:
-	_screen_title.text = "Conditioning"
-	_screen_subtitle.text = "Drag brushes, toggle them on, and cash out before pain reaches 100%."
+	# Hide the side frame entirely; the play screen has its own HUD.
+	_frame.visible = false
 	_select_screen.visible = false
 	_game_screen.visible = true
 	_result_screen.visible = false
 
 func _show_result_screen() -> void:
-	_screen_title.text = "Result"
-	_screen_subtitle.text = "Review the day and return to species selection."
+	_screen_title.text = "リザルト"
+	_screen_subtitle.text = "1日の成果を確認して選択画面へ戻ろう。"
+	_frame.visible = true
 	_select_screen.visible = false
 	_game_screen.visible = false
 	_result_screen.visible = true
@@ -161,21 +164,21 @@ func _on_day_finished(result: Dictionary) -> void:
 func _render_result() -> void:
 	var species: Dictionary = _species_list[_selected_species_index]
 	var failed := bool(_last_result.get("failed_by_pain", false))
-	var status_text := "Pain limit reached. The day's finish was halved." if failed else "Voluntary cash-out. All finish secured."
+	var status_text := "痛みが限界に達した。今日の成果は半減となった。" if failed else "任意終了。成果をすべて持ち帰った。"
 	_result_body.text = (
 		"[b]%s[/b]\n"
 		+ "%s\n\n"
-		+ "Today Finish: %d\n"
-		+ "Banked Finish: %d\n"
-		+ "Species Level: %d / %d\n"
-		+ "Total Finish: %d\n"
-		+ "Pain Failures: %d\n\n"
-		+ "Unlocked growth focus:\n"
-		+ "- Better polish gain\n"
-		+ "- Better pain tolerance\n"
-		+ "- Better post-FINISH retention"
+		+ "本日のFINISH: %d\n"
+		+ "持ち帰りFINISH: %d\n"
+		+ "種レベル: %d / %d\n"
+		+ "累計FINISH: %d\n"
+		+ "痛み失敗: %d\n\n"
+		+ "成長で伸びるもの:\n"
+		+ "- 快感の上がりやすさ\n"
+		+ "- 痛みへの耐性\n"
+		+ "- FINISH後に残る快感量"
 	) % [
-		str(_last_result.get("species_name", "Slime")),
+		str(_last_result.get("species_name", "スライム")),
 		status_text,
 		int(_last_result.get("day_finish_count", 0)),
 		int(_last_result.get("banked_finish_count", 0)),
