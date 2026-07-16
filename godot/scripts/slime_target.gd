@@ -179,6 +179,8 @@ func _sync_visuals() -> void:
 		_hearts.position = Vector2(0.0, -radius * 0.3)
 	if _heart_burst != null:
 		_heart_burst.emission_sphere_radius = radius * 0.5
+	# 部位ターゲットが小さいときは名前ラベルを出さない（立ち絵に重なって邪魔になる）。
+	_label.visible = radius >= 60.0
 	_label.text = display_name
 	_label.position = Vector2(-radius, radius + 12.0)
 	_label.size = Vector2(radius * 2.0, 28.0)

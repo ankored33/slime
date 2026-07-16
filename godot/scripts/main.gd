@@ -17,14 +17,16 @@ var _characters: Array[Dictionary] = [
 		"expressions": {},
 		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(1.0, 0.71, 0.78, 0.92),
+		# 磨きターゲット = 立ち絵に重ねる乳首部分の小画像＋当たり判定。
+		# 位置は本素材が来たら立ち絵に合わせて調整する。
 		"left": {
 			"position": Vector2(552.5, 480.0),
-			"radius": 110.0,
+			"radius": 24.0,
 			"image": ""
 		},
 		"right": {
 			"position": Vector2(753.5, 477.0),
-			"radius": 110.0,
+			"radius": 24.0,
 			"image": ""
 		},
 		"level": 1,
@@ -56,12 +58,12 @@ var _characters: Array[Dictionary] = [
 		"color": Color(0.47, 0.9, 0.78, 0.92),
 		"left": {
 			"position": Vector2(560.0, 474.0),
-			"radius": 98.0,
+			"radius": 22.0,
 			"image": ""
 		},
 		"right": {
 			"position": Vector2(746.0, 471.0),
-			"radius": 98.0,
+			"radius": 22.0,
 			"image": ""
 		},
 		"level": 1,
