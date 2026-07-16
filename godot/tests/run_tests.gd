@@ -10,6 +10,7 @@ var _passes := 0
 
 func _init() -> void:
 	_test_level_for_finish_total()
+	_test_finish_threshold()
 	_test_polish_bonus()
 	_test_pain_resist()
 	_test_retention_ratio()
@@ -34,29 +35,42 @@ func _check_near(actual: float, expected: float, label: String) -> void:
 
 func _test_level_for_finish_total() -> void:
 	_check_eq(GameRules.level_for_finish_total(0), 1, "level: 0 finish -> Lv1")
-	_check_eq(GameRules.level_for_finish_total(2), 1, "level: 2 finish -> Lv1")
-	_check_eq(GameRules.level_for_finish_total(3), 2, "level: 3 finish -> Lv2")
-	_check_eq(GameRules.level_for_finish_total(20), 7, "level: 20 finish -> Lv7")
+	_check_eq(GameRules.level_for_finish_total(1), 1, "level: 1 finish -> Lv1")
+	_check_eq(GameRules.level_for_finish_total(2), 2, "level: 2 finish -> Lv2")
+	_check_eq(GameRules.level_for_finish_total(4), 2, "level: 4 finish -> Lv2")
+	_check_eq(GameRules.level_for_finish_total(5), 3, "level: 5 finish -> Lv3")
+	_check_eq(GameRules.level_for_finish_total(20), 6, "level: 20 finish -> Lv6")
+	_check_eq(GameRules.level_for_finish_total(53), 9, "level: 53 finish -> Lv9")
+	_check_eq(GameRules.level_for_finish_total(54), 10, "level: 54 finish -> Lv10")
 	_check_eq(GameRules.level_for_finish_total(999), GameRules.MAX_LEVEL, "level: capped at MAX_LEVEL")
 	_check_eq(GameRules.level_for_finish_total(-5), 1, "level: negative finish clamps to Lv1")
 	_check_eq(GameRules.level_for_finish_total(0, 5), 5, "level: saved level wins when higher")
 	_check_eq(GameRules.level_for_finish_total(0, 99), GameRules.MAX_LEVEL, "level: saved level capped")
 	_check_eq(GameRules.level_for_finish_total(0, -3), 1, "level: bad saved level clamps to Lv1")
 
+func _test_finish_threshold() -> void:
+	_check_near(GameRules.finish_threshold(1), 170.0, "threshold: Lv1 is near the ceiling")
+	_check_near(GameRules.finish_threshold(5), 134.0, "threshold: Lv5")
+	_check_near(GameRules.finish_threshold(10), 90.0, "threshold: Lv10 floors at 90")
+	_check_near(GameRules.finish_threshold(100), 90.0, "threshold: floored at 90")
+
 func _test_polish_bonus() -> void:
-	_check_near(GameRules.polish_bonus(1), 1.0, "polish_bonus: Lv1 baseline")
-	_check_near(GameRules.polish_bonus(5), 1.32, "polish_bonus: Lv5")
-	_check_near(GameRules.polish_bonus(0), 1.0, "polish_bonus: Lv0 clamps to baseline")
+	_check_near(GameRules.polish_bonus(1), 0.6, "polish_bonus: Lv1 is dull")
+	_check_near(GameRules.polish_bonus(5), 1.2, "polish_bonus: Lv5")
+	_check_near(GameRules.polish_bonus(10), 1.95, "polish_bonus: Lv10 roughly 2x")
+	_check_near(GameRules.polish_bonus(0), 0.6, "polish_bonus: Lv0 clamps to baseline")
 
 func _test_pain_resist() -> void:
 	_check_near(GameRules.pain_resist(1), 1.0, "pain_resist: Lv1 baseline")
-	_check_near(GameRules.pain_resist(5), 0.84, "pain_resist: Lv5")
-	_check_near(GameRules.pain_resist(100), 0.45, "pain_resist: floored at 0.45")
+	_check_near(GameRules.pain_resist(5), 0.8, "pain_resist: Lv5")
+	_check_near(GameRules.pain_resist(10), 0.55, "pain_resist: Lv10")
+	_check_near(GameRules.pain_resist(100), 0.5, "pain_resist: floored at 0.5")
 
 func _test_retention_ratio() -> void:
 	_check_near(GameRules.retention_ratio(1), 0.0, "retention: Lv1 keeps nothing")
-	_check_near(GameRules.retention_ratio(4), 0.24, "retention: Lv4")
-	_check_near(GameRules.retention_ratio(100), 0.6, "retention: capped at 0.6")
+	_check_near(GameRules.retention_ratio(4), 0.21, "retention: Lv4")
+	_check_near(GameRules.retention_ratio(10), 0.63, "retention: Lv10")
+	_check_near(GameRules.retention_ratio(100), 0.65, "retention: capped at 0.65")
 
 func _test_banked_finish() -> void:
 	_check_eq(GameRules.banked_finish(7, false), 7, "banked: voluntary end keeps all")

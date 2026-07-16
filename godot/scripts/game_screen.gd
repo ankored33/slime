@@ -3,8 +3,10 @@ extends Control
 signal day_finished(result: Dictionary)
 
 @export var follow_speed := 16.0
-@export var finish_threshold := 160.0
 @export var finish_fx_duration := 5.0
+
+# Level-driven; refreshed in setup_species.
+var finish_threshold := GameRules.finish_threshold(1)
 
 # 右パネル上部のブラシ置き場。開始・リセット時にブラシをここへ戻す。
 const BRUSH_RACK_SLOTS := {
@@ -156,7 +158,9 @@ func setup_species(species: Dictionary) -> void:
 	_apply_slime_layout(_right_slime, right_config)
 	_left_slime.apply_species(_species, "L", left_config)
 	_right_slime.apply_species(_species, "R", right_config)
-	_meta_label.text = "LV %d" % int(_species.get("level", 1))
+	var level := int(_species.get("level", 1))
+	finish_threshold = GameRules.finish_threshold(level)
+	_meta_label.text = "LV %d" % level
 	_day_label.text = "1日目"
 	reset_day()
 

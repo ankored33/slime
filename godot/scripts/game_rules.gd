@@ -4,23 +4,37 @@ extends RefCounted
 ## Pure gameplay formulas shared by main.gd and game_screen.gd.
 ## Keep this file free of Node/scene dependencies so it stays unit-testable.
 
-const MAX_LEVEL := 8
-const LEVEL_STEP := 3
+const MAX_LEVEL := 10
 const FAIL_PENALTY_RATIO := 0.5
 const PAIN_LIMIT := 100.0
 
+## Cumulative FINISH totals required to reach each level (index = level - 1).
+## Gaps widen by one each level (2, 3, 4, ...) so progression stretches out:
+## early levels come quickly, the road to Lv10 takes 54 FINISH in total.
+const LEVEL_THRESHOLDS: Array[int] = [0, 2, 5, 9, 14, 20, 27, 35, 44, 54]
+
 static func level_for_finish_total(finish_total: int, saved_level: int = 1) -> int:
-	var derived := 1 + maxi(0, finish_total) / LEVEL_STEP
+	var derived := 1
+	for index in range(LEVEL_THRESHOLDS.size()):
+		if finish_total >= LEVEL_THRESHOLDS[index]:
+			derived = index + 1
 	return mini(MAX_LEVEL, maxi(1, maxi(saved_level, derived)))
 
+## Combined polish needed for a FINISH. Starts near the 200-point ceiling
+## (both targets almost maxed) and falls as sensitivity grows with level.
+static func finish_threshold(level: int) -> float:
+	return maxf(90.0, 170.0 - float(maxi(0, level - 1)) * 9.0)
+
+## Sensitivity: polish gain multiplier. Dull at Lv1, roughly 2x by Lv10.
 static func polish_bonus(level: int) -> float:
-	return 1.0 + float(maxi(0, level - 1)) * 0.08
+	return 0.6 + float(maxi(0, level - 1)) * 0.15
 
 static func pain_resist(level: int) -> float:
-	return maxf(0.45, 1.0 - float(maxi(0, level - 1)) * 0.04)
+	return maxf(0.5, 1.0 - float(maxi(0, level - 1)) * 0.05)
 
+## Polish kept after a FINISH; high levels chain climaxes back to back.
 static func retention_ratio(level: int) -> float:
-	return minf(0.6, float(maxi(0, level - 1)) * 0.08)
+	return minf(0.65, float(maxi(0, level - 1)) * 0.07)
 
 static func banked_finish(day_finish_count: int, failed_by_pain: bool) -> int:
 	if failed_by_pain:
