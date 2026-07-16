@@ -32,7 +32,7 @@ func _run_tests() -> void:
 	var result: Control = main.get_node("CanvasLayer/Frame/Margin/VBox/ResultScreen")
 	var game: Control = main.get_node("GameScreen")
 	var next_button: Button = main.get_node(
-		"CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/Actions/OpeningNextButton"
+		"CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions/OpeningNextButton"
 	)
 
 	main._characters[0]["opening_seen"] = false

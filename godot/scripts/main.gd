@@ -40,15 +40,17 @@ var _characters: Array[Dictionary] = [
 		"opening_seen": false,
 		"opening_pages": [
 			{
-				"image": "",
+				"style": "split",
+				"portrait": "portrait",
 				"text": "ネブラレア王国最強の将軍、金色の髪を靡かせる《眩耀たる漆黒》アリスティア。\n彼女は我らが帝国にとって悪夢そのものだった。その剣技はもはや人智を超越しており、一振りで百の兵を薙ぎ払い、魔法を込めた一閃は堅牢なる城壁すらも砕いた。赤い瞳は戦場のあらゆる動きを見抜き、いかなる英雄の攻撃をも紙一重で躱す。彼女の前に立つ者は、勇猛なる帝国兵であろうと歴戦の将であろうと等しく塵となった。彼女の剣は我々にとって敗北を運ぶ魔剣であり、彼女自身が帝国を穿つ最強の矛なのだと、幾度となく身をもって知らされた。"
 			},
 			{
-				"image": "",
+				"style": "blackout",
 				"text": "だが捕らえた。\n帝国の7つの軍団が\nついに降伏したのだ。"
 			},
 			{
-				"image": "",
+				"style": "split",
+				"portrait": "portrait_after_opening",
 				"text": "彼女の手首に嵌められた枷から伸びる重々しい鎖は、頑丈な柱に繋がれている。拘束された両手は吊り上げられ、漆黒の鎧を剥ぎ取られた無防備な身体は、屈辱的な姿勢を強いられている。かつて魔剣を握り、数多の帝国兵を切り裂いたその指先は、今や固く握りしめられ、震えていた。その赤き瞳の輝きは失せ、ただ屈辱と怒りの炎が燻るのみだった。透き通る肌から真珠のような汗が流れ落ちる。最強の矛は今、完全にその力を奪われ、晒し者にされている。\n\n……今日から、彼女の「世話」はお前の役目だ。"
 			}
 		]
@@ -79,25 +81,30 @@ var _characters: Array[Dictionary] = [
 		"opening_seen": false,
 		"opening_pages": [
 			{
-				"image": "",
+				"style": "split",
+				"portrait": "portrait",
 				"text": "ザコチック条約機構軍を統べる総督、飄々と軍幕を巡る《緋色の方程式》チチカ・エルマ。\n彼女は戦場を支配する絶対的な知性そのものだった。その風貌からは想像もつかない速度で千の策を脳裏に渦巻かせ、戦況を未来予知のごとく読み解く。我々の大軍はわずかな手勢に翻弄され、難攻不落と信じていた要塞は一夜にして陥落した。帝国全土から選りすぐられた最高の軍師たちでさえ、掌の上で踊らされた。その軍略は完璧であり、我が軍の敗北は彼女がペンを走らせたその瞬間に約束されていた。我々が受けた幾多の屈辱は、彼女という盤上の支配者によってもたらされた。"
 			},
 			{
-				"image": "",
+				"style": "blackout",
 				"text": "だが捕らえた。"
 			},
 			{
-				"image": "",
+				"style": "split",
+				"portrait": "portrait_after_opening",
 				"text": "彼女の身体を拘束するのは、分厚い鉄枷だった。彼女が築き上げた不敗の歴史は、自身の敗北によって終わりを告げた。かつて机上に地図を広げ、無数の部隊を動かしたその小さな腕は、今はただ冷たく鋭い金属の感触に耐えている。軍服は引き裂かれ、白い肌には幾つもの痛々しい傷が見えた。かつて無尽蔵とも思える知性と希望とをたたえていた瞳にはもはや光はなく、ただ屈辱と絶望に歪んでいる。いかな神算鬼謀を宿す頭脳も、この無慈悲な状況を覆すことはできない。\n\n……鉄格子の向こうで、彼女はお前を睨みつけている。"
 			}
 		]
 	}
 ]
 
+const SCREEN_FADE_DURATION := 0.25
+
 var _selected_index := 0
 var _last_result: Dictionary = {}
 var _opening_page := 0
 var _pending_character_index := -1
+var _fade_tween: Tween
 
 @onready var _frame: Control = $CanvasLayer/Frame
 @onready var _screen_title: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenTitle
@@ -111,16 +118,22 @@ var _pending_character_index := -1
 @onready var _title_screen: Control = $CanvasLayer/TitleScreen
 @onready var _title_start_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleStartButton
 @onready var _opening_screen: Control = $CanvasLayer/OpeningScreen
-@onready var _opening_image: TextureRect = $CanvasLayer/OpeningScreen/Margin/VBox/ImageArea/OpeningImage
-@onready var _opening_image_placeholder: Label = $CanvasLayer/OpeningScreen/Margin/VBox/ImageArea/ImagePlaceholder
-@onready var _opening_text: RichTextLabel = $CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/OpeningText
-@onready var _opening_page_label: Label = $CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/Actions/PageLabel
-@onready var _opening_next_button: Button = $CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/Actions/OpeningNextButton
+@onready var _opening_split: Control = $CanvasLayer/OpeningScreen/SplitView
+@onready var _opening_portrait: TextureRect = $CanvasLayer/OpeningScreen/SplitView/PortraitRect
+@onready var _opening_portrait_placeholder: Label = $CanvasLayer/OpeningScreen/SplitView/PortraitPlaceholder
+@onready var _opening_text: RichTextLabel = $CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/OpeningText
+@onready var _opening_page_label: Label = $CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions/PageLabel
+@onready var _opening_next_button: Button = $CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions/OpeningNextButton
+@onready var _opening_blackout: Control = $CanvasLayer/OpeningScreen/BlackoutView
+@onready var _opening_blackout_label: Label = $CanvasLayer/OpeningScreen/BlackoutView/BlackoutLabel
+@onready var _fade_rect: ColorRect = $CanvasLayer/FadeRect
 
 func _ready() -> void:
 	_return_button.pressed.connect(_on_return_pressed)
 	_title_start_button.pressed.connect(_on_title_start_pressed)
 	_opening_next_button.pressed.connect(_on_opening_next_pressed)
+	# 画面のどこをクリックしてもページが進む（暗転ページはこれが唯一の進行手段）。
+	_opening_screen.gui_input.connect(_on_opening_gui_input)
 	_game_screen.day_finished.connect(_on_day_finished)
 	_character_confirm_dialog.confirmed.connect(_on_character_confirmed)
 	_character_confirm_dialog.canceled.connect(_on_character_selection_canceled)
@@ -134,6 +147,14 @@ func _ready() -> void:
 		reset_button.pressed.connect(_on_character_reset_pressed.bind(index))
 	_load_progress()
 	_show_title_screen()
+	# 起動時はタイトルへフェードインで入る。
+	if DisplayServer.get_name() != "headless":
+		_fade_rect.visible = true
+		_fade_rect.color.a = 1.0
+		_fade_rect.mouse_filter = Control.MOUSE_FILTER_STOP
+		_fade_tween = create_tween()
+		_fade_tween.tween_property(_fade_rect, "color:a", 0.0, SCREEN_FADE_DURATION * 2)
+		_fade_tween.tween_callback(_on_fade_finished)
 
 func _get_card(index: int) -> Control:
 	return _select_screen.get_node("Margin/VBox/Cards/Card%d" % index)
@@ -187,6 +208,26 @@ func _fit_profile_overlay(info_overlay: PanelContainer) -> void:
 		return
 	info_overlay.offset_top = info_overlay.offset_bottom - info_overlay.get_combined_minimum_size().y
 
+## 暗転フェードを挟んで画面を切り替える。switcher は _show_*_screen 系の Callable。
+## ヘッドレス（テスト）実行時は即時切替。フェード中の再要求は無視する。
+func _transition(switcher: Callable) -> void:
+	if DisplayServer.get_name() == "headless":
+		switcher.call()
+		return
+	if _fade_tween != null and _fade_tween.is_running():
+		return
+	_fade_rect.visible = true
+	_fade_rect.mouse_filter = Control.MOUSE_FILTER_STOP
+	_fade_tween = create_tween()
+	_fade_tween.tween_property(_fade_rect, "color:a", 1.0, SCREEN_FADE_DURATION)
+	_fade_tween.tween_callback(switcher)
+	_fade_tween.tween_property(_fade_rect, "color:a", 0.0, SCREEN_FADE_DURATION)
+	_fade_tween.tween_callback(_on_fade_finished)
+
+func _on_fade_finished() -> void:
+	_fade_rect.visible = false
+	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 func _hide_all_screens() -> void:
 	_frame.visible = false
 	_select_screen.visible = false
@@ -232,7 +273,7 @@ func _show_result_screen() -> void:
 
 func _on_title_start_pressed() -> void:
 	GameAudio.play_se("ui_click")
-	_show_select_screen()
+	_transition(_show_select_screen)
 
 func _on_character_card_pressed(index: int) -> void:
 	if index < 0 or index >= _characters.size():
@@ -270,14 +311,19 @@ func _on_character_start_pressed(index: int) -> void:
 	var chara: Dictionary = _characters[_selected_index]
 	if not bool(chara.get("opening_seen", false)):
 		_opening_page = 0
-		_show_opening_screen()
+		_transition(_show_opening_screen)
 	else:
 		_begin_day()
 
 func _begin_day() -> void:
 	var chara: Dictionary = _characters[_selected_index]
 	_game_screen.setup_species(chara)
-	_show_game_screen()
+	_transition(_show_game_screen)
+
+func _on_opening_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton \
+			and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		_on_opening_next_pressed()
 
 func _on_opening_next_pressed() -> void:
 	GameAudio.play_se("ui_click")
@@ -296,24 +342,32 @@ func _render_opening_page() -> void:
 	var chara: Dictionary = _characters[_selected_index]
 	var pages: Array = chara.get("opening_pages", [])
 	if pages.is_empty():
-		_opening_text.text = ""
-		_opening_page_label.text = "0 / 0"
+		_opening_split.visible = false
+		_opening_blackout.visible = false
 		return
 	var page: Dictionary = pages[_opening_page]
+	var is_blackout := str(page.get("style", "split")) == "blackout"
+	_opening_split.visible = not is_blackout
+	_opening_blackout.visible = is_blackout
+	if is_blackout:
+		_opening_blackout_label.text = str(page.get("text", ""))
+		return
 	_opening_text.text = str(page.get("text", ""))
 	_opening_page_label.text = "%d / %d" % [_opening_page + 1, pages.size()]
-	var image_path := str(page.get("image", ""))
+	# 左半分にはキャラ選択と同じ立ち絵を出す。page["portrait"] はキャラ定義のキー名。
+	var portrait_key := str(page.get("portrait", "portrait"))
+	var image_path := str(chara.get(portrait_key, ""))
 	var texture: Texture2D = null
 	if image_path != "" and ResourceLoader.exists(image_path):
 		texture = load(image_path)
-	_opening_image.texture = texture
-	_opening_image_placeholder.visible = texture == null
+	_opening_portrait.texture = texture
+	_opening_portrait_placeholder.visible = texture == null
 	var is_last := _opening_page + 1 >= pages.size()
 	_opening_next_button.text = "はじめる ▶" if is_last else "次へ ▼"
 
 func _on_return_pressed() -> void:
 	GameAudio.play_se("ui_click")
-	_show_select_screen()
+	_transition(_show_select_screen)
 
 func _on_day_finished(result: Dictionary) -> void:
 	_last_result = result.duplicate(true)
@@ -324,7 +378,7 @@ func _on_day_finished(result: Dictionary) -> void:
 	chara["level"] = GameRules.level_for_finish_total(int(chara["finish_total"]))
 	_characters[_selected_index] = chara
 	_save_progress()
-	_show_result_screen()
+	_transition(_show_result_screen)
 
 func _render_result() -> void:
 	var chara: Dictionary = _characters[_selected_index]
