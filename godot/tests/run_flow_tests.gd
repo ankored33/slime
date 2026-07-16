@@ -121,17 +121,15 @@ func _run_tests() -> void:
 	main._characters[1]["opening_seen"] = true
 	main._refresh_character_card(1)
 	var admiral_reset: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugResetButton")
-	_check_eq(admiral_reset.visible, OS.is_debug_build(), "debug reset: visibility follows debug build")
-	if OS.is_debug_build():
-		admiral_reset.emit_signal("pressed")
-		_check_eq(int(main._characters[1]["level"]), 1, "debug reset: level")
-		_check_eq(int(main._characters[1]["finish_total"]), 0, "debug reset: finish total")
-		_check_eq(int(main._characters[1]["pain_fail_total"]), 0, "debug reset: pain failures")
-		_check(not bool(main._characters[1]["opening_seen"]), "debug reset: opening state")
-		_check(String(card1_portrait.texture.resource_path).ends_with("/admiral/portrait.png"),
-			"debug reset: portrait returns to initial state")
-	else:
-		_check(admiral_reset.disabled, "debug reset: disabled outside debug builds")
+	# headless テストは常にデバッグビルドで走る。リリース時の非表示はここでは検証できない。
+	_check(admiral_reset.visible, "debug reset: visible in debug builds")
+	admiral_reset.emit_signal("pressed")
+	_check_eq(int(main._characters[1]["level"]), 1, "debug reset: level")
+	_check_eq(int(main._characters[1]["finish_total"]), 0, "debug reset: finish total")
+	_check_eq(int(main._characters[1]["pain_fail_total"]), 0, "debug reset: pain failures")
+	_check(not bool(main._characters[1]["opening_seen"]), "debug reset: opening state")
+	_check(String(card1_portrait.texture.resource_path).ends_with("/admiral/portrait.png"),
+		"debug reset: portrait returns to initial state")
 
 	main._on_character_start_pressed(0)
 	_check(game.visible and not opening.visible, "second start skips opening")
