@@ -333,8 +333,8 @@ func _apply_expression(expression_id: String) -> void:
 	# 表情が変わった瞬間だけボイス再生を試みる（素材が無ければ無音、連射は抑制済み）。
 	GameAudio.play_voice(str(_species.get("id", "")), expression_id)
 
-## キャラ定義の expressions 辞書を優先し、無ければ既定パス
-## assets/chara/<キャラid>/<表情id>.png を探す。どちらも無ければ null。
+## キャラ定義の expressions 辞書を優先し、次に既定の表情パスを探す。
+## 表情素材が無い場合は、磨き画面用の固定背景 game_background を使う。
 func _resolve_expression_texture(expression_id: String) -> Texture2D:
 	var expressions: Dictionary = _species.get("expressions", {})
 	var path := str(expressions.get(expression_id, ""))
@@ -344,6 +344,11 @@ func _resolve_expression_texture(expression_id: String) -> Texture2D:
 		var texture := load(path)
 		if texture is Texture2D:
 			return texture
+	var background_path := str(_species.get("game_background", ""))
+	if background_path != "" and ResourceLoader.exists(background_path):
+		var background := load(background_path)
+		if background is Texture2D:
+			return background
 	return null
 
 func _update_gauges() -> void:

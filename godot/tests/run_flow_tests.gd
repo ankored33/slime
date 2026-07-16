@@ -84,6 +84,14 @@ func _run_tests() -> void:
 	main._on_opening_next_pressed()
 	_check(game.visible and not opening.visible, "opening end -> game screen")
 	_check(bool(main._characters[0]["opening_seen"]), "opening marked as seen")
+	var game_background: TextureRect = main.get_node("GameScreen/Playfield/CharaImage")
+	_check(game_background.texture != null, "game: character background loaded")
+	_check(String(game_background.texture.resource_path).ends_with("/general/game_background.png"),
+		"game: selected character background is used")
+	_check(absf(game_background.position.x + game_background.size.x * 0.5 - 640.0) < 0.1,
+		"game: character background is horizontally centered")
+	_check(absf(game_background.position.y) < 0.1 and absf(game_background.size.y - 720.0) < 0.1,
+		"game: character background fills the screen height")
 
 	var brush_a: Node2D = main.get_node("GameScreen/Playfield/BrushA")
 	var brush_d: Node2D = main.get_node("GameScreen/Playfield/BrushD")
