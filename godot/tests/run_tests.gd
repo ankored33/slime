@@ -1,9 +1,10 @@
 extends SceneTree
 
-## Headless unit tests for GameRules.
+## Headless unit tests for GameRules and ExpressionRules.
 ## Run: godot --headless --path godot -s res://tests/run_tests.gd
 
 const GameRules = preload("res://scripts/game_rules.gd")
+const ExpressionRules = preload("res://scripts/expression_rules.gd")
 
 var _failures := 0
 var _passes := 0
@@ -17,6 +18,7 @@ func _init() -> void:
 	_test_brush_unlocks()
 	_test_banked_finish()
 	_test_push_out_from_rect()
+	_test_expression_pick()
 	print("---")
 	print("Passed: %d, Failed: %d" % [_passes, _failures])
 	quit(1 if _failures > 0 else 0)
@@ -110,3 +112,40 @@ func _test_push_out_from_rect() -> void:
 		or escaped_center.distance_to(deep_center) > 0.0
 	_check(outside and escaped_center != deep_center, "push_out: deep center is moved out")
 	_check_eq(escaped_center, Vector2(200, 90), "push_out: deep center escapes via shortest axis (top)")
+
+func _test_expression_pick() -> void:
+	# 優先度: 絶望 > 絶頂 > それ以外
+	_check_eq(ExpressionRules.pick({"despair": true, "climax": true, "touching": true}),
+		ExpressionRules.DESPAIR, "expr: despair wins over everything")
+	_check_eq(ExpressionRules.pick({"climax": true, "touching": true, "polish_ratio": 1.0}),
+		ExpressionRules.CLIMAX, "expr: climax wins over touch")
+
+	# ブラシ当て: 痛み上昇が快感上昇を上回れば「痛い」
+	_check_eq(ExpressionRules.pick({"touching": true, "pain_rate": 10.0, "polish_rate": 5.0}),
+		ExpressionRules.TOUCH_A, "expr: pain-dominant touch -> 痛い")
+	_check_eq(ExpressionRules.pick({"touching": true, "pain_rate": 5.0, "polish_rate": 5.0, "polish_ratio": 0.0}),
+		ExpressionRules.TOUCH_B, "expr: equal rates are not pain-dominant")
+
+	# ブラシ当て: ゲージ比率で b -> c -> d
+	_check_eq(ExpressionRules.pick({"touching": true, "polish_rate": 10.0, "polish_ratio": 0.1}),
+		ExpressionRules.TOUCH_B, "expr: touch low gauge -> 恥じらい")
+	_check_eq(ExpressionRules.pick({"touching": true, "polish_rate": 10.0, "polish_ratio": 0.5}),
+		ExpressionRules.TOUCH_C, "expr: touch mid gauge -> 快感")
+	_check_eq(ExpressionRules.pick({"touching": true, "polish_rate": 10.0, "polish_ratio": 0.8}),
+		ExpressionRules.TOUCH_D, "expr: touch high gauge -> 大快感")
+
+	# ブラシ無し: 憔悴はアイドル時のみ、接触が優先
+	_check_eq(ExpressionRules.pick({"exhausted": true}),
+		ExpressionRules.EXHAUSTED, "expr: exhausted after finish")
+	_check_eq(ExpressionRules.pick({"exhausted": true, "touching": true, "polish_rate": 10.0, "polish_ratio": 0.5}),
+		ExpressionRules.TOUCH_C, "expr: touching overrides exhausted")
+
+	# ブラシ無し: ゲージ比率で a -> b -> c -> d
+	_check_eq(ExpressionRules.pick({}), ExpressionRules.IDLE_A, "expr: empty gauge -> 怒り・軽蔑")
+	_check_eq(ExpressionRules.pick({"polish_ratio": 0.3}), ExpressionRules.IDLE_B, "expr: idle low-mid -> 恥じらい")
+	_check_eq(ExpressionRules.pick({"polish_ratio": 0.7}), ExpressionRules.IDLE_C, "expr: idle high -> 大快感耐え")
+	_check_eq(ExpressionRules.pick({"polish_ratio": 0.95}), ExpressionRules.IDLE_D, "expr: near finish -> 媚び")
+
+	# 素材の既定パス
+	_check_eq(ExpressionRules.default_image_path("general", "climax"),
+		"res://assets/chara/general/climax.png", "expr: default image path convention")

@@ -4,12 +4,17 @@ const SAVE_PATH := "user://slime_save_v2.json"
 
 # キャラ定義。名前・オープニングは仮素材で、本素材が来たら差し替える。
 # left / right は磨きターゲット2点の配置。
+# expressions は表情id → 画像パス。空のままなら既定パス
+# res://assets/chara/<id>/<表情id>.png を探す（無ければ表情名ラベルで代替表示）。
+# 表情id一覧: idle_a〜idle_d（ブラシ無し）, touch_a〜touch_d（ブラシ当て）,
+# climax（絶頂）, despair（絶望）, exhausted（憔悴）。詳細は expression_rules.gd。
 var _characters: Array[Dictionary] = [
 	{
 		"id": "general",
 		"name": "女将軍（仮名）",
 		"epithet": "無敵と呼ばれた女将軍",
 		"portrait": "",
+		"expressions": {},
 		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(1.0, 0.71, 0.78, 0.92),
 		"left": {
@@ -46,6 +51,7 @@ var _characters: Array[Dictionary] = [
 		"name": "エルフ提督（仮名）",
 		"epithet": "無敗を誇った女エルフ提督",
 		"portrait": "",
+		"expressions": {},
 		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(0.47, 0.9, 0.78, 0.92),
 		"left": {

@@ -2,8 +2,14 @@ extends Control
 
 signal day_finished(result: Dictionary)
 
+const ExpressionRules = preload("res://scripts/expression_rules.gd")
+
 @export var follow_speed := 16.0
 @export var finish_fx_duration := 5.0
+@export var fail_fx_duration := 2.5
+
+# FINISH演出が終わってから憔悴表情を保つ時間。
+const EXHAUST_DURATION := 4.0
 
 # Level-driven; refreshed in setup_species.
 var finish_threshold := GameRules.finish_threshold(1)
@@ -18,6 +24,9 @@ const BRUSH_RACK_SLOTS := {
 
 var _held_brush: Brush
 var _finish_fx_time_left := 0.0
+var _fail_fx_time_left := 0.0
+var _exhaust_time_left := 0.0
+var _current_expression := ""
 var _gauge_map: Dictionary = {}
 var _brush_map: Dictionary = {}
 var _wall_zones: Array[WallZone] = []
@@ -46,6 +55,8 @@ var _brush_special_buttons: Dictionary = {}
 @onready var _brush_button_rows: VBoxContainer = $Hud/Controls/BrushButtons
 @onready var _left_slime: SlimeTarget = $Playfield/LeftSlime
 @onready var _right_slime: SlimeTarget = $Playfield/RightSlime
+@onready var _chara_image: TextureRect = $Playfield/CharaImage
+@onready var _expression_label: Label = $Playfield/CharaImage/ExpressionLabel
 
 func _ready() -> void:
 	_collect_gauges()
@@ -135,7 +146,9 @@ func _process(delta: float) -> void:
 			min(1.0, follow_speed * delta)
 		)
 	_update_finish_fx(delta)
-	if not _is_finish_fx_active():
+	_update_fail_fx(delta)
+	_exhaust_time_left = maxf(0.0, _exhaust_time_left - delta)
+	if not _is_finish_fx_active() and not _is_fail_fx_active():
 		for brush in _brush_map.values():
 			if brush.is_active:
 				_apply_brush_effects(brush, delta)
@@ -143,9 +156,10 @@ func _process(delta: float) -> void:
 	_resolve_brush_overlaps()
 	_apply_wall_push_out()
 	_apply_slime_push_out()
-	if not _is_finish_fx_active():
+	if not _is_finish_fx_active() and not _is_fail_fx_active():
 		_check_finish()
 		_check_failure()
+	_update_expression()
 	_update_gauges()
 	_update_brush_controls()
 
@@ -192,12 +206,33 @@ func _update_finish_fx(delta: float) -> void:
 	_finish_fx_time_left = maxf(0.0, _finish_fx_time_left - delta)
 	if _finish_fx_time_left == 0.0:
 		_finish_label.visible = false
+		_exhaust_time_left = EXHAUST_DURATION
+
+func _is_fail_fx_active() -> bool:
+	return _fail_fx_time_left > 0.0
+
+func _start_fail_fx() -> void:
+	# 痛み限界: 絶望表情を見せてから日終了へ移る。
+	_fail_fx_time_left = fail_fx_duration
+	_held_brush = null
+	for brush: Brush in _brush_map.values():
+		brush.is_active = false
+
+func _update_fail_fx(delta: float) -> void:
+	if _fail_fx_time_left <= 0.0:
+		return
+	_fail_fx_time_left = maxf(0.0, _fail_fx_time_left - delta)
+	if _fail_fx_time_left == 0.0:
+		_finish_day(true)
 
 func reset_day() -> void:
 	_day_finish_count = 0
 	_is_running = true
 	_held_brush = null
 	_finish_fx_time_left = 0.0
+	_fail_fx_time_left = 0.0
+	_exhaust_time_left = 0.0
+	_current_expression = ""
 	_finish_label.visible = false
 	_slime_state = {
 		"left": {"polish": 0.0, "pain": 0.0},
@@ -211,6 +246,7 @@ func reset_day() -> void:
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		slime.reset_pressure()
 		slime.set_hearts_active(false)
+	_update_expression()
 	_update_gauges()
 	_update_brush_controls()
 
@@ -268,6 +304,60 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 			state["polish"] = clamp(float(state.get("polish", 0.0)) + brush.get_effective_polish_gain() * polish_bonus * delta, 0.0, 100.0)
 			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * delta * 0.35, 0.0, 100.0)
 			_slime_state[side] = state
+
+## アクティブなブラシの接触状態と、いま掛かっている上昇量/秒（補正込み）。
+func _compute_touch_info() -> Dictionary:
+	var touching := false
+	var polish_rate := 0.0
+	var pain_rate := 0.0
+	var level := int(_species.get("level", 1))
+	var polish_bonus := GameRules.polish_bonus(level)
+	var pain_resist := GameRules.pain_resist(level)
+	for brush: Brush in _brush_map.values():
+		if not brush.visible or not brush.is_active:
+			continue
+		for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+			if brush.global_position.distance_to(slime.global_position) <= brush.hit_radius + slime.get_hit_radius():
+				touching = true
+				# _apply_brush_effects と同じ係数で「ゲージが実際に動く速さ」を比較する。
+				polish_rate += brush.get_effective_polish_gain() * polish_bonus
+				pain_rate += brush.get_effective_pain_gain() * pain_resist * 0.35
+	return {"touching": touching, "polish_rate": polish_rate, "pain_rate": pain_rate}
+
+func _update_expression() -> void:
+	var info := _compute_touch_info()
+	var expression := ExpressionRules.pick({
+		"touching": bool(info["touching"]),
+		"polish_ratio": _get_combined_polish() / maxf(finish_threshold, 0.001),
+		"polish_rate": float(info["polish_rate"]),
+		"pain_rate": float(info["pain_rate"]),
+		"climax": _is_finish_fx_active(),
+		"despair": _is_fail_fx_active(),
+		"exhausted": _exhaust_time_left > 0.0
+	})
+	_apply_expression(expression)
+
+func _apply_expression(expression_id: String) -> void:
+	if expression_id == _current_expression:
+		return
+	_current_expression = expression_id
+	var texture := _resolve_expression_texture(expression_id)
+	_chara_image.texture = texture
+	_expression_label.visible = texture == null
+	_expression_label.text = "立ち絵：%s" % ExpressionRules.display_name(expression_id)
+
+## キャラ定義の expressions 辞書を優先し、無ければ既定パス
+## assets/chara/<キャラid>/<表情id>.png を探す。どちらも無ければ null。
+func _resolve_expression_texture(expression_id: String) -> Texture2D:
+	var expressions: Dictionary = _species.get("expressions", {})
+	var path := str(expressions.get(expression_id, ""))
+	if path == "":
+		path = ExpressionRules.default_image_path(str(_species.get("id", "")), expression_id)
+	if ResourceLoader.exists(path):
+		var texture := load(path)
+		if texture is Texture2D:
+			return texture
+	return null
 
 func _update_gauges() -> void:
 	_set_gauge("polish-L", _slime_state["left"]["polish"])
@@ -367,7 +457,7 @@ func _check_finish() -> void:
 func _check_failure() -> void:
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
 	if peak_pain >= GameRules.PAIN_LIMIT:
-		_finish_day(true)
+		_start_fail_fx()
 
 func _resolve_brush_overlaps() -> void:
 	var brushes: Array[Brush] = []

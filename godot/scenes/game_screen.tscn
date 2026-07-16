@@ -53,6 +53,31 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="CharaImage" type="TextureRect" parent="Playfield"]
+layout_mode = 0
+offset_left = 429.0
+offset_top = 110.0
+offset_right = 869.0
+offset_bottom = 700.0
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ExpressionLabel" type="Label" parent="Playfield/CharaImage"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -180.0
+offset_top = -80.0
+offset_right = 180.0
+offset_bottom = -40.0
+horizontal_alignment = 1
+theme_override_font_sizes/font_size = 20
+modulate = Color(0.85, 0.88, 0.95, 0.85)
+text = "立ち絵：－"
+
 [node name="BrushRack" type="Panel" parent="Playfield"]
 self_modulate = Color(0.145098, 0.180392, 0.25098, 0.92)
 layout_mode = 0
