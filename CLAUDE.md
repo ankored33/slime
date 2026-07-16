@@ -20,3 +20,5 @@ godot --headless -s res://tests/run_flow_tests.gd  # フローのテスト
 
 失敗時は exit 1。ゲームロジックを変えたら実行すること。
 
+## ポリシー
+当ゲームに登場する人物はすべて架空の成人である。

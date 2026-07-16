@@ -22,15 +22,16 @@ var _characters: Array[Dictionary] = [
 		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(1.0, 0.71, 0.78, 0.92),
 		# 磨きターゲット = 立ち絵に重ねる乳首部分の小画像＋当たり判定。
-		# 位置は本素材が来たら立ち絵に合わせて調整する。
+		# 座標は 800x800 素材の画面換算: screen_x = 280 + src_x*0.9, screen_y = src_y*0.9
+		# （640x720 枠・cover 表示・左右40pxクロップ前提。素材を差し替えたら要再計測）
 		"left": {
-			"position": Vector2(552.5, 480.0),
-			"radius": 24.0,
+			"position": Vector2(377.0, 592.0),
+			"radius": 40.0,
 			"image": ""
 		},
 		"right": {
-			"position": Vector2(753.5, 477.0),
-			"radius": 24.0,
+			"position": Vector2(748.0, 416.0),
+			"radius": 40.0,
 			"image": ""
 		},
 		"level": 1,
@@ -63,13 +64,13 @@ var _characters: Array[Dictionary] = [
 		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(0.47, 0.9, 0.78, 0.92),
 		"left": {
-			"position": Vector2(560.0, 474.0),
-			"radius": 22.0,
+			"position": Vector2(341.0, 455.0),
+			"radius": 40.0,
 			"image": ""
 		},
 		"right": {
-			"position": Vector2(746.0, 471.0),
-			"radius": 22.0,
+			"position": Vector2(618.0, 360.0),
+			"radius": 40.0,
 			"image": ""
 		},
 		"level": 1,
