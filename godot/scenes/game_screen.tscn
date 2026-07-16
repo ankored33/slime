@@ -53,6 +53,24 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
+[node name="BrushRack" type="Panel" parent="Playfield"]
+self_modulate = Color(0.145098, 0.180392, 0.25098, 0.92)
+layout_mode = 0
+offset_left = 976.0
+offset_top = 100.0
+offset_right = 1266.0
+offset_bottom = 320.0
+
+[node name="RackLabel" type="Label" parent="Playfield/BrushRack"]
+layout_mode = 0
+offset_left = 12.0
+offset_top = 6.0
+offset_right = 220.0
+offset_bottom = 30.0
+theme_override_font_sizes/font_size = 15
+modulate = Color(0.78, 0.82, 0.9, 0.9)
+text = "ブラシ置き場"
+
 [node name="ZoomLeft" type="Panel" parent="Playfield" unique_id=1791844975]
 self_modulate = Color(0.866667, 0.866667, 1, 0.75)
 layout_mode = 0
@@ -83,17 +101,39 @@ display_name = "右スライム"
 radius = 20.0
 
 [node name="BrushA" parent="Playfield" unique_id=1919971458 instance=ExtResource("5")]
-position = Vector2(577, 446)
+position = Vector2(1050, 180)
 brush_id = "brush-a"
+display_name = "やわらか"
 hit_radius = 26.0
 
 [node name="BrushB" parent="Playfield" unique_id=886467796 instance=ExtResource("5")]
-position = Vector2(777, 204)
+position = Vector2(1195, 180)
 brush_id = "brush-b"
+display_name = "かため"
 hit_radius = 22.0
 polish_gain_per_sec = 24.0
 pain_gain_per_sec = 11.0
 fill_color = Color(1, 0.560784, 0.4, 0.95)
+
+[node name="BrushC" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1050, 265)
+brush_id = "brush-c"
+display_name = "羽"
+hit_radius = 30.0
+polish_gain_per_sec = 12.0
+pain_gain_per_sec = 2.0
+special_multiplier = 2.2
+fill_color = Color(0.6, 0.85, 1, 0.95)
+
+[node name="BrushD" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1195, 265)
+brush_id = "brush-d"
+display_name = "極細"
+hit_radius = 14.0
+polish_gain_per_sec = 34.0
+pain_gain_per_sec = 18.0
+special_multiplier = 1.5
+fill_color = Color(0.9, 0.5, 1, 0.95)
 
 [node name="Hud" type="Control" parent="." unique_id=1008816429]
 layout_mode = 1
@@ -220,34 +260,13 @@ offset_right = 1266.0
 offset_bottom = 678.0
 theme_override_constants/separation = 10
 
-[node name="BrushAToggle" type="Button" parent="Hud/Controls" unique_id=1775050072]
+[node name="BrushButtons" type="VBoxContainer" parent="Hud/Controls"]
 layout_mode = 2
-text = "ブラシA: OFF"
-
-[node name="BrushASpecial" type="Button" parent="Hud/Controls" unique_id=1153918083]
-layout_mode = 2
-text = "ブラシA 特殊技"
-
-[node name="BrushBToggle" type="Button" parent="Hud/Controls" unique_id=153784150]
-layout_mode = 2
-text = "ブラシB: OFF"
-
-[node name="BrushBSpecial" type="Button" parent="Hud/Controls" unique_id=458990346]
-layout_mode = 2
-text = "ブラシB 特殊技"
+theme_override_constants/separation = 8
 
 [node name="EndDayButton" type="Button" parent="Hud/Controls" unique_id=1017712887]
 layout_mode = 2
 text = "1日を終える"
-
-[node name="DebugLabel" type="Label" parent="Hud" unique_id=2081223899]
-layout_mode = 0
-offset_left = 983.0
-offset_top = 105.0
-offset_right = 1169.0
-offset_bottom = 318.0
-theme_override_font_sizes/font_size = 15
-autowrap_mode = 3
 
 [node name="CharaNameLabel" type="Label" parent="Hud" unique_id=1875689029]
 layout_mode = 0

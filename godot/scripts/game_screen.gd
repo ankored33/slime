@@ -6,6 +6,14 @@ signal day_finished(result: Dictionary)
 @export var finish_threshold := 160.0
 @export var finish_fx_duration := 5.0
 
+# 右パネル上部のブラシ置き場。開始・リセット時にブラシをここへ戻す。
+const BRUSH_RACK_SLOTS := {
+	"brush-a": Vector2(1050, 180),
+	"brush-b": Vector2(1195, 180),
+	"brush-c": Vector2(1050, 265),
+	"brush-d": Vector2(1195, 265)
+}
+
 var _held_brush: Brush
 var _finish_fx_time_left := 0.0
 var _gauge_map: Dictionary = {}
@@ -19,8 +27,10 @@ var _species: Dictionary = {}
 var _day_finish_count := 0
 var _is_running := false
 
+var _brush_toggle_buttons: Dictionary = {}
+var _brush_special_buttons: Dictionary = {}
+
 @onready var _playfield: Control = $Playfield
-@onready var _debug_label: Label = $Hud/DebugLabel
 @onready var _title_label: Label = $Hud/CharaNameLabel
 @onready var _meta_label: Label = $Hud/LevelLabel
 @onready var _danger_label: RichTextLabel = $Hud/ConditionLabel
@@ -31,37 +41,52 @@ var _is_running := false
 @onready var _finish_label: Label = $Hud/FinishLabel
 @onready var _day_finish_label: Label = $Hud/DayStats/Margin/FinishCount
 @onready var _end_day_button: Button = $Hud/Controls/EndDayButton
-@onready var _brush_a_toggle: Button = $Hud/Controls/BrushAToggle
-@onready var _brush_b_toggle: Button = $Hud/Controls/BrushBToggle
-@onready var _brush_a_special: Button = $Hud/Controls/BrushASpecial
-@onready var _brush_b_special: Button = $Hud/Controls/BrushBSpecial
+@onready var _brush_button_rows: VBoxContainer = $Hud/Controls/BrushButtons
 @onready var _left_slime: SlimeTarget = $Playfield/LeftSlime
 @onready var _right_slime: SlimeTarget = $Playfield/RightSlime
 
 func _ready() -> void:
-	_configure_mouse_filters()
 	_collect_gauges()
 	_collect_brushes()
 	_collect_walls()
+	_build_brush_controls()
+	_configure_mouse_filters()
 	_end_day_button.pressed.connect(_on_end_day_pressed)
-	_brush_a_toggle.pressed.connect(_on_brush_toggle_pressed.bind("brush-a"))
-	_brush_b_toggle.pressed.connect(_on_brush_toggle_pressed.bind("brush-b"))
-	_brush_a_special.pressed.connect(_on_brush_special_pressed.bind("brush-a"))
-	_brush_b_special.pressed.connect(_on_brush_special_pressed.bind("brush-b"))
 	_update_gauges()
 	_update_brush_controls()
-	_refresh_debug_text()
 	reset_day()
+
+func _sorted_brush_ids() -> Array:
+	var ids := _brush_map.keys()
+	ids.sort()
+	return ids
+
+func _build_brush_controls() -> void:
+	for brush_id: String in _sorted_brush_ids():
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 8)
+		var toggle := Button.new()
+		toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		toggle.pressed.connect(_on_brush_toggle_pressed.bind(brush_id))
+		row.add_child(toggle)
+		var special := Button.new()
+		special.pressed.connect(_on_brush_special_pressed.bind(brush_id))
+		row.add_child(special)
+		_brush_button_rows.add_child(row)
+		_brush_toggle_buttons[brush_id] = toggle
+		_brush_special_buttons[brush_id] = special
+
+func _interactive_controls() -> Array[Control]:
+	var controls: Array[Control] = [_end_day_button]
+	for button: Button in _brush_toggle_buttons.values():
+		controls.append(button)
+	for button: Button in _brush_special_buttons.values():
+		controls.append(button)
+	return controls
 
 func _configure_mouse_filters() -> void:
 	# Keep only actionable controls (buttons) consuming mouse input.
-	var interactive_controls: Array[Control] = [
-		_end_day_button,
-		_brush_a_toggle,
-		_brush_b_toggle,
-		_brush_a_special,
-		_brush_b_special
-	]
+	var interactive_controls := _interactive_controls()
 	var interactive_set: Dictionary = {}
 	for node in interactive_controls:
 		interactive_set[node] = true
@@ -93,14 +118,7 @@ func _input(event: InputEvent) -> void:
 		_held_brush.position = _clamp_brush_to_playfield(_to_playfield_local(event.position), _held_brush)
 
 func _is_over_interactive_ui(global_pos: Vector2) -> bool:
-	var interactive_controls: Array[Control] = [
-		_end_day_button,
-		_brush_a_toggle,
-		_brush_b_toggle,
-		_brush_a_special,
-		_brush_b_special
-	]
-	for node in interactive_controls:
+	for node in _interactive_controls():
 		if node != null and node.get_global_rect().has_point(global_pos):
 			return true
 	return false
@@ -128,7 +146,6 @@ func _process(delta: float) -> void:
 		_check_failure()
 	_update_gauges()
 	_update_brush_controls()
-	_refresh_debug_text()
 
 func setup_species(species: Dictionary) -> void:
 	_species = species.duplicate(true)
@@ -173,15 +190,16 @@ func reset_day() -> void:
 		"left": {"polish": 0.0, "pain": 0.0},
 		"right": {"polish": 0.0, "pain": 0.0}
 	}
-	for brush in _brush_map.values():
+	for brush: Brush in _brush_map.values():
 		brush.is_active = false
 		brush.special_time_left = 0.0
+		if BRUSH_RACK_SLOTS.has(brush.brush_id):
+			brush.position = BRUSH_RACK_SLOTS[brush.brush_id]
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		slime.reset_pressure()
 		slime.set_hearts_active(false)
 	_update_gauges()
 	_update_brush_controls()
-	_refresh_debug_text()
 
 func _collect_gauges() -> void:
 	for gauge in get_tree().get_nodes_in_group("named_gauges"):
@@ -258,12 +276,6 @@ func _set_gauge(gauge_id: String, current: float) -> void:
 	if gauge != null:
 		gauge.set_gauge_value(current, 100.0)
 
-func _refresh_debug_text() -> void:
-	_debug_label.text = "操作ガイド\nブラシはドラッグで移動。\n合計快感: %d / %d\n痛みはリアルタイムで変化する。" % [
-		int(round(_get_combined_polish())),
-		int(round(finish_threshold))
-	]
-
 func _to_playfield_local(global_position: Vector2) -> Vector2:
 	return _playfield.get_global_transform().affine_inverse() * global_position
 
@@ -285,30 +297,29 @@ func _on_brush_special_pressed(brush_id: String) -> void:
 	_update_brush_controls()
 
 func _update_brush_controls() -> void:
-	var brush_a: Brush = _brush_map.get("brush-a")
-	var brush_b: Brush = _brush_map.get("brush-b")
-	if brush_a != null:
-		_brush_a_toggle.text = "ブラシA: ON" if brush_a.is_active else "ブラシA: OFF"
-		_brush_a_special.text = "ブラシA 特殊技*" if brush_a.is_special_active() else "ブラシA 特殊技"
-	if brush_b != null:
-		_brush_b_toggle.text = "ブラシB: ON" if brush_b.is_active else "ブラシB: OFF"
-		_brush_b_special.text = "ブラシB 特殊技*" if brush_b.is_special_active() else "ブラシB 特殊技"
-	var selected_brush: Brush = _held_brush if _held_brush != null else brush_a
+	for brush_id: String in _brush_toggle_buttons:
+		var brush: Brush = _brush_map.get(brush_id)
+		if brush == null:
+			continue
+		var toggle: Button = _brush_toggle_buttons[brush_id]
+		toggle.text = "%s: %s" % [_brush_display_name(brush), "ON" if brush.is_active else "OFF"]
+		var special: Button = _brush_special_buttons[brush_id]
+		special.text = "特殊技*" if brush.is_special_active() else "特殊技"
+	var selected_brush: Brush = _held_brush
+	if selected_brush == null and not _brush_map.is_empty():
+		selected_brush = _brush_map.get(_sorted_brush_ids()[0])
 	if selected_brush != null:
-		_brush_name_label.text = _brush_display_name(selected_brush.brush_id)
+		_brush_name_label.text = _brush_display_name(selected_brush)
 		_brush_spec_label.text = "快感 %d / 痛み %d / サイズ %d" % [
 			int(round(selected_brush.polish_gain_per_sec)),
 			int(round(selected_brush.pain_gain_per_sec)),
 			int(round(selected_brush.hit_radius))
 		]
 
-func _brush_display_name(brush_id: String) -> String:
-	match brush_id:
-		"brush-a":
-			return "ブラシA"
-		"brush-b":
-			return "ブラシB"
-	return brush_id.capitalize().replace("-", " ")
+func _brush_display_name(brush: Brush) -> String:
+	if brush.display_name != "":
+		return brush.display_name
+	return brush.brush_id.capitalize().replace("-", " ")
 
 func _get_combined_polish() -> float:
 	return float(_slime_state["left"]["polish"]) + float(_slime_state["right"]["polish"])

@@ -3,6 +3,7 @@ class_name Brush
 extends Area2D
 
 @export var brush_id := ""
+@export var display_name := ""
 @export var hit_radius := 20.0:
 	set(value):
 		hit_radius = max(value, 2.0)
