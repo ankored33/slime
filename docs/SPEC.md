@@ -17,7 +17,7 @@
 `main.gd` が5画面の表示切替を管理する（シーン遷移ではなく可視切替）。
 
 1. タイトル画面（`_show_title_screen`）
-2. キャラ選択画面（`_show_select_screen`、全画面2カード）
+2. キャラ選択画面（`_show_select_screen`、全面ポートレイト2カード＋上部選択案内＋右下1/3幅プロフィールオーバーレイ。カードクリック後に確認して遷移）
 3. キャラオープニング（`_show_opening_screen`、初回のみ・`opening_seen` で管理）
 4. 磨き画面（`game_screen.tscn` / `_show_game_screen`）
 5. リザルト画面（`_show_result_screen`）→ 選択画面に戻る
@@ -78,6 +78,8 @@
 - キャラごとに色・磨きターゲット2点（left / right）の配置座標・当たり判定半径・画像パス・
   表情画像辞書（`expressions`）・オープニングページ（`opening_pages`）を持つ。
 - 成長はキャラ単位で管理: `level`, `finish_total`, `pain_fail_total`, `opening_seen`。
+- 選択画面では `opening_seen` 後に `portrait_after_opening` へ切り替える。
+- デバッグ用の状態リセットは対象キャラだけをLv1・各累計0・オープニング未視聴へ戻して保存する。
 - 現状、キャラデータは `main.gd` にハードコード（将来リソース化の候補）。
 
 ## 6. データ保存

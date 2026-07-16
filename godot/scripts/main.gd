@@ -15,7 +15,8 @@ var _characters: Array[Dictionary] = [
 		"id": "general",
 		"name": "女将軍（仮名）",
 		"epithet": "無敵と呼ばれた女将軍",
-		"portrait": "",
+		"portrait": "res://assets/chara/general/portrait.png",
+		"portrait_after_opening": "res://assets/chara/general/portrait_after_opening.png",
 		"expressions": {},
 		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(1.0, 0.71, 0.78, 0.92),
@@ -54,7 +55,8 @@ var _characters: Array[Dictionary] = [
 		"id": "admiral",
 		"name": "エルフ提督（仮名）",
 		"epithet": "無敗を誇った女エルフ提督",
-		"portrait": "",
+		"portrait": "res://assets/chara/admiral/portrait.png",
+		"portrait_after_opening": "res://assets/chara/admiral/portrait_after_opening.png",
 		"expressions": {},
 		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(0.47, 0.9, 0.78, 0.92),
@@ -92,11 +94,13 @@ var _characters: Array[Dictionary] = [
 var _selected_index := 0
 var _last_result: Dictionary = {}
 var _opening_page := 0
+var _pending_character_index := -1
 
 @onready var _frame: Control = $CanvasLayer/Frame
 @onready var _screen_title: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenTitle
 @onready var _screen_subtitle: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenSubtitle
 @onready var _select_screen: Control = $CanvasLayer/SelectScreen
+@onready var _character_confirm_dialog: ConfirmationDialog = $CanvasLayer/SelectScreen/CharacterConfirmDialog
 @onready var _game_screen: Control = $GameScreen
 @onready var _result_screen: Control = $CanvasLayer/Frame/Margin/VBox/ResultScreen
 @onready var _result_body: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/ResultScreen/ResultPanel/Margin/ResultBody
@@ -115,10 +119,16 @@ func _ready() -> void:
 	_title_start_button.pressed.connect(_on_title_start_pressed)
 	_opening_next_button.pressed.connect(_on_opening_next_pressed)
 	_game_screen.day_finished.connect(_on_day_finished)
+	_character_confirm_dialog.confirmed.connect(_on_character_confirmed)
+	_character_confirm_dialog.canceled.connect(_on_character_selection_canceled)
+	_character_confirm_dialog.get_ok_button().text = "選択"
+	_character_confirm_dialog.get_cancel_button().text = "キャンセル"
 	for index in range(_characters.size()):
 		var card := _get_card(index)
-		var button: Button = card.get_node("Margin/VBox/StartButton")
-		button.pressed.connect(_on_character_start_pressed.bind(index))
+		var button: Button = card.get_node("InteractionLayer/CardButton")
+		button.pressed.connect(_on_character_card_pressed.bind(index))
+		var reset_button: Button = card.get_node("InteractionLayer/DebugResetButton")
+		reset_button.pressed.connect(_on_character_reset_pressed.bind(index))
 	_load_progress()
 	_show_title_screen()
 
@@ -132,9 +142,10 @@ func _refresh_character_cards() -> void:
 func _refresh_character_card(index: int) -> void:
 	var chara: Dictionary = _characters[index]
 	var card := _get_card(index)
-	var name_label: Label = card.get_node("Margin/VBox/NameLabel")
-	var epithet_label: Label = card.get_node("Margin/VBox/EpithetLabel")
-	var profile_body: RichTextLabel = card.get_node("Margin/VBox/ProfileBody")
+	var info: VBoxContainer = card.get_node("Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox")
+	var name_label: Label = info.get_node("NameLabel")
+	var epithet_label: Label = info.get_node("EpithetLabel")
+	var profile_body: RichTextLabel = info.get_node("ProfileBody")
 	var portrait: TextureRect = card.get_node("Margin/VBox/PortraitArea/Portrait")
 	var placeholder: Label = card.get_node("Margin/VBox/PortraitArea/PortraitPlaceholder")
 	name_label.text = str(chara["name"])
@@ -154,12 +165,24 @@ func _refresh_character_card(index: int) -> void:
 		int(chara["pain_fail_total"]),
 		opening_state
 	]
-	var portrait_path := str(chara.get("portrait", ""))
+	var portrait_path := str(chara.get(
+		"portrait_after_opening" if bool(chara.get("opening_seen", false)) else "portrait",
+		""
+	))
+	if portrait_path == "":
+		portrait_path = str(chara.get("portrait", ""))
 	var texture: Texture2D = null
 	if portrait_path != "" and ResourceLoader.exists(portrait_path):
 		texture = load(portrait_path)
 	portrait.texture = texture
 	placeholder.visible = texture == null
+	var info_overlay := info.get_parent().get_parent() as PanelContainer
+	call_deferred("_fit_profile_overlay", info_overlay)
+
+func _fit_profile_overlay(info_overlay: PanelContainer) -> void:
+	if not is_instance_valid(info_overlay):
+		return
+	info_overlay.offset_top = info_overlay.offset_bottom - info_overlay.get_combined_minimum_size().y
 
 func _hide_all_screens() -> void:
 	_frame.visible = false
@@ -176,6 +199,8 @@ func _show_title_screen() -> void:
 
 func _show_select_screen() -> void:
 	_hide_all_screens()
+	_pending_character_index = -1
+	_character_confirm_dialog.hide()
 	_select_screen.visible = true
 	_refresh_character_cards()
 	GameAudio.play_bgm("title")
@@ -204,6 +229,36 @@ func _show_result_screen() -> void:
 func _on_title_start_pressed() -> void:
 	GameAudio.play_se("ui_click")
 	_show_select_screen()
+
+func _on_character_card_pressed(index: int) -> void:
+	if index < 0 or index >= _characters.size():
+		return
+	GameAudio.play_se("ui_click")
+	_pending_character_index = index
+	_character_confirm_dialog.popup_centered()
+
+func _on_character_confirmed() -> void:
+	if _pending_character_index < 0:
+		return
+	var index := _pending_character_index
+	_pending_character_index = -1
+	_on_character_start_pressed(index)
+
+func _on_character_selection_canceled() -> void:
+	_pending_character_index = -1
+
+func _on_character_reset_pressed(index: int) -> void:
+	if index < 0 or index >= _characters.size():
+		return
+	GameAudio.play_se("ui_click")
+	var chara: Dictionary = _characters[index]
+	chara["level"] = 1
+	chara["finish_total"] = 0
+	chara["pain_fail_total"] = 0
+	chara["opening_seen"] = false
+	_characters[index] = chara
+	_save_progress()
+	_refresh_character_card(index)
 
 func _on_character_start_pressed(index: int) -> void:
 	GameAudio.play_se("ui_click")

@@ -38,17 +38,40 @@ func _run_tests() -> void:
 	main._characters[0]["opening_seen"] = false
 	main._characters[0]["level"] = 1
 	main._characters[0]["finish_total"] = 0
+	main._characters[1]["opening_seen"] = false
 
 	_check(title.visible and not frame.visible and not game.visible, "boot: title screen only")
 
 	main._on_title_start_pressed()
 	_check(select.visible and not frame.visible and not title.visible, "title start -> select screen")
 
-	var card0_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/NameLabel")
-	var card1_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/NameLabel")
+	var card0_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
+	var card1_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
 	_check(card0_name.text != "？？？" and card1_name.text != "？？？", "select: both cards populated")
-
-	main._on_character_start_pressed(0)
+	var card0_portrait: TextureRect = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/Portrait")
+	var card1_portrait: TextureRect = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/Portrait")
+	_check(card0_portrait.texture != null, "select: general portrait loaded")
+	_check(card1_portrait.texture != null, "select: admiral portrait loaded")
+	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait.png"),
+		"select: general uses initial portrait before opening")
+	var profile_body: RichTextLabel = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/ProfileBody")
+	_check(profile_body.fit_content, "select: profile overlay shrinks to its content")
+	var instruction: Label = main.get_node("CanvasLayer/SelectScreen/InstructionOverlay/Label")
+	_check_eq(instruction.text, "キャラクターを選択してください。", "select: instruction is overlaid")
+	var card0_info: PanelContainer = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay")
+	_check(absf(card0_info.anchor_left - (2.0 / 3.0)) < 0.001,
+		"select: profile overlay uses the right third")
+	var card0_button: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/CardButton")
+	var card1_button: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/CardButton")
+	_check(card0_button.anchor_right == 1.0 and card0_button.anchor_bottom == 1.0,
+		"select: general card is fully clickable")
+	_check(card1_button.anchor_right == 1.0 and card1_button.anchor_bottom == 1.0,
+		"select: admiral card is fully clickable")
+	var confirm_dialog: ConfirmationDialog = main.get_node("CanvasLayer/SelectScreen/CharacterConfirmDialog")
+	card0_button.emit_signal("pressed")
+	_check(confirm_dialog.visible, "select: card click opens confirmation")
+	_check_eq(confirm_dialog.dialog_text, "このキャラクターを選択しますか？", "select: confirmation message")
+	confirm_dialog.emit_signal("confirmed")
 	_check(opening.visible and not select.visible, "first start -> opening screen")
 	_check_eq(main._opening_page, 0, "opening starts at page 0")
 
@@ -81,6 +104,22 @@ func _run_tests() -> void:
 
 	main._on_return_pressed()
 	_check(select.visible and not result.visible, "result return -> select screen")
+	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait_after_opening.png"),
+		"select: general portrait changes after opening")
+
+	main._characters[1]["level"] = 5
+	main._characters[1]["finish_total"] = 14
+	main._characters[1]["pain_fail_total"] = 3
+	main._characters[1]["opening_seen"] = true
+	main._refresh_character_card(1)
+	var admiral_reset: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugResetButton")
+	admiral_reset.emit_signal("pressed")
+	_check_eq(int(main._characters[1]["level"]), 1, "debug reset: level")
+	_check_eq(int(main._characters[1]["finish_total"]), 0, "debug reset: finish total")
+	_check_eq(int(main._characters[1]["pain_fail_total"]), 0, "debug reset: pain failures")
+	_check(not bool(main._characters[1]["opening_seen"]), "debug reset: opening state")
+	_check(String(card1_portrait.texture.resource_path).ends_with("/admiral/portrait.png"),
+		"debug reset: portrait returns to initial state")
 
 	main._on_character_start_pressed(0)
 	_check(game.visible and not opening.visible, "second start skips opening")

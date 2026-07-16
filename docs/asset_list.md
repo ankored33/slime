@@ -31,8 +31,18 @@
 
 ## 2. キャラ選択カードのポートレート（受け口実装済み）
 
-2枚。`main.gd` のキャラ定義 `portrait` にパスを書く（例: `res://assets/chara/general/portrait.png`）。
-表示はカード内にアスペクト維持で収まる。縦長推奨（立ち絵の流用でも可）。
+初期・オープニング視聴後の計4枚を配置・接続済み。
+
+- 女将軍: `godot/assets/chara/general/portrait.png` / `portrait_after_opening.png`
+- エルフ提督: `godot/assets/chara/admiral/portrait.png` / `portrait_after_opening.png`
+
+`main.gd` のキャラ定義 `portrait` / `portrait_after_opening` から読み込み、
+`opening_seen` に応じて切り替える。
+表示はアスペクト比を維持し、画像全体がカード内に収まる最大サイズで中央配置する。
+上部に選択案内、右下3分の1幅にプロフィールを重ねる。
+カード全体をクリックすると確認ダイアログを表示し、承認後に遷移する。
+各カードには、成長値とオープニング状態を初期化するデバッグ用リセットボタンを置く。
+縦長推奨（立ち絵の流用でも可）。
 
 ## 3. オープニングCG（受け口実装済み）
 
