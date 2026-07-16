@@ -51,11 +51,15 @@ static func retention_ratio(level: int) -> float:
 
 ## Character level required to use each brush. Unknown ids unlock at Lv1.
 const BRUSH_UNLOCK_LEVELS := {
-	"brush-a": 1,
-	"brush-c": 2,
-	"brush-b": 3,
-	"brush-d": 5,
-	"brush-e": 7
+	"finger": 1,
+	"tongue": 2,
+	"feather": 3,
+	"fude": 4,
+	"teeth": 5,
+	"toothbrush": 6,
+	"rotary": 7,
+	"candle": 8,
+	"tawashi": 9
 }
 
 static func brush_unlock_level(brush_id: String) -> int:

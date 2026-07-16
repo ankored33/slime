@@ -13,7 +13,6 @@ extends Area2D
 @export var pain_gain_per_sec := 8.0
 ## 当てている間、毎秒この量だけ痛みを減らす（癒し系ブラシ用）。
 @export var pain_soothe_per_sec := 0.0
-@export var special_multiplier := 1.75
 ## 回転ブラシだけがON/OFFでき、静止中も回転によって効果を出す。
 @export var is_rotating := false
 @export var rotation_speed := 4.5
@@ -32,8 +31,6 @@ var is_held := false:
 		is_held = value
 		_sync_visuals()
 
-var special_time_left := 0.0
-
 # こすり判定用。フレーム間の移動速度を平滑化して保持する。
 var _prev_position := Vector2.INF
 var _rub_speed := 0.0
@@ -48,9 +45,6 @@ func _ready() -> void:
 func _process(delta: float) -> void:
 	if is_rotating and is_active:
 		rotation += rotation_speed * delta
-	if special_time_left > 0.0:
-		special_time_left = max(0.0, special_time_left - delta)
-		_sync_visuals()
 	if not Engine.is_editor_hint():
 		_track_rub_speed(delta)
 
@@ -75,20 +69,13 @@ func is_effective() -> bool:
 	return get_action_multiplier() > 0.0
 
 func get_effective_polish_gain() -> float:
-	return polish_gain_per_sec * _get_special_multiplier()
+	return polish_gain_per_sec
 
 func get_effective_pain_gain() -> float:
-	return pain_gain_per_sec * _get_special_multiplier()
+	return pain_gain_per_sec
 
 func get_effective_soothe_gain() -> float:
-	return pain_soothe_per_sec * _get_special_multiplier()
-
-func trigger_special(duration: float = 3.0) -> void:
-	special_time_left = max(special_time_left, duration)
-	_sync_visuals()
-
-func is_special_active() -> bool:
-	return special_time_left > 0.0
+	return pain_soothe_per_sec
 
 func _sync_visuals() -> void:
 	if not is_node_ready():
@@ -108,11 +95,6 @@ func _sync_visuals() -> void:
 	var tint := fill_color
 	if is_active:
 		tint = tint.lightened(0.18)
-	if is_special_active():
-		tint = tint.lightened(0.28)
 	if is_held:
 		tint = tint.lightened(0.12)
 	_body.color = tint
-
-func _get_special_multiplier() -> float:
-	return special_multiplier if is_special_active() else 1.0

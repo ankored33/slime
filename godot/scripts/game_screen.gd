@@ -25,11 +25,15 @@ var finish_threshold := GameRules.finish_threshold(1)
 
 # 右パネル上部のブラシ置き場。開始・リセット時にブラシをここへ戻す。
 const BRUSH_RACK_SLOTS := {
-	"brush-a": Vector2(1050, 180),
-	"brush-b": Vector2(1195, 180),
-	"brush-c": Vector2(1050, 265),
-	"brush-d": Vector2(1195, 265),
-	"brush-e": Vector2(1122, 350)
+	"finger": Vector2(1050, 150),
+	"tongue": Vector2(1195, 150),
+	"feather": Vector2(1050, 215),
+	"fude": Vector2(1195, 215),
+	"teeth": Vector2(1050, 280),
+	"toothbrush": Vector2(1195, 280),
+	"rotary": Vector2(1050, 345),
+	"tawashi": Vector2(1195, 345),
+	"candle": Vector2(1122, 375)
 }
 
 var _finish_fx_time_left := 0.0
@@ -57,7 +61,6 @@ var _is_running := false
 @onready var _finish_label: Label = $Hud/FinishLabel
 @onready var _day_finish_label: Label = $Hud/DayStats/Margin/FinishCount
 @onready var _end_day_button: Button = $Hud/Controls/EndDayButton
-@onready var _brush_button_rows: VBoxContainer = $Hud/Controls/BrushButtons
 @onready var _left_slime: SlimeTarget = $Playfield/LeftSlime
 @onready var _right_slime: SlimeTarget = $Playfield/RightSlime
 @onready var _chara_image: TextureRect = $Playfield/CharaImage
@@ -67,14 +70,7 @@ var _is_running := false
 func _ready() -> void:
 	_collect_gauges()
 	_end_day_button.pressed.connect(_on_end_day_pressed)
-	_brushes.setup(
-		self,
-		_playfield,
-		_brush_button_rows,
-		_end_day_button,
-		_on_brush_toggle_pressed,
-		_on_brush_special_pressed
-	)
+	_brushes.setup(self, _playfield, _end_day_button)
 	_update_gauges()
 	_update_brush_controls()
 	reset_day()
@@ -378,22 +374,6 @@ func _set_gauge(gauge_id: String, current: float) -> void:
 func _on_end_day_pressed() -> void:
 	GameAudio.play_se("ui_click")
 	_finish_day(false)
-
-func _on_brush_toggle_pressed(brush_id: String) -> void:
-	var brush := _brushes.get_brush(brush_id)
-	if brush == null or not brush.visible or not brush.is_rotating:
-		return
-	GameAudio.play_se("ui_click")
-	brush.is_active = not brush.is_active
-	_update_brush_controls()
-
-func _on_brush_special_pressed(brush_id: String) -> void:
-	var brush := _brushes.get_brush(brush_id)
-	if brush == null or not brush.visible:
-		return
-	GameAudio.play_se("ui_click")
-	brush.trigger_special()
-	_update_brush_controls()
 
 func _update_brush_controls() -> void:
 	_brushes.update_controls(_brush_name_label, _brush_spec_label)

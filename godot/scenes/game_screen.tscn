@@ -97,22 +97,6 @@ theme_override_font_sizes/font_size = 15
 modulate = Color(0.78, 0.82, 0.9, 0.9)
 text = "ブラシ置き場"
 
-[node name="ZoomLeft" type="Panel" parent="Playfield" unique_id=1791844975]
-self_modulate = Color(0.866667, 0.866667, 1, 0.75)
-layout_mode = 0
-offset_left = 128.0
-offset_top = 339.0
-offset_right = 388.0
-offset_bottom = 599.0
-
-[node name="ZoomRight" type="Panel" parent="Playfield" unique_id=1891600091]
-self_modulate = Color(0.866667, 0.866667, 1, 0.75)
-layout_mode = 0
-offset_left = 919.0
-offset_top = 338.0
-offset_right = 1179.0
-offset_bottom = 598.0
-
 [node name="LeftSlime" parent="Playfield" unique_id=687335192 instance=ExtResource("3")]
 position = Vector2(504, 481)
 display_name = "左スライム"
@@ -124,52 +108,89 @@ side = "right"
 display_name = "右スライム"
 radius = 20.0
 
-[node name="BrushA" parent="Playfield" unique_id=1919971458 instance=ExtResource("5")]
-position = Vector2(1050, 180)
-brush_id = "brush-a"
-display_name = "やわらか"
-hit_radius = 26.0
+[node name="BrushFinger" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1050, 150)
+brush_id = "finger"
+display_name = "指"
+hit_radius = 24.0
+polish_gain_per_sec = 16.0
+pain_gain_per_sec = 5.0
+fill_color = Color(1, 0.8, 0.65, 0.95)
 
-[node name="BrushB" parent="Playfield" unique_id=886467796 instance=ExtResource("5")]
-position = Vector2(1195, 180)
-brush_id = "brush-b"
-display_name = "かため"
+[node name="BrushTongue" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1195, 150)
+brush_id = "tongue"
+display_name = "舌"
 hit_radius = 22.0
-polish_gain_per_sec = 24.0
-pain_gain_per_sec = 11.0
-fill_color = Color(1, 0.560784, 0.4, 0.95)
+polish_gain_per_sec = 14.0
+pain_gain_per_sec = 0.0
+pain_soothe_per_sec = 3.0
+fill_color = Color(1, 0.45, 0.5, 0.95)
 
-[node name="BrushC" parent="Playfield" instance=ExtResource("5")]
-position = Vector2(1050, 265)
-brush_id = "brush-c"
+[node name="BrushFeather" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1050, 215)
+brush_id = "feather"
 display_name = "羽"
 hit_radius = 30.0
 polish_gain_per_sec = 12.0
 pain_gain_per_sec = 0.0
 pain_soothe_per_sec = 6.0
-special_multiplier = 2.2
 fill_color = Color(0.6, 0.85, 1, 0.95)
 
-[node name="BrushD" parent="Playfield" instance=ExtResource("5")]
-position = Vector2(1195, 265)
-brush_id = "brush-d"
-display_name = "極細"
+[node name="BrushFude" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1195, 215)
+brush_id = "fude"
+display_name = "筆"
+hit_radius = 20.0
+polish_gain_per_sec = 22.0
+pain_gain_per_sec = 7.0
+fill_color = Color(0.75, 0.55, 0.35, 0.95)
+
+[node name="BrushTeeth" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1050, 280)
+brush_id = "teeth"
+display_name = "歯"
+hit_radius = 18.0
+polish_gain_per_sec = 30.0
+pain_gain_per_sec = 15.0
+fill_color = Color(0.95, 0.95, 0.88, 0.95)
+
+[node name="BrushToothbrush" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1195, 280)
+brush_id = "toothbrush"
+display_name = "歯ブラシ"
 hit_radius = 14.0
 polish_gain_per_sec = 34.0
 pain_gain_per_sec = 18.0
-special_multiplier = 1.5
-fill_color = Color(0.9, 0.5, 1, 0.95)
+fill_color = Color(0.55, 0.75, 1, 0.95)
 
-[node name="BrushE" parent="Playfield" instance=ExtResource("5")]
-position = Vector2(1122, 350)
-brush_id = "brush-e"
-display_name = "回転"
+[node name="BrushRotary" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1050, 345)
+brush_id = "rotary"
+display_name = "回転ブラシ"
 hit_radius = 28.0
-polish_gain_per_sec = 18.0
-pain_gain_per_sec = 7.0
-special_multiplier = 2.0
+polish_gain_per_sec = 20.0
+pain_gain_per_sec = 8.0
 is_rotating = true
 fill_color = Color(0.35, 0.9, 0.65, 0.95)
+
+[node name="BrushTawashi" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1195, 345)
+brush_id = "tawashi"
+display_name = "たわし"
+hit_radius = 26.0
+polish_gain_per_sec = 44.0
+pain_gain_per_sec = 26.0
+fill_color = Color(0.62, 0.42, 0.22, 0.95)
+
+[node name="BrushCandle" parent="Playfield" instance=ExtResource("5")]
+position = Vector2(1122, 375)
+brush_id = "candle"
+display_name = "ろうそく"
+hit_radius = 18.0
+polish_gain_per_sec = 26.0
+pain_gain_per_sec = 12.0
+fill_color = Color(1, 0.68, 0.3, 0.95)
 
 [node name="FlashRect" type="ColorRect" parent="."]
 layout_mode = 1
@@ -282,9 +303,9 @@ text = "FINISH!"
 
 [node name="DayStats" type="PanelContainer" parent="Hud" unique_id=936402762]
 layout_mode = 0
-offset_left = 983.0
+offset_left = 26.0
 offset_top = 330.0
-offset_right = 1240.0
+offset_right = 288.0
 offset_bottom = 384.0
 
 [node name="Margin" type="MarginContainer" parent="Hud/DayStats" unique_id=1184699040]
@@ -306,10 +327,6 @@ offset_top = 394.0
 offset_right = 1266.0
 offset_bottom = 678.0
 theme_override_constants/separation = 10
-
-[node name="BrushButtons" type="VBoxContainer" parent="Hud/Controls"]
-layout_mode = 2
-theme_override_constants/separation = 8
 
 [node name="EndDayButton" type="Button" parent="Hud/Controls" unique_id=1017712887]
 layout_mode = 2

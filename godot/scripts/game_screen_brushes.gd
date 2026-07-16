@@ -9,26 +9,13 @@ var brush_map: Dictionary = {}
 var held_brush: Brush
 
 var _wall_zones: Array[WallZone] = []
-var _toggle_buttons: Dictionary = {}
-var _name_labels: Dictionary = {}
-var _special_buttons: Dictionary = {}
 var _playfield: Control
-var _button_rows: VBoxContainer
 var _end_day_button: Button
 
-func setup(
-	root: Control,
-	playfield: Control,
-	button_rows: VBoxContainer,
-	end_day_button: Button,
-	toggle_callback: Callable,
-	special_callback: Callable
-) -> void:
+func setup(root: Control, playfield: Control, end_day_button: Button) -> void:
 	_playfield = playfield
-	_button_rows = button_rows
 	_end_day_button = end_day_button
 	_collect_nodes(root)
-	_build_controls(toggle_callback, special_callback)
 	_configure_mouse_filters(root)
 
 func _collect_nodes(root: Node) -> void:
@@ -44,35 +31,8 @@ func _sorted_ids() -> Array:
 	ids.sort()
 	return ids
 
-func _build_controls(toggle_callback: Callable, special_callback: Callable) -> void:
-	for brush_id: String in _sorted_ids():
-		var brush: Brush = brush_map[brush_id]
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 8)
-		if brush.is_rotating:
-			var toggle := Button.new()
-			toggle.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			toggle.pressed.connect(toggle_callback.bind(brush_id))
-			row.add_child(toggle)
-			_toggle_buttons[brush_id] = toggle
-		else:
-			var name_label := Label.new()
-			name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_child(name_label)
-			_name_labels[brush_id] = name_label
-		var special := Button.new()
-		special.pressed.connect(special_callback.bind(brush_id))
-		row.add_child(special)
-		_button_rows.add_child(row)
-		_special_buttons[brush_id] = special
-
 func _interactive_controls() -> Array[Control]:
-	var controls: Array[Control] = [_end_day_button]
-	for button: Button in _toggle_buttons.values():
-		controls.append(button)
-	for button: Button in _special_buttons.values():
-		controls.append(button)
-	return controls
+	return [_end_day_button]
 
 func _configure_mouse_filters(root: Node) -> void:
 	var interactive_set: Dictionary = {}
@@ -93,12 +53,13 @@ func _find_control_descendants(root: Node) -> Array[Control]:
 	return out
 
 func handle_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
-		if not event.pressed:
-			return
-		if _is_over_interactive_ui(event.position):
-			return
-		_toggle_held_brush(_pick_brush(event.position))
+	if not (event is InputEventMouseButton and event.pressed):
+		return
+	if event.button_index != MOUSE_BUTTON_LEFT:
+		return
+	if _is_over_interactive_ui(event.position):
+		return
+	_toggle_held_brush(_pick_brush(event.position))
 
 func _is_over_interactive_ui(global_pos: Vector2) -> bool:
 	for node in _interactive_controls():
@@ -141,9 +102,15 @@ func _set_held_brush(brush: Brush) -> void:
 		return
 	if held_brush != null:
 		held_brush.is_held = false
+		# 回転ブラシは置いた場所で自動回転を始める。
+		if held_brush.is_rotating:
+			held_brush.is_active = true
 	held_brush = brush
 	if held_brush != null:
 		held_brush.is_held = true
+		# 持ち上げている間は回転を止める。
+		if held_brush.is_rotating:
+			held_brush.is_active = false
 
 func _to_playfield_local(global_position: Vector2) -> Vector2:
 	return _playfield.get_global_transform().affine_inverse() * global_position
@@ -155,7 +122,6 @@ func apply_unlocks(level: int) -> void:
 		if not unlocked:
 			brush.is_active = false
 			brush.is_held = false
-			brush.special_time_left = 0.0
 			if held_brush == brush:
 				_set_held_brush(null)
 
@@ -164,7 +130,6 @@ func reset(rack_slots: Dictionary) -> void:
 	for brush: Brush in brush_map.values():
 		brush.is_active = false
 		brush.is_held = false
-		brush.special_time_left = 0.0
 		if rack_slots.has(brush.brush_id):
 			brush.position = rack_slots[brush.brush_id]
 
@@ -178,27 +143,6 @@ func get_brush(brush_id: String) -> Brush:
 	return brush_map.get(brush_id)
 
 func update_controls(name_label: Label, spec_label: Label) -> void:
-	for brush_id: String in _sorted_ids():
-		var brush: Brush = brush_map.get(brush_id)
-		if brush == null:
-			continue
-		var special: Button = _special_buttons[brush_id]
-		var locked := not brush.visible
-		special.disabled = locked
-		if brush.is_rotating:
-			var toggle: Button = _toggle_buttons[brush_id]
-			toggle.disabled = locked
-			if locked:
-				toggle.text = "%s: Lv%d解禁" % [_display_name(brush), GameRules.brush_unlock_level(brush_id)]
-			else:
-				toggle.text = "%s: %s" % [_display_name(brush), "ON" if brush.is_active else "OFF"]
-		else:
-			var row_name: Label = _name_labels[brush_id]
-			row_name.text = (
-				"%s: Lv%d解禁" % [_display_name(brush), GameRules.brush_unlock_level(brush_id)]
-				if locked else _display_name(brush)
-			)
-		special.text = "特殊技*" if brush.is_special_active() else "特殊技"
 	var selected_brush := held_brush
 	if selected_brush == null:
 		for brush_id: String in _sorted_ids():
@@ -219,9 +163,7 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 		spec += " / 癒し %d" % int(round(selected_brush.pain_soothe_per_sec))
 	spec += " / サイズ %d" % int(round(selected_brush.hit_radius))
 	if selected_brush.is_rotating:
-		spec += " / 回転 %s" % ("ON" if selected_brush.is_active else "OFF")
-	else:
-		spec += " / こすり専用"
+		spec += " / 置くと自動回転"
 	spec_label.text = spec
 
 func _display_name(brush: Brush) -> String:

@@ -43,6 +43,5 @@
 ## Remaining work
 
 - Port final art/audio assets to Godot scenes/resources (placeholder rendering for now).
-- FINISH effects and per-level reaction variants (see `docs/game_spec_v0_2.md`).
+- FINISH effects and per-level reaction variants.
 - Verify gameplay constants against desired balance targets.
-- Consider moving hardcoded species data in `scripts/main.gd` to `.tres` resources.
