@@ -1,12 +1,15 @@
 extends Control
 
-const SAVE_PATH := "user://slime_save_v1.json"
+const SAVE_PATH := "user://slime_save_v2.json"
 
-var _species_list: Array[Dictionary] = [
+# キャラ定義。名前・オープニングは仮素材で、本素材が来たら差し替える。
+# left / right は磨きターゲット2点の配置。
+var _characters: Array[Dictionary] = [
 	{
-		"id": "mint",
-		"name": "ミントスライム",
-		"color": Color(0.45, 1.0, 0.8, 0.92),
+		"id": "general",
+		"name": "女将軍（仮名）",
+		"epithet": "無敵と呼ばれた女将軍",
+		"color": Color(1.0, 0.71, 0.78, 0.92),
 		"left": {
 			"position": Vector2(552.5, 480.0),
 			"radius": 110.0,
@@ -19,30 +22,28 @@ var _species_list: Array[Dictionary] = [
 		},
 		"level": 1,
 		"finish_total": 0,
-		"pain_fail_total": 0
+		"pain_fail_total": 0,
+		"opening_seen": false,
+		"opening_pages": [
+			{
+				"image": "",
+				"text": "（仮テキスト 1/3）\n戦場で無敵を誇った女将軍は、ついに捕らえられ、この牢に繋がれた。"
+			},
+			{
+				"image": "",
+				"text": "（仮テキスト 2/3）\nここに本編のオープニングテキストを差し込む。"
+			},
+			{
+				"image": "",
+				"text": "（仮テキスト 3/3）\n……今日から、彼女の「世話」はお前の役目だ。"
+			}
+		]
 	},
 	{
-		"id": "peach",
-		"name": "ピーチスライム",
-		"color": Color(1.0, 0.71, 0.78, 0.92),
-		"left": {
-			"position": Vector2(540.0, 485.0),
-			"radius": 124.0,
-			"image": ""
-		},
-		"right": {
-			"position": Vector2(766.0, 482.0),
-			"radius": 124.0,
-			"image": ""
-		},
-		"level": 1,
-		"finish_total": 0,
-		"pain_fail_total": 0
-	},
-	{
-		"id": "azure",
-		"name": "アジュールスライム",
-		"color": Color(0.47, 0.73, 1.0, 0.92),
+		"id": "admiral",
+		"name": "エルフ提督（仮名）",
+		"epithet": "無敗を誇った女エルフ提督",
+		"color": Color(0.47, 0.9, 0.78, 0.92),
 		"left": {
 			"position": Vector2(560.0, 474.0),
 			"radius": 98.0,
@@ -55,12 +56,28 @@ var _species_list: Array[Dictionary] = [
 		},
 		"level": 1,
 		"finish_total": 0,
-		"pain_fail_total": 0
+		"pain_fail_total": 0,
+		"opening_seen": false,
+		"opening_pages": [
+			{
+				"image": "",
+				"text": "（仮テキスト 1/3）\n海で無敗を誇った女エルフ提督も、陸に上げられればただの捕虜だった。"
+			},
+			{
+				"image": "",
+				"text": "（仮テキスト 2/3）\nここに本編のオープニングテキストを差し込む。"
+			},
+			{
+				"image": "",
+				"text": "（仮テキスト 3/3）\n……鉄格子の向こうで、彼女はお前を睨みつけている。"
+			}
+		]
 	}
 ]
 
-var _selected_species_index := 0
+var _selected_index := 0
 var _last_result: Dictionary = {}
+var _opening_page := 0
 
 @onready var _frame: Control = $CanvasLayer/Frame
 @onready var _screen_title: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenTitle
@@ -68,101 +85,171 @@ var _last_result: Dictionary = {}
 @onready var _select_screen: Control = $CanvasLayer/Frame/Margin/VBox/SelectScreen
 @onready var _game_screen: Control = $GameScreen
 @onready var _result_screen: Control = $CanvasLayer/Frame/Margin/VBox/ResultScreen
-@onready var _species_list_ui: ItemList = $CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox/SpeciesList
-@onready var _species_detail: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox/DetailPanel/Margin/SpeciesDetail
+@onready var _character_list_ui: ItemList = $CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox/SpeciesList
+@onready var _character_detail: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox/DetailPanel/Margin/SpeciesDetail
 @onready var _start_button: Button = $CanvasLayer/Frame/Margin/VBox/SelectScreen/Actions/StartButton
 @onready var _result_body: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/ResultScreen/ResultPanel/Margin/ResultBody
 @onready var _return_button: Button = $CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions/ReturnButton
+@onready var _title_screen: Control = $CanvasLayer/TitleScreen
+@onready var _title_start_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleStartButton
+@onready var _opening_screen: Control = $CanvasLayer/OpeningScreen
+@onready var _opening_image: TextureRect = $CanvasLayer/OpeningScreen/Margin/VBox/ImageArea/OpeningImage
+@onready var _opening_image_placeholder: Label = $CanvasLayer/OpeningScreen/Margin/VBox/ImageArea/ImagePlaceholder
+@onready var _opening_text: RichTextLabel = $CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/OpeningText
+@onready var _opening_page_label: Label = $CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/Actions/PageLabel
+@onready var _opening_next_button: Button = $CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/Actions/OpeningNextButton
 
 func _ready() -> void:
-	_species_list_ui.item_selected.connect(_on_species_selected)
+	_character_list_ui.item_selected.connect(_on_character_selected)
 	_start_button.pressed.connect(_on_start_pressed)
 	_return_button.pressed.connect(_on_return_pressed)
+	_title_start_button.pressed.connect(_on_title_start_pressed)
+	_opening_next_button.pressed.connect(_on_opening_next_pressed)
 	_game_screen.day_finished.connect(_on_day_finished)
 	_load_progress()
-	_refresh_species_list()
-	_show_select_screen()
+	_refresh_character_list()
+	_show_title_screen()
 
-func _refresh_species_list() -> void:
-	_species_list_ui.clear()
-	for species: Dictionary in _species_list:
-		_species_list_ui.add_item("%s  Lv.%d" % [species["name"], species["level"]])
-	_species_list_ui.select(_selected_species_index)
-	_refresh_species_detail()
+func _refresh_character_list() -> void:
+	_character_list_ui.clear()
+	for chara: Dictionary in _characters:
+		_character_list_ui.add_item("%s  Lv.%d" % [chara["name"], chara["level"]])
+	_character_list_ui.select(_selected_index)
+	_refresh_character_detail()
 
-func _refresh_species_detail() -> void:
-	var species: Dictionary = _species_list[_selected_species_index]
-	var left_cfg: Dictionary = species.get("left", {})
+func _refresh_character_detail() -> void:
+	var chara: Dictionary = _characters[_selected_index]
+	var left_cfg: Dictionary = chara.get("left", {})
 	var left_radius := float(left_cfg.get("radius", 100.0))
-	_species_detail.text = (
+	var opening_state := "済" if bool(chara.get("opening_seen", false)) else "未"
+	_character_detail.text = (
 		"[b]%s[/b]\n"
+		+ "%s\n\n"
 		+ "レベル: %d / %d\n"
 		+ "累計FINISH: %d\n"
 		+ "痛み失敗: %d\n"
-		+ "当たり判定半径: %d\n\n"
+		+ "当たり判定半径: %d\n"
+		+ "オープニング: %s\n\n"
 		+ "成長で伸びるもの:\n"
 		+ "- 快感の上がりやすさ\n"
 		+ "- 痛みへの耐性\n"
 		+ "- FINISH後に残る快感量"
 	) % [
-		species["name"],
-		species["level"],
+		chara["name"],
+		str(chara.get("epithet", "")),
+		chara["level"],
 		GameRules.MAX_LEVEL,
-		species["finish_total"],
-		species["pain_fail_total"],
-		int(round(left_radius))
+		chara["finish_total"],
+		chara["pain_fail_total"],
+		int(round(left_radius)),
+		opening_state
 	]
 
-func _show_select_screen() -> void:
-	_screen_title.text = "スライム選択"
-	_screen_subtitle.text = "今日お手入れするスライムの種を選ぼう。"
-	_frame.visible = true
-	_select_screen.visible = true
+func _hide_all_screens() -> void:
+	_frame.visible = false
+	_select_screen.visible = false
 	_game_screen.visible = false
 	_result_screen.visible = false
-	_refresh_species_list()
+	_title_screen.visible = false
+	_opening_screen.visible = false
+
+func _show_title_screen() -> void:
+	_hide_all_screens()
+	_title_screen.visible = true
+
+func _show_select_screen() -> void:
+	_hide_all_screens()
+	_screen_title.text = "キャラ選択"
+	_screen_subtitle.text = "今日はどちらをいじるか選ぼう。"
+	_frame.visible = true
+	_select_screen.visible = true
+	_refresh_character_list()
+
+func _show_opening_screen() -> void:
+	_hide_all_screens()
+	_opening_screen.visible = true
+	_render_opening_page()
 
 func _show_game_screen() -> void:
 	# Hide the side frame entirely; the play screen has its own HUD.
-	_frame.visible = false
-	_select_screen.visible = false
+	_hide_all_screens()
 	_game_screen.visible = true
-	_result_screen.visible = false
 
 func _show_result_screen() -> void:
+	_hide_all_screens()
 	_screen_title.text = "リザルト"
-	_screen_subtitle.text = "1日の成果を確認して選択画面へ戻ろう。"
+	_screen_subtitle.text = "今日の成果を確認してキャラ選択へ戻ろう。"
 	_frame.visible = true
-	_select_screen.visible = false
-	_game_screen.visible = false
 	_result_screen.visible = true
 	_render_result()
 
-func _on_species_selected(index: int) -> void:
-	_selected_species_index = index
-	_refresh_species_detail()
+func _on_title_start_pressed() -> void:
+	_show_select_screen()
+
+func _on_character_selected(index: int) -> void:
+	_selected_index = index
+	_refresh_character_detail()
 
 func _on_start_pressed() -> void:
-	var species: Dictionary = _species_list[_selected_species_index]
-	_game_screen.setup_species(species)
+	var chara: Dictionary = _characters[_selected_index]
+	if not bool(chara.get("opening_seen", false)):
+		_opening_page = 0
+		_show_opening_screen()
+	else:
+		_begin_day()
+
+func _begin_day() -> void:
+	var chara: Dictionary = _characters[_selected_index]
+	_game_screen.setup_species(chara)
 	_show_game_screen()
+
+func _on_opening_next_pressed() -> void:
+	var chara: Dictionary = _characters[_selected_index]
+	var pages: Array = chara.get("opening_pages", [])
+	if _opening_page + 1 < pages.size():
+		_opening_page += 1
+		_render_opening_page()
+		return
+	chara["opening_seen"] = true
+	_characters[_selected_index] = chara
+	_save_progress()
+	_begin_day()
+
+func _render_opening_page() -> void:
+	var chara: Dictionary = _characters[_selected_index]
+	var pages: Array = chara.get("opening_pages", [])
+	if pages.is_empty():
+		_opening_text.text = ""
+		_opening_page_label.text = "0 / 0"
+		return
+	var page: Dictionary = pages[_opening_page]
+	_opening_text.text = str(page.get("text", ""))
+	_opening_page_label.text = "%d / %d" % [_opening_page + 1, pages.size()]
+	var image_path := str(page.get("image", ""))
+	var texture: Texture2D = null
+	if image_path != "" and ResourceLoader.exists(image_path):
+		texture = load(image_path)
+	_opening_image.texture = texture
+	_opening_image_placeholder.visible = texture == null
+	var is_last := _opening_page + 1 >= pages.size()
+	_opening_next_button.text = "はじめる ▶" if is_last else "次へ ▼"
 
 func _on_return_pressed() -> void:
 	_show_select_screen()
 
 func _on_day_finished(result: Dictionary) -> void:
 	_last_result = result.duplicate(true)
-	var species: Dictionary = _species_list[_selected_species_index]
-	species["finish_total"] = int(species["finish_total"]) + int(result.get("banked_finish_count", 0))
+	var chara: Dictionary = _characters[_selected_index]
+	chara["finish_total"] = int(chara["finish_total"]) + int(result.get("banked_finish_count", 0))
 	if bool(result.get("failed_by_pain", false)):
-		species["pain_fail_total"] = int(species["pain_fail_total"]) + 1
-	species["level"] = GameRules.level_for_finish_total(int(species["finish_total"]))
-	_species_list[_selected_species_index] = species
+		chara["pain_fail_total"] = int(chara["pain_fail_total"]) + 1
+	chara["level"] = GameRules.level_for_finish_total(int(chara["finish_total"]))
+	_characters[_selected_index] = chara
 	_save_progress()
 	_show_result_screen()
 
 func _render_result() -> void:
-	var species: Dictionary = _species_list[_selected_species_index]
+	var chara: Dictionary = _characters[_selected_index]
 	var failed := bool(_last_result.get("failed_by_pain", false))
 	var status_text := "痛みが限界に達した。今日の成果は半減となった。" if failed else "任意終了。成果をすべて持ち帰った。"
 	_result_body.text = (
@@ -170,7 +257,7 @@ func _render_result() -> void:
 		+ "%s\n\n"
 		+ "本日のFINISH: %d\n"
 		+ "持ち帰りFINISH: %d\n"
-		+ "種レベル: %d / %d\n"
+		+ "レベル: %d / %d\n"
 		+ "累計FINISH: %d\n"
 		+ "痛み失敗: %d\n\n"
 		+ "成長で伸びるもの:\n"
@@ -178,27 +265,28 @@ func _render_result() -> void:
 		+ "- 痛みへの耐性\n"
 		+ "- FINISH後に残る快感量"
 	) % [
-		str(_last_result.get("species_name", "スライム")),
+		str(_last_result.get("species_name", "？？？")),
 		status_text,
 		int(_last_result.get("day_finish_count", 0)),
 		int(_last_result.get("banked_finish_count", 0)),
-		int(species["level"]),
+		int(chara["level"]),
 		GameRules.MAX_LEVEL,
-		int(species["finish_total"]),
-		int(species["pain_fail_total"])
+		int(chara["finish_total"]),
+		int(chara["pain_fail_total"])
 	]
 
 func _save_progress() -> void:
 	var payload := {
-		"version": 1,
-		"species": []
+		"version": 2,
+		"characters": []
 	}
-	for species: Dictionary in _species_list:
-		payload["species"].append({
-			"id": str(species.get("id", "")),
-			"level": int(species.get("level", 1)),
-			"finish_total": int(species.get("finish_total", 0)),
-			"pain_fail_total": int(species.get("pain_fail_total", 0))
+	for chara: Dictionary in _characters:
+		payload["characters"].append({
+			"id": str(chara.get("id", "")),
+			"level": int(chara.get("level", 1)),
+			"finish_total": int(chara.get("finish_total", 0)),
+			"pain_fail_total": int(chara.get("pain_fail_total", 0)),
+			"opening_seen": bool(chara.get("opening_seen", false))
 		})
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -220,19 +308,20 @@ func _load_progress() -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		push_warning("Save format is invalid; ignoring save file.")
 		return
-	var loaded_species: Array = parsed.get("species", [])
+	var loaded: Array = parsed.get("characters", [])
 	var by_id: Dictionary = {}
-	for entry in loaded_species:
+	for entry in loaded:
 		if typeof(entry) == TYPE_DICTIONARY:
 			by_id[str(entry.get("id", ""))] = entry
-	for index in range(_species_list.size()):
-		var species: Dictionary = _species_list[index]
-		var sid := str(species.get("id", ""))
-		if not by_id.has(sid):
+	for index in range(_characters.size()):
+		var chara: Dictionary = _characters[index]
+		var cid := str(chara.get("id", ""))
+		if not by_id.has(cid):
 			continue
-		var saved: Dictionary = by_id[sid]
-		species["finish_total"] = max(0, int(saved.get("finish_total", 0)))
-		species["pain_fail_total"] = max(0, int(saved.get("pain_fail_total", 0)))
+		var saved: Dictionary = by_id[cid]
+		chara["finish_total"] = max(0, int(saved.get("finish_total", 0)))
+		chara["pain_fail_total"] = max(0, int(saved.get("pain_fail_total", 0)))
+		chara["opening_seen"] = bool(saved.get("opening_seen", false))
 		var saved_level := int(saved.get("level", 1))
-		species["level"] = GameRules.level_for_finish_total(int(species["finish_total"]), saved_level)
-		_species_list[index] = species
+		chara["level"] = GameRules.level_for_finish_total(int(chara["finish_total"]), saved_level)
+		_characters[index] = chara

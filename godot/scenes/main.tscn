@@ -107,3 +107,158 @@ theme_override_constants/separation = 12
 
 [node name="ReturnButton" type="Button" parent="CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions"]
 text = "選択画面へ戻る"
+
+[node name="TitleScreen" type="Control" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bg" type="ColorRect" parent="CanvasLayer/TitleScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0392157, 0.0431373, 0.0666667, 1)
+
+[node name="Center" type="CenterContainer" parent="CanvasLayer/TitleScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/TitleScreen/Center"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="GameTitle" type="Label" parent="CanvasLayer/TitleScreen/Center/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 60
+horizontal_alignment = 1
+text = "SLIME POLISH（仮題）"
+
+[node name="GameSubtitle" type="Label" parent="CanvasLayer/TitleScreen/Center/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 17
+horizontal_alignment = 1
+modulate = Color(0.8, 0.84, 0.9, 0.92)
+text = "――牢の奥で、今日も手入れがはじまる。"
+
+[node name="Spacer" type="Control" parent="CanvasLayer/TitleScreen/Center/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 24)
+
+[node name="TitleStartButton" type="Button" parent="CanvasLayer/TitleScreen/Center/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(280, 52)
+theme_override_font_sizes/font_size = 22
+text = "はじめる"
+
+[node name="OpeningScreen" type="Control" parent="CanvasLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bg" type="ColorRect" parent="CanvasLayer/OpeningScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0235294, 0.0235294, 0.0392157, 1)
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/OpeningScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 48
+theme_override_constants/margin_top = 32
+theme_override_constants/margin_right = 48
+theme_override_constants/margin_bottom = 28
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/OpeningScreen/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ImageArea" type="Control" parent="CanvasLayer/OpeningScreen/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ImageBg" type="ColorRect" parent="CanvasLayer/OpeningScreen/Margin/VBox/ImageArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.09, 0.09, 0.14, 1)
+
+[node name="OpeningImage" type="TextureRect" parent="CanvasLayer/OpeningScreen/Margin/VBox/ImageArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="ImagePlaceholder" type="Label" parent="CanvasLayer/OpeningScreen/Margin/VBox/ImageArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+modulate = Color(0.55, 0.58, 0.68, 0.8)
+text = "オープニング画像（未設定）"
+
+[node name="TextPanel" type="PanelContainer" parent="CanvasLayer/OpeningScreen/Margin/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 170)
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/OpeningScreen/Margin/VBox/TextPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 12
+
+[node name="TextVBox" type="VBoxContainer" parent="CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="OpeningText" type="RichTextLabel" parent="CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+bbcode_enabled = true
+scroll_active = false
+
+[node name="Actions" type="HBoxContainer" parent="CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="PageLabel" type="Label" parent="CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/Actions"]
+layout_mode = 2
+size_flags_horizontal = 3
+modulate = Color(0.7, 0.74, 0.82, 0.9)
+text = "1 / 1"
+
+[node name="OpeningNextButton" type="Button" parent="CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/Actions"]
+layout_mode = 2
+custom_minimum_size = Vector2(160, 40)
+text = "次へ ▼"
