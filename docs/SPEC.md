@@ -43,7 +43,8 @@
 
 ## 4. 磨き画面（ゲームプレイ）
 
-参照: `godot/scripts/game_screen.gd`, `godot/scenes/game_screen.tscn`
+参照: `godot/scripts/game_screen.gd`, `godot/scripts/game_screen_brushes.gd`,
+`godot/scenes/game_screen.tscn`
 
 - スライム2匹（left/right）それぞれが `polish` / `pain` ゲージ（0〜100）を持つ。
 - ブラシ（`brush.gd`）:
@@ -52,6 +53,7 @@
   - 特殊技（一時ブースト）を手動発動
   - ブラシ同士の重なりは押し出しで解決（`_resolve_brush_overlaps`）
   - 壁ゾーン(`wall_zone.gd`)からの押し出し（`GameRules.push_out_from_rect`）
+  - 収集・入力・解禁UI・衝突補正は `game_screen_brushes.gd` が担当
 - こすり判定: ブラシの移動速度（平滑化した px/秒）で効果に倍率が掛かる
   （`GameRules.rub_multiplier`、置きっぱなし 0.25倍〜素早く磨いて最大 1.5倍。快感・痛み両方に効く）。
 - 痛みの回復:

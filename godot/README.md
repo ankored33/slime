@@ -8,6 +8,10 @@
   - Headless unit tests for `GameRules`. Run with `godot --headless -s res://tests/run_tests.gd` (exits 1 on failure).
 - `scenes/game_screen.tscn`
   - Play screen authored directly in Godot.
+- `scripts/game_screen.gd`
+  - Day progression, gauges, FINISH/failure rules, expressions, and presentation orchestration.
+- `scripts/game_screen_brushes.gd`
+  - Brush discovery, input/dragging, unlock controls, and collision correction.
 - `scenes/slime_target.tscn`
   - Slime target node with species-driven radius/color.
 - `scenes/wall_zone.tscn`
@@ -28,7 +32,7 @@
   - FINISH threshold + post-finish polish retention by level
 - Brushes can be dragged, toggled independently, and special-triggered.
 - Brush overlap resolution and wall push-out are active in play.
-- Progress is saved/loaded via `user://slime_save_v1.json`.
+- Progress is saved/loaded via `user://slime_save_v2.json`.
 
 ## Explicitly out of scope
 
