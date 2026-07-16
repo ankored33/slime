@@ -86,14 +86,11 @@ func _find_control_descendants(root: Node) -> Array[Control]:
 
 func handle_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
+		if not event.pressed:
+			return
 		if _is_over_interactive_ui(event.position):
 			return
-		if event.pressed:
-			_pick_brush(event.position)
-		else:
-			held_brush = null
-	elif event is InputEventMouseMotion and held_brush != null:
-		held_brush.position = clamp_to_playfield(_to_playfield_local(event.position), held_brush)
+		_toggle_held_brush(_pick_brush(event.position))
 
 func _is_over_interactive_ui(global_pos: Vector2) -> bool:
 	for node in _interactive_controls():
@@ -110,7 +107,7 @@ func update_drag(global_mouse_position: Vector2, follow_speed: float, delta: flo
 		minf(1.0, follow_speed * delta)
 	)
 
-func _pick_brush(mouse_position: Vector2) -> void:
+func _pick_brush(mouse_position: Vector2) -> Brush:
 	var local_mouse := _to_playfield_local(mouse_position)
 	var nearest: Brush
 	var nearest_distance: float = INF
@@ -121,7 +118,24 @@ func _pick_brush(mouse_position: Vector2) -> void:
 		if distance <= brush.hit_radius * 1.4 and distance < nearest_distance:
 			nearest = brush
 			nearest_distance = distance
-	held_brush = nearest
+	return nearest
+
+func _toggle_held_brush(brush: Brush) -> void:
+	if brush == null:
+		return
+	if held_brush == brush:
+		_set_held_brush(null)
+	else:
+		_set_held_brush(brush)
+
+func _set_held_brush(brush: Brush) -> void:
+	if held_brush == brush:
+		return
+	if held_brush != null:
+		held_brush.is_held = false
+	held_brush = brush
+	if held_brush != null:
+		held_brush.is_held = true
 
 func _to_playfield_local(global_position: Vector2) -> Vector2:
 	return _playfield.get_global_transform().affine_inverse() * global_position
@@ -132,20 +146,25 @@ func apply_unlocks(level: int) -> void:
 		brush.visible = unlocked
 		if not unlocked:
 			brush.is_active = false
+			brush.is_held = false
 			brush.special_time_left = 0.0
+			if held_brush == brush:
+				_set_held_brush(null)
 
 func reset(rack_slots: Dictionary) -> void:
-	held_brush = null
+	_set_held_brush(null)
 	for brush: Brush in brush_map.values():
 		brush.is_active = false
+		brush.is_held = false
 		brush.special_time_left = 0.0
 		if rack_slots.has(brush.brush_id):
 			brush.position = rack_slots[brush.brush_id]
 
 func deactivate_all() -> void:
-	held_brush = null
+	_set_held_brush(null)
 	for brush: Brush in brush_map.values():
 		brush.is_active = false
+		brush.is_held = false
 
 func get_brush(brush_id: String) -> Brush:
 	return brush_map.get(brush_id)
@@ -176,6 +195,8 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 	if selected_brush == null:
 		return
 	name_label.text = _display_name(selected_brush)
+	if selected_brush == held_brush:
+		name_label.text += " [保持中]"
 	var spec := "快感 %d / 痛み %d" % [
 		int(round(selected_brush.polish_gain_per_sec)),
 		int(round(selected_brush.pain_gain_per_sec))

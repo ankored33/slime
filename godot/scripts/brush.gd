@@ -24,6 +24,11 @@ var is_active := false:
 		is_active = value
 		_sync_visuals()
 
+var is_held := false:
+	set(value):
+		is_held = value
+		_sync_visuals()
+
 var special_time_left := 0.0
 
 # こすり判定用。フレーム間の移動速度を平滑化して保持する。
@@ -89,6 +94,8 @@ func _sync_visuals() -> void:
 		tint = tint.lightened(0.18)
 	if is_special_active():
 		tint = tint.lightened(0.28)
+	if is_held:
+		tint = tint.lightened(0.12)
 	_body.color = tint
 
 func _get_special_multiplier() -> float:
