@@ -210,40 +210,6 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
 
-[node name="TopBar" type="PanelContainer" parent="Hud" unique_id=1491293964]
-visible = false
-layout_mode = 0
-offset_left = 26.0
-offset_top = 18.0
-offset_right = 288.0
-offset_bottom = 124.0
-
-[node name="Margin" type="MarginContainer" parent="Hud/TopBar" unique_id=1836204730]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 12
-
-[node name="VBox" type="VBoxContainer" parent="Hud/TopBar/Margin" unique_id=1119957183]
-layout_mode = 2
-theme_override_constants/separation = 5
-
-[node name="SpeciesLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1892668349]
-layout_mode = 2
-theme_override_font_sizes/font_size = 24
-text = "スライムペア"
-
-[node name="MetaLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1205237299]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "Lv.1"
-
-[node name="DangerLabel" type="Label" parent="Hud/TopBar/Margin/VBox" unique_id=1363708631]
-layout_mode = 2
-theme_override_font_sizes/font_size = 15
-text = "痛み：安定"
-
 [node name="PolishL" parent="Hud" unique_id=1734165133 instance=ExtResource("2")]
 layout_mode = 0
 offset_top = 615.0
