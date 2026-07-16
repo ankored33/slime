@@ -14,11 +14,13 @@
 
 ## 2. 画面フロー
 
-`main.gd` が3画面の表示切替を管理する（シーン遷移ではなく可視切替）。
+`main.gd` が5画面の表示切替を管理する（シーン遷移ではなく可視切替）。
 
-1. スライム選択画面（`_show_select_screen`）
-2. 磨き画面（`game_screen.tscn` / `_show_game_screen`）
-3. リザルト画面（`_show_result_screen`）→ 選択画面に戻る
+1. タイトル画面（`_show_title_screen`）
+2. キャラ選択画面（`_show_select_screen`、全画面2カード）
+3. キャラオープニング（`_show_opening_screen`、初回のみ・`opening_seen` で管理）
+4. 磨き画面（`game_screen.tscn` / `_show_game_screen`）
+5. リザルト画面（`_show_result_screen`）→ 選択画面に戻る
 
 参照: `godot/scripts/main.gd`, `godot/scenes/main.tscn`
 
@@ -29,14 +31,15 @@
 
 | 項目 | 値 / 式 |
 |---|---|
-| レベル上限 `MAX_LEVEL` | 8 |
-| レベル計算 | `1 + finish_total / 3`（LEVEL_STEP=3、セーブ値と高い方を採用、1〜8にクランプ） |
-| polish 上昇補正 | `1.0 + (level-1) * 0.08` |
-| pain 耐性 | `max(0.45, 1.0 - (level-1) * 0.04)` |
-| FINISH 後 polish 保持率 | `min(0.6, (level-1) * 0.08)`（Lv1 は全ロス） |
+| レベル上限 `MAX_LEVEL` | 10 |
+| レベル計算 | 累計FINISHの閾値表 `LEVEL_THRESHOLDS = [0, 2, 5, 9, 14, 20, 27, 35, 44, 54]`（セーブ値と高い方を採用、1〜10にクランプ） |
+| polish 上昇補正 | `0.6 + (level-1) * 0.15`（Lv10 で約2倍） |
+| pain 耐性 | `max(0.5, 1.0 - (level-1) * 0.05)` |
+| FINISH 後 polish 保持率 | `min(0.65, (level-1) * 0.07)`（Lv1 は全ロス、高Lvは連続絶頂） |
 | pain 上限 | 100.0（到達で強制終了） |
 | 失敗ペナルティ | 当日 FINISH 数を半減（切り捨て） |
-| FINISH しきい値 | 160.0（`game_screen.gd` の `finish_threshold`、2匹の polish 合計） |
+| FINISH しきい値 | `max(90, 170 - (level-1) * 9)`（磨きターゲット2点の polish 合計） |
+| ブラシ解禁 | brush-a: Lv1 / brush-c: Lv2 / brush-b: Lv3 / brush-d: Lv5 |
 
 ## 4. 磨き画面（ゲームプレイ）
 
@@ -56,18 +59,21 @@
   - どちらかの pain が 100% で強制失敗終了（成果半減）
 - 終了時に `day_finished` シグナルで結果 Dictionary を `main.gd` へ通知。
 
-## 5. スライム種と成長
+## 5. キャラクターと成長
 
-参照: `godot/scripts/main.gd`（`_species_list`）, `godot/scripts/slime_target.gd`
+参照: `godot/scripts/main.gd`（`_characters`）, `godot/scripts/slime_target.gd`
 
-- 種は3種（mint / peach / azure）。種ごとに色・左右それぞれの配置座標・当たり判定半径・画像パスを持つ。
-- 成長は種単位で管理: `level`, `finish_total`, `pain_fail_total`。
-- 現状、種データは `main.gd` にハードコード（将来リソース化の候補）。
+- キャラは2人: `general`（女将軍）/ `admiral`（エルフ提督）。
+  ※旧Web版の「スライム3種（mint / peach / azure）」構成は廃止。実装するのはこの2人のみ。
+- キャラごとに色・磨きターゲット2点（left / right）の配置座標・当たり判定半径・画像パス・
+  表情画像辞書（`expressions`）・オープニングページ（`opening_pages`）を持つ。
+- 成長はキャラ単位で管理: `level`, `finish_total`, `pain_fail_total`, `opening_seen`。
+- 現状、キャラデータは `main.gd` にハードコード（将来リソース化の候補）。
 
 ## 6. データ保存
 
-- 保存先: `user://slime_save_v1.json`
-- 形式: `{"version": 1, "species": [{"id", "level", "finish_total", "pain_fail_total"}]}`
+- 保存先: `user://slime_save_v2.json`
+- 形式: `{"version": 2, "characters": [{"id", "level", "finish_total", "pain_fail_total", "opening_seen"}]}`
 - ロード時はセーブされたレベルと `finish_total` からの導出レベルの高い方を採用。
 - 不正な形式のセーブは警告を出して無視する。
 

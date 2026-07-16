@@ -114,14 +114,12 @@ offset_bottom = 598.0
 
 [node name="LeftSlime" parent="Playfield" unique_id=687335192 instance=ExtResource("3")]
 position = Vector2(504, 481)
-slime_id = "mint"
 display_name = "左スライム"
 radius = 20.0
 
 [node name="RightSlime" parent="Playfield" unique_id=1098827226 instance=ExtResource("3")]
 position = Vector2(794, 481)
 side = "right"
-slime_id = "mint"
 display_name = "右スライム"
 radius = 20.0
 
