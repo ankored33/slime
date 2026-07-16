@@ -100,8 +100,11 @@
 
 | 分類 | 置き場所（`godot/assets/audio/` 配下） | 内容 | 備考 |
 |---|---|---|---|
-| BGM | `bgm/title.ogg` | タイトル/選択/オープニング/リザルト共通 | 自動ループ |
-| BGM | `bgm/game.ogg` | 磨き画面 | 自動ループ。暗め・静かめだと SE が立つ |
+| BGM | `bgm/title.ogg` | タイトル画面 | 自動ループ。現素材: 荒野をこえて |
+| BGM | `bgm/select.ogg` | キャラ選択・リザルト | 自動ループ。現素材: kraken |
+| BGM | `bgm/opening_general.ogg` | 将軍オープニング | 現素材: Witch_Bress |
+| BGM | `bgm/opening_admiral.ogg` | 提督オープニング | 現素材: BGM_-_033_-_Cloudy_Sky |
+| BGM | `bgm/game_a.ogg` 〜 `game_c.ogg` | 磨き画面（3曲からランダム） | 現素材: メルヘンゴシック / 思い返すと / すれちがい |
 | SE | `se/brush_soft.ogg` | ブラシ接触ループ（恥じらい段階） | ループ素材で |
 | SE | `se/brush_mid.ogg` | ブラシ接触ループ（快感段階） | ループ素材で |
 | SE | `se/brush_strong.ogg` | ブラシ接触ループ（大快感段階） | ループ素材で |

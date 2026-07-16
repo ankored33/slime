@@ -16,3 +16,6 @@ dist/
 
 # Claude Code local settings
 .claude/
+
+# BGM聴き比べ用の一時置き場
+/bgm_candidates/

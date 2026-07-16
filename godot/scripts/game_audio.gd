@@ -3,7 +3,9 @@ extends Node
 
 ## 音システムの土台。素材ファイルが無い間は何も鳴らさず黙って動く。
 ## 素材の置き場所（OGG推奨。置くだけで鳴り出す）:
-##   BGM:   res://assets/audio/bgm/<id>.ogg      （title / game）
+##   BGM:   res://assets/audio/bgm/<id>.ogg
+##     title（タイトル画面） / select（キャラ選択・リザルト） /
+##     opening_<キャラid>（キャラ別OP） / game_a〜game_c（磨き画面・ランダム）
 ##   SE:    res://assets/audio/se/<id>.ogg       （climax / despair / heartbeat / ui_click /
 ##                                                 brush_soft / brush_mid / brush_strong / brush_pain）
 ##   ボイス: res://assets/audio/voice/<キャラid>/<表情id>.ogg
@@ -16,7 +18,8 @@ const SE_POOL_SIZE := 8
 ## 表情替わりのたびにボイスが連射されないための最小間隔（秒）。
 const VOICE_MIN_INTERVAL := 0.8
 
-var _volumes := {"bgm": 1.0, "se": 1.0, "voice": 1.0}
+# BGM素材は音圧が高いので既定を下げておく（GameAudio.set_volume で変更可）。
+var _volumes := {"bgm": 0.4, "se": 1.0, "voice": 1.0}
 var _stream_cache: Dictionary = {}
 var _bgm_player: AudioStreamPlayer
 var _bgm_id := ""
