@@ -3,6 +3,7 @@ extends Control
 signal day_finished(result: Dictionary)
 
 const ExpressionRules = preload("res://scripts/expression_rules.gd")
+const GameAudio = preload("res://scripts/game_audio.gd")
 
 @export var follow_speed := 16.0
 @export var finish_fx_duration := 5.0
@@ -217,6 +218,7 @@ func _start_finish_fx() -> void:
 	tween.tween_property(_finish_label, "scale", Vector2.ONE, 0.3)
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		slime.burst_hearts()
+	GameAudio.play_se("climax")
 
 func _update_finish_fx(delta: float) -> void:
 	if _finish_fx_time_left <= 0.0:
@@ -263,6 +265,7 @@ func _start_fail_fx() -> void:
 	_held_brush = null
 	for brush: Brush in _brush_map.values():
 		brush.is_active = false
+	GameAudio.play_se("despair")
 
 func _update_fail_fx(delta: float) -> void:
 	if _fail_fx_time_left <= 0.0:
@@ -404,9 +407,10 @@ func _compute_touch_info() -> Dictionary:
 func _update_expression(info: Dictionary = {}) -> void:
 	if info.is_empty():
 		info = _compute_touch_info()
+	var polish_ratio := _get_combined_polish() / maxf(finish_threshold, 0.001)
 	var expression := ExpressionRules.pick({
 		"touching": bool(info["touching"]),
-		"polish_ratio": _get_combined_polish() / maxf(finish_threshold, 0.001),
+		"polish_ratio": polish_ratio,
 		"polish_rate": float(info["polish_rate"]),
 		"pain_rate": float(info["pain_rate"]),
 		"climax": _is_finish_fx_active(),
@@ -414,6 +418,15 @@ func _update_expression(info: Dictionary = {}) -> void:
 		"exhausted": _exhaust_time_left > 0.0
 	})
 	_apply_expression(expression)
+	_update_sound_loops(expression, polish_ratio)
+
+## 接触ループSE（表情連動）と絶頂寸前の心音ループを更新する。素材が無ければ無音。
+func _update_sound_loops(expression: String, polish_ratio: float) -> void:
+	GameAudio.update_loop("brush", ExpressionRules.touch_loop_se(expression))
+	var heartbeat := polish_ratio >= ExpressionRules.IDLE_HIGH \
+		and expression != ExpressionRules.CLIMAX \
+		and expression != ExpressionRules.DESPAIR
+	GameAudio.update_loop("heartbeat", "heartbeat" if heartbeat else "")
 
 func _apply_expression(expression_id: String) -> void:
 	if expression_id == _current_expression:
@@ -423,6 +436,8 @@ func _apply_expression(expression_id: String) -> void:
 	_chara_image.texture = texture
 	_expression_label.visible = texture == null
 	_expression_label.text = "立ち絵：%s" % ExpressionRules.display_name(expression_id)
+	# 表情が変わった瞬間だけボイス再生を試みる（素材が無ければ無音、連射は抑制済み）。
+	GameAudio.play_voice(str(_species.get("id", "")), expression_id)
 
 ## キャラ定義の expressions 辞書を優先し、無ければ既定パス
 ## assets/chara/<キャラid>/<表情id>.png を探す。どちらも無ければ null。
@@ -465,12 +480,14 @@ func _to_playfield_local(global_position: Vector2) -> Vector2:
 	return _playfield.get_global_transform().affine_inverse() * global_position
 
 func _on_end_day_pressed() -> void:
+	GameAudio.play_se("ui_click")
 	_finish_day(false)
 
 func _on_brush_toggle_pressed(brush_id: String) -> void:
 	var brush: Brush = _brush_map.get(brush_id)
 	if brush == null or not brush.visible:
 		return
+	GameAudio.play_se("ui_click")
 	brush.is_active = not brush.is_active
 	_update_brush_controls()
 
@@ -478,6 +495,7 @@ func _on_brush_special_pressed(brush_id: String) -> void:
 	var brush: Brush = _brush_map.get(brush_id)
 	if brush == null or not brush.visible:
 		return
+	GameAudio.play_se("ui_click")
 	brush.trigger_special()
 	_update_brush_controls()
 
@@ -598,6 +616,8 @@ func _finish_day(failed_by_pain: bool) -> void:
 	if not _is_running:
 		return
 	_is_running = false
+	GameAudio.update_loop("brush", "")
+	GameAudio.update_loop("heartbeat", "")
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		slime.set_hearts_active(false)
 	var banked_finish := GameRules.banked_finish(_day_finish_count, failed_by_pain)

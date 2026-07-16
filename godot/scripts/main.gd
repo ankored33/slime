@@ -1,5 +1,7 @@
 extends Control
 
+const GameAudio = preload("res://scripts/game_audio.gd")
+
 const SAVE_PATH := "user://slime_save_v2.json"
 
 # キャラ定義。名前・オープニングは仮素材で、本素材が来たら差し替える。
@@ -170,21 +172,25 @@ func _hide_all_screens() -> void:
 func _show_title_screen() -> void:
 	_hide_all_screens()
 	_title_screen.visible = true
+	GameAudio.play_bgm("title")
 
 func _show_select_screen() -> void:
 	_hide_all_screens()
 	_select_screen.visible = true
 	_refresh_character_cards()
+	GameAudio.play_bgm("title")
 
 func _show_opening_screen() -> void:
 	_hide_all_screens()
 	_opening_screen.visible = true
 	_render_opening_page()
+	GameAudio.play_bgm("title")
 
 func _show_game_screen() -> void:
 	# Hide the side frame entirely; the play screen has its own HUD.
 	_hide_all_screens()
 	_game_screen.visible = true
+	GameAudio.play_bgm("game")
 
 func _show_result_screen() -> void:
 	_hide_all_screens()
@@ -193,11 +199,14 @@ func _show_result_screen() -> void:
 	_frame.visible = true
 	_result_screen.visible = true
 	_render_result()
+	GameAudio.play_bgm("title")
 
 func _on_title_start_pressed() -> void:
+	GameAudio.play_se("ui_click")
 	_show_select_screen()
 
 func _on_character_start_pressed(index: int) -> void:
+	GameAudio.play_se("ui_click")
 	_selected_index = index
 	var chara: Dictionary = _characters[_selected_index]
 	if not bool(chara.get("opening_seen", false)):
@@ -212,6 +221,7 @@ func _begin_day() -> void:
 	_show_game_screen()
 
 func _on_opening_next_pressed() -> void:
+	GameAudio.play_se("ui_click")
 	var chara: Dictionary = _characters[_selected_index]
 	var pages: Array = chara.get("opening_pages", [])
 	if _opening_page + 1 < pages.size():
@@ -243,6 +253,7 @@ func _render_opening_page() -> void:
 	_opening_next_button.text = "はじめる ▶" if is_last else "次へ ▼"
 
 func _on_return_pressed() -> void:
+	GameAudio.play_se("ui_click")
 	_show_select_screen()
 
 func _on_day_finished(result: Dictionary) -> void:

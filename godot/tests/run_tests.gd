@@ -151,6 +151,12 @@ func _test_expression_pick() -> void:
 	_check_eq(ExpressionRules.default_image_path("general", "climax"),
 		"res://assets/chara/general/climax.png", "expr: default image path convention")
 
+	# 接触ループSEの対応
+	_check_eq(ExpressionRules.touch_loop_se(ExpressionRules.TOUCH_A), "brush_pain", "se: 痛い -> brush_pain")
+	_check_eq(ExpressionRules.touch_loop_se(ExpressionRules.TOUCH_D), "brush_strong", "se: 大快感 -> brush_strong")
+	_check_eq(ExpressionRules.touch_loop_se(ExpressionRules.IDLE_A), "", "se: 非接触表情はループ無し")
+	_check_eq(ExpressionRules.touch_loop_se(ExpressionRules.CLIMAX), "", "se: 絶頂中はループ無し")
+
 func _test_rub_multiplier() -> void:
 	_check_near(GameRules.rub_multiplier(0.0), GameRules.RUB_MIN_MULTIPLIER, "rub: parked brush at floor")
 	_check_near(GameRules.rub_multiplier(-50.0), GameRules.RUB_MIN_MULTIPLIER, "rub: negative speed clamps to floor")

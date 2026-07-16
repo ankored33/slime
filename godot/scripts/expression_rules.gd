@@ -82,6 +82,17 @@ static func pick(state: Dictionary) -> String:
 static func display_name(expression_id: String) -> String:
 	return str(DISPLAY_NAMES.get(expression_id, expression_id))
 
+## ブラシ接触中に流すループSEのid（assets/audio/se/<id>.ogg）。非接触表情は ""。
+const TOUCH_LOOP_SE := {
+	TOUCH_A: "brush_pain",
+	TOUCH_B: "brush_soft",
+	TOUCH_C: "brush_mid",
+	TOUCH_D: "brush_strong"
+}
+
+static func touch_loop_se(expression_id: String) -> String:
+	return str(TOUCH_LOOP_SE.get(expression_id, ""))
+
 ## 素材の既定パス。expressions 辞書に指定が無いときはこの場所を探す。
 static func default_image_path(chara_id: String, expression_id: String) -> String:
 	return "res://assets/chara/%s/%s.png" % [chara_id, expression_id]

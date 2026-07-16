@@ -106,7 +106,9 @@
 
 - アート・音声アセットの本移植（現状はプレースホルダ描画）。必要素材の一覧は `asset_list.md`
 - FINISH 演出の本実装（5秒の土台のみ）
-- 音の差分（`表情差分と音.xlsx` の音側。表情差分は `expression_rules.gd` + `game_screen.gd` で実装済み。
-  画像は `res://assets/chara/<キャラid>/<表情id>.png` を置くと自動で差し替わる）
+- 音素材（再生システムは `game_audio.gd` で実装済み。`assets/audio/` に OGG を置くと鳴り出す。
+  BGM2曲・SE8種・任意ボイスの内訳は `asset_list.md` 参照）
+- 表情差分は `expression_rules.gd` + `game_screen.gd` で実装済み。
+  画像は `res://assets/chara/<キャラid>/<表情id>.png` を置くと自動で差し替わる
 - 種データのリソース化（`.tres`）
 - ゲームバランスの本調整（現行値は暫定）
