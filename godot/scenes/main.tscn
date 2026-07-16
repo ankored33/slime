@@ -1,4 +1,4 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=8 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/game_screen.tscn" id="2"]
@@ -31,6 +31,8 @@ border_width_top = 2
 border_width_right = 2
 border_width_bottom = 2
 border_color = Color(1, 0.9, 0.72, 0.75)
+
+[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_card_normal"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -425,7 +427,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_default_cursor_shape = 2
 focus_mode = 0
-flat = true
+theme_override_styles/normal = SubResource("StyleBoxEmpty_card_normal")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_card_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_card_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_card_pressed")
 
@@ -548,7 +551,8 @@ grow_horizontal = 2
 grow_vertical = 2
 mouse_default_cursor_shape = 2
 focus_mode = 0
-flat = true
+theme_override_styles/normal = SubResource("StyleBoxEmpty_card_normal")
+theme_override_styles/focus = SubResource("StyleBoxEmpty_card_normal")
 theme_override_styles/hover = SubResource("StyleBoxFlat_card_hover")
 theme_override_styles/pressed = SubResource("StyleBoxFlat_card_pressed")
 
