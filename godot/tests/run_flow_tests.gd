@@ -93,13 +93,13 @@ func _run_tests() -> void:
 	_check(absf(game_background.position.y) < 0.1 and absf(game_background.size.y - 720.0) < 0.1,
 		"game: character background fills the screen height")
 
-	var brush_a: Node2D = main.get_node("GameScreen/Playfield/BrushA")
-	var brush_d: Node2D = main.get_node("GameScreen/Playfield/BrushD")
-	var brush_e: Node2D = main.get_node("GameScreen/Playfield/BrushE")
-	_check(brush_a.visible, "Lv1: soft brush available")
-	_check(not brush_d.visible, "Lv1: fine-point brush locked")
-	_check(not brush_e.visible, "Lv1: rotating brush locked")
-	_check(bool(brush_e.is_rotating), "rotating brush: scene marks it as rotating")
+	var brush_finger: Node2D = main.get_node("GameScreen/Playfield/BrushFinger")
+	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/BrushFude")
+	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/BrushRotary")
+	_check(brush_finger.visible, "Lv1: finger brush available")
+	_check(not brush_fude.visible, "Lv1: fude brush locked")
+	_check(not brush_rotary.visible, "Lv1: rotating brush locked")
+	_check(bool(brush_rotary.is_rotating), "rotating brush: scene marks it as rotating")
 
 	main._on_day_finished({
 		"species_id": "general",
@@ -121,13 +121,17 @@ func _run_tests() -> void:
 	main._characters[1]["opening_seen"] = true
 	main._refresh_character_card(1)
 	var admiral_reset: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugResetButton")
-	admiral_reset.emit_signal("pressed")
-	_check_eq(int(main._characters[1]["level"]), 1, "debug reset: level")
-	_check_eq(int(main._characters[1]["finish_total"]), 0, "debug reset: finish total")
-	_check_eq(int(main._characters[1]["pain_fail_total"]), 0, "debug reset: pain failures")
-	_check(not bool(main._characters[1]["opening_seen"]), "debug reset: opening state")
-	_check(String(card1_portrait.texture.resource_path).ends_with("/admiral/portrait.png"),
-		"debug reset: portrait returns to initial state")
+	_check_eq(admiral_reset.visible, OS.is_debug_build(), "debug reset: visibility follows debug build")
+	if OS.is_debug_build():
+		admiral_reset.emit_signal("pressed")
+		_check_eq(int(main._characters[1]["level"]), 1, "debug reset: level")
+		_check_eq(int(main._characters[1]["finish_total"]), 0, "debug reset: finish total")
+		_check_eq(int(main._characters[1]["pain_fail_total"]), 0, "debug reset: pain failures")
+		_check(not bool(main._characters[1]["opening_seen"]), "debug reset: opening state")
+		_check(String(card1_portrait.texture.resource_path).ends_with("/admiral/portrait.png"),
+			"debug reset: portrait returns to initial state")
+	else:
+		_check(admiral_reset.disabled, "debug reset: disabled outside debug builds")
 
 	main._on_character_start_pressed(0)
 	_check(game.visible and not opening.visible, "second start skips opening")

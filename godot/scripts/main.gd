@@ -67,12 +67,16 @@ func _ready() -> void:
 	_character_confirm_dialog.canceled.connect(_on_character_selection_canceled)
 	_character_confirm_dialog.get_ok_button().text = "選択"
 	_character_confirm_dialog.get_cancel_button().text = "キャンセル"
+	var show_debug_tools := OS.is_debug_build()
 	for index in range(_characters.size()):
 		var card := _get_card(index)
 		var button: Button = card.get_node("InteractionLayer/CardButton")
 		button.pressed.connect(_on_character_card_pressed.bind(index))
 		var reset_button: Button = card.get_node("InteractionLayer/DebugResetButton")
-		reset_button.pressed.connect(_on_character_reset_pressed.bind(index))
+		reset_button.visible = show_debug_tools
+		reset_button.disabled = not show_debug_tools
+		if show_debug_tools:
+			reset_button.pressed.connect(_on_character_reset_pressed.bind(index))
 	_load_progress()
 	_show_title_screen()
 	# 起動時はタイトルへフェードインで入る。
@@ -246,6 +250,8 @@ func _on_character_selection_canceled() -> void:
 	_pending_character_index = -1
 
 func _on_character_reset_pressed(index: int) -> void:
+	if not OS.is_debug_build():
+		return
 	if index < 0 or index >= _characters.size():
 		return
 	GameAudio.play_se("ui_click")
