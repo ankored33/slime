@@ -76,7 +76,7 @@
 
 ## 5. キャラクターと成長
 
-参照: `godot/scripts/main.gd`（`_characters`）, `godot/scripts/slime_target.gd`
+参照: `godot/scripts/characters.gd`（`CharacterDefs`）, `godot/scripts/slime_target.gd`
 
 - キャラは2人: `general`（女将軍）/ `admiral`（エルフ提督）。
   ※旧Web版の「スライム3種（mint / peach / azure）」構成は廃止。実装するのはこの2人のみ。
@@ -85,7 +85,8 @@
 - 成長はキャラ単位で管理: `level`, `finish_total`, `pain_fail_total`, `opening_seen`。
 - 選択画面では `opening_seen` 後に `portrait_after_opening` へ切り替える。
 - デバッグ用の状態リセットは対象キャラだけをLv1・各累計0・オープニング未視聴へ戻して保存する。
-- 現状、キャラデータは `main.gd` にハードコード（将来リソース化の候補）。
+- キャラデータ（テキスト・座標・パス）は `characters.gd`（`CharacterDefs.create()`）に分離。
+  テキスト推敲・座標調整はこのファイルだけで完結する。
 
 ## 6. データ保存
 

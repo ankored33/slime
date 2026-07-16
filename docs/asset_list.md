@@ -36,7 +36,7 @@
 - 女将軍: `godot/assets/chara/general/portrait.png` / `portrait_after_opening.png`
 - エルフ提督: `godot/assets/chara/admiral/portrait.png` / `portrait_after_opening.png`
 
-`main.gd` のキャラ定義 `portrait` / `portrait_after_opening` から読み込み、
+`characters.gd` のキャラ定義 `portrait` / `portrait_after_opening` から読み込み、
 `opening_seen` に応じて切り替える。
 表示はアスペクト比を維持し、画像全体がカード内に収まる最大サイズで中央配置する。
 上部に選択案内、右下3分の1幅にプロフィールを重ねる。
@@ -46,7 +46,7 @@
 
 ## 3. オープニング演出（実装済み・専用CG不要）
 
-各キャラ初回スタート時の3ページ構成（`main.gd` の `opening_pages` で管理、増減可）:
+各キャラ初回スタート時の3ページ構成（`characters.gd` の `opening_pages` で管理、増減可）:
 
 1. `split`: 左半分にキャラ選択の初期立ち絵（`portrait`）、右半分に導入テキスト
 2. `blackout`: 全画面真っ暗＋中央に「だが捕らえた。」
@@ -59,7 +59,7 @@
 ## 4. 磨きターゲット画像 = 乳首部分のオーバーレイ（受け口実装済み）
 
 2人 × 左右 = 4枚。裸の立ち絵の乳首部分だけを別画像にして重ね、そこが当たり判定になる。
-`main.gd` のキャラ定義 `left/right` の `image` にパスを書く。
+`characters.gd` のキャラ定義 `left/right` の `image` にパスを書く。
 表示は直径44〜48pxの円形領域に伸縮 → **128×128の透過PNG**で十分。
 立ち絵と同じ拡大率で切り出すとなじむ。重ねる位置・当たり判定サイズはコード側で立ち絵に合わせて調整する。
 （表情差分で立ち絵が切り替わっても、このオーバーレイは同じ位置に載り続ける想定。
