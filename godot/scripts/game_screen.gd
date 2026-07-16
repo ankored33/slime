@@ -5,6 +5,7 @@ signal day_finished(result: Dictionary)
 const ExpressionRules = preload("res://scripts/expression_rules.gd")
 const GameAudio = preload("res://scripts/game_audio.gd")
 const GameScreenBrushes = preload("res://scripts/game_screen_brushes.gd")
+const DebugPanelScript = preload("res://scripts/debug_panel.gd")
 
 @export var follow_speed := 16.0
 @export var finish_fx_duration := 5.0
@@ -49,6 +50,8 @@ var _slime_state := {
 var _species: Dictionary = {}
 var _day_finish_count := 0
 var _is_running := false
+var _debug_panel: PanelContainer
+var _debug_expression_override := ""
 
 @onready var _playfield: Control = $Playfield
 @onready var _title_label: Label = $Hud/CharaNameLabel
@@ -71,11 +74,20 @@ func _ready() -> void:
 	_collect_gauges()
 	_end_day_button.pressed.connect(_on_end_day_pressed)
 	_brushes.setup(self, _playfield, _end_day_button)
+	if OS.is_debug_build():
+		_debug_panel = DebugPanelScript.new(self)
+		_debug_panel.visible = false
+		add_child(_debug_panel)
+		_brushes.register_interactive(_debug_panel)
 	_update_gauges()
 	_update_brush_controls()
 	reset_day()
 
 func _input(event: InputEvent) -> void:
+	if _debug_panel != null and event is InputEventKey \
+			and event.pressed and not event.echo and event.keycode == KEY_F1:
+		_debug_panel.visible = not _debug_panel.visible
+		return
 	if not _is_running:
 		return
 	_brushes.handle_input(event)
@@ -307,6 +319,8 @@ func _update_expression(info: Dictionary = {}) -> void:
 		"despair": _is_fail_fx_active(),
 		"exhausted": _exhaust_time_left > 0.0
 	})
+	if _debug_expression_override != "":
+		expression = _debug_expression_override
 	_apply_expression(expression)
 	_update_sound_loops(expression, polish_ratio)
 
@@ -398,10 +412,69 @@ func _check_failure() -> void:
 	if peak_pain >= GameRules.PAIN_LIMIT:
 		_start_fail_fx()
 
+# --- デバッグパネル用フック（debug_panel.gd から呼ばれる。リリースでは未使用） ---
+
+func debug_get_level() -> int:
+	return int(_species.get("level", 1))
+
+func debug_set_level(level: int) -> void:
+	level = clampi(level, 1, GameRules.MAX_LEVEL)
+	_species["level"] = level
+	finish_threshold = GameRules.finish_threshold(level)
+	_brushes.apply_unlocks(level)
+	_meta_label.text = "LV %d" % level
+
+func debug_add_gauge(side: String, key: String, amount: float) -> void:
+	var state: Dictionary = _slime_state[side]
+	state[key] = clampf(float(state[key]) + amount, 0.0, 100.0)
+	_slime_state[side] = state
+
+func debug_reset_gauges() -> void:
+	_slime_state = {
+		"left": {"polish": 0.0, "pain": 0.0},
+		"right": {"polish": 0.0, "pain": 0.0}
+	}
+
+func debug_trigger_finish() -> void:
+	if not _is_running or _is_finish_fx_active() or _is_fail_fx_active():
+		return
+	for side in ["left", "right"]:
+		var state: Dictionary = _slime_state[side]
+		state["polish"] = minf(finish_threshold * 0.5, 100.0)
+		_slime_state[side] = state
+	_check_finish()
+
+func debug_trigger_fail() -> void:
+	if not _is_running or _is_fail_fx_active():
+		return
+	var state: Dictionary = _slime_state["left"]
+	state["pain"] = GameRules.PAIN_LIMIT
+	_slime_state["left"] = state
+	_check_failure()
+
+func debug_expression_override() -> String:
+	return _debug_expression_override
+
+func debug_cycle_expression() -> void:
+	var ids: Array[String] = [
+		ExpressionRules.IDLE_A, ExpressionRules.IDLE_B,
+		ExpressionRules.IDLE_C, ExpressionRules.IDLE_D,
+		ExpressionRules.TOUCH_A, ExpressionRules.TOUCH_B,
+		ExpressionRules.TOUCH_C, ExpressionRules.TOUCH_D,
+		ExpressionRules.CLIMAX, ExpressionRules.DESPAIR, ExpressionRules.EXHAUSTED
+	]
+	var index := ids.find(_debug_expression_override)
+	_debug_expression_override = ids[(index + 1) % ids.size()]
+
+func debug_clear_expression() -> void:
+	_debug_expression_override = ""
+
 func _finish_day(failed_by_pain: bool) -> void:
 	if not _is_running:
 		return
 	_is_running = false
+	# デバッグの倍速を磨き画面の外へ持ち出さない。
+	Engine.time_scale = 1.0
 	GameAudio.update_loop("brush", "")
 	GameAudio.update_loop("heartbeat", "")
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):

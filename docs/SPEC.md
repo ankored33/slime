@@ -30,6 +30,7 @@
 | `scripts/expression_rules.gd` | 状態→表情id・接触ループSEの対応 |
 | `scripts/game_audio.gd` | BGM/SE/ボイス再生（ファイルを置くだけで鳴る。冒頭コメント参照） |
 | `scripts/named_gauge.gd` ほか | UI部品（`named_gauges` 等のグループ経由で収集） |
+| `scripts/debug_panel.gd` | 開発用チートパネル（磨き画面でF1。デバッグビルドのみ生成） |
 
 ## セーブ
 

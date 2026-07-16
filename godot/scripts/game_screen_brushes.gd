@@ -11,6 +11,7 @@ var held_brush: Brush
 var _wall_zones: Array[WallZone] = []
 var _playfield: Control
 var _end_day_button: Button
+var _extra_interactive: Array[Control] = []
 
 func setup(root: Control, playfield: Control, end_day_button: Button) -> void:
 	_playfield = playfield
@@ -31,8 +32,14 @@ func _sorted_ids() -> Array:
 	ids.sort()
 	return ids
 
+## セットアップ後に追加されるUI（デバッグパネル等）をクリック透過の対象外にする。
+func register_interactive(control: Control) -> void:
+	_extra_interactive.append(control)
+
 func _interactive_controls() -> Array[Control]:
-	return [_end_day_button]
+	var controls: Array[Control] = [_end_day_button]
+	controls.append_array(_extra_interactive)
+	return controls
 
 func _configure_mouse_filters(root: Node) -> void:
 	var interactive_set: Dictionary = {}
@@ -63,7 +70,8 @@ func handle_input(event: InputEvent) -> void:
 
 func _is_over_interactive_ui(global_pos: Vector2) -> bool:
 	for node in _interactive_controls():
-		if node != null and node.get_global_rect().has_point(global_pos):
+		if node != null and node.is_visible_in_tree() \
+				and node.get_global_rect().has_point(global_pos):
 			return true
 	return false
 
