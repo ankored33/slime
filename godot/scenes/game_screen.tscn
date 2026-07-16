@@ -144,7 +144,8 @@ brush_id = "brush-c"
 display_name = "羽"
 hit_radius = 30.0
 polish_gain_per_sec = 12.0
-pain_gain_per_sec = 2.0
+pain_gain_per_sec = 0.0
+pain_soothe_per_sec = 6.0
 special_multiplier = 2.2
 fill_color = Color(0.6, 0.85, 1, 0.95)
 

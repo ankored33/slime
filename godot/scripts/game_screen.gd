@@ -11,6 +11,9 @@ const ExpressionRules = preload("res://scripts/expression_rules.gd")
 # FINISH演出が終わってから憔悴表情を保つ時間。
 const EXHAUST_DURATION := 4.0
 
+# 痛み上昇の全体係数（快感とのバランス調整用）。
+const PAIN_GAIN_SCALE := 0.35
+
 # 演出オーバーレイの色。FINISHは白ピンクの閃光、失敗は暗い赤の暗転。
 const FINISH_FLASH_COLOR := Color(1.0, 0.88, 0.93)
 const FAIL_FLASH_COLOR := Color(0.35, 0.02, 0.06)
@@ -153,10 +156,13 @@ func _process(delta: float) -> void:
 	_update_finish_fx(delta)
 	_update_fail_fx(delta)
 	_exhaust_time_left = maxf(0.0, _exhaust_time_left - delta)
+	var touch_info := _compute_touch_info()
 	if not _is_finish_fx_active() and not _is_fail_fx_active():
 		for brush in _brush_map.values():
 			if brush.is_active:
 				_apply_brush_effects(brush, delta)
+	if not _is_fail_fx_active():
+		_apply_pain_recovery(touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
 	_resolve_brush_overlaps()
 	_apply_wall_push_out()
@@ -164,7 +170,7 @@ func _process(delta: float) -> void:
 	if not _is_finish_fx_active() and not _is_fail_fx_active():
 		_check_finish()
 		_check_failure()
-	_update_expression()
+	_update_expression(touch_info)
 	_update_gauges()
 	_update_brush_controls()
 
@@ -349,13 +355,28 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 			var level := int(_species.get("level", 1))
 			var polish_bonus := GameRules.polish_bonus(level)
 			var pain_resist := GameRules.pain_resist(level)
-			state["polish"] = clamp(float(state.get("polish", 0.0)) + brush.get_effective_polish_gain() * polish_bonus * delta, 0.0, 100.0)
-			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * delta * 0.35, 0.0, 100.0)
+			# こすり判定: 動かすほど効く。置きっぱなしは最低倍率まで落ちる。
+			var rub := GameRules.rub_multiplier(brush.get_rub_speed())
+			state["polish"] = clamp(float(state.get("polish", 0.0)) + brush.get_effective_polish_gain() * polish_bonus * rub * delta, 0.0, 100.0)
+			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * rub * delta * PAIN_GAIN_SCALE, 0.0, 100.0)
+			# 癒し系ブラシ: 当てている間は痛みを直接減らす（こすり速度に依存しない）。
+			state["pain"] = clamp(float(state["pain"]) - brush.get_effective_soothe_gain() * delta, 0.0, 100.0)
 			_slime_state[side] = state
 
+## アクティブなブラシが触れていない部位は痛みが自然回復する。
+func _apply_pain_recovery(touched_sides: Dictionary, delta: float) -> void:
+	for side in ["left", "right"]:
+		if bool(touched_sides.get(side, false)):
+			continue
+		var state: Dictionary = _slime_state[side]
+		state["pain"] = maxf(0.0, float(state["pain"]) - GameRules.PAIN_RECOVERY_PER_SEC * delta)
+		_slime_state[side] = state
+
 ## アクティブなブラシの接触状態と、いま掛かっている上昇量/秒（補正込み）。
+## touched_sides は side名 → 接触中フラグ（痛み自然回復の判定に使う）。
 func _compute_touch_info() -> Dictionary:
 	var touching := false
+	var touched_sides := {}
 	var polish_rate := 0.0
 	var pain_rate := 0.0
 	var level := int(_species.get("level", 1))
@@ -367,13 +388,22 @@ func _compute_touch_info() -> Dictionary:
 		for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 			if brush.global_position.distance_to(slime.global_position) <= brush.hit_radius + slime.get_hit_radius():
 				touching = true
+				touched_sides[String(slime.side)] = true
 				# _apply_brush_effects と同じ係数で「ゲージが実際に動く速さ」を比較する。
-				polish_rate += brush.get_effective_polish_gain() * polish_bonus
-				pain_rate += brush.get_effective_pain_gain() * pain_resist * 0.35
-	return {"touching": touching, "polish_rate": polish_rate, "pain_rate": pain_rate}
+				var rub := GameRules.rub_multiplier(brush.get_rub_speed())
+				polish_rate += brush.get_effective_polish_gain() * polish_bonus * rub
+				pain_rate += brush.get_effective_pain_gain() * pain_resist * rub * PAIN_GAIN_SCALE
+				pain_rate -= brush.get_effective_soothe_gain()
+	return {
+		"touching": touching,
+		"touched_sides": touched_sides,
+		"polish_rate": polish_rate,
+		"pain_rate": pain_rate
+	}
 
-func _update_expression() -> void:
-	var info := _compute_touch_info()
+func _update_expression(info: Dictionary = {}) -> void:
+	if info.is_empty():
+		info = _compute_touch_info()
 	var expression := ExpressionRules.pick({
 		"touching": bool(info["touching"]),
 		"polish_ratio": _get_combined_polish() / maxf(finish_threshold, 0.001),
@@ -476,11 +506,14 @@ func _update_brush_controls() -> void:
 				break
 	if selected_brush != null:
 		_brush_name_label.text = _brush_display_name(selected_brush)
-		_brush_spec_label.text = "快感 %d / 痛み %d / サイズ %d" % [
+		var spec := "快感 %d / 痛み %d" % [
 			int(round(selected_brush.polish_gain_per_sec)),
-			int(round(selected_brush.pain_gain_per_sec)),
-			int(round(selected_brush.hit_radius))
+			int(round(selected_brush.pain_gain_per_sec))
 		]
+		if selected_brush.pain_soothe_per_sec > 0.0:
+			spec += " / 癒し %d" % int(round(selected_brush.pain_soothe_per_sec))
+		spec += " / サイズ %d" % int(round(selected_brush.hit_radius))
+		_brush_spec_label.text = spec
 
 func _brush_display_name(brush: Brush) -> String:
 	if brush.display_name != "":

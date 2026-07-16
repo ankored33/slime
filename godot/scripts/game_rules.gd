@@ -8,6 +8,17 @@ const MAX_LEVEL := 10
 const FAIL_PENALTY_RATIO := 0.5
 const PAIN_LIMIT := 100.0
 
+## アクティブなブラシが触れていない部位の痛み自然回復量（毎秒）。
+const PAIN_RECOVERY_PER_SEC := 2.0
+
+## こすり判定: ブラシ移動速度(px/秒)による効果倍率。
+## 置きっぱなしでは最低倍率まで落ち、素早く磨くほど伸びる。
+const RUB_MIN_MULTIPLIER := 0.25
+const RUB_MAX_MULTIPLIER := 1.5
+
+static func rub_multiplier(speed: float) -> float:
+	return clampf(RUB_MIN_MULTIPLIER + speed * 0.0025, RUB_MIN_MULTIPLIER, RUB_MAX_MULTIPLIER)
+
 ## Cumulative FINISH totals required to reach each level (index = level - 1).
 ## Gaps widen by one each level (2, 3, 4, ...) so progression stretches out:
 ## early levels come quickly, the road to Lv10 takes 54 FINISH in total.

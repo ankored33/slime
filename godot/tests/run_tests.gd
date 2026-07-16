@@ -19,6 +19,7 @@ func _init() -> void:
 	_test_banked_finish()
 	_test_push_out_from_rect()
 	_test_expression_pick()
+	_test_rub_multiplier()
 	print("---")
 	print("Passed: %d, Failed: %d" % [_passes, _failures])
 	quit(1 if _failures > 0 else 0)
@@ -149,3 +150,10 @@ func _test_expression_pick() -> void:
 	# 素材の既定パス
 	_check_eq(ExpressionRules.default_image_path("general", "climax"),
 		"res://assets/chara/general/climax.png", "expr: default image path convention")
+
+func _test_rub_multiplier() -> void:
+	_check_near(GameRules.rub_multiplier(0.0), GameRules.RUB_MIN_MULTIPLIER, "rub: parked brush at floor")
+	_check_near(GameRules.rub_multiplier(-50.0), GameRules.RUB_MIN_MULTIPLIER, "rub: negative speed clamps to floor")
+	_check_near(GameRules.rub_multiplier(300.0), 1.0, "rub: brisk stroke reaches full effect")
+	_check_near(GameRules.rub_multiplier(500.0), GameRules.RUB_MAX_MULTIPLIER, "rub: fast stroke hits cap")
+	_check_near(GameRules.rub_multiplier(9999.0), GameRules.RUB_MAX_MULTIPLIER, "rub: capped at max")

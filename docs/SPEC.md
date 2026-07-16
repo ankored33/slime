@@ -52,6 +52,12 @@
   - 特殊技（一時ブースト）を手動発動
   - ブラシ同士の重なりは押し出しで解決（`_resolve_brush_overlaps`）
   - 壁ゾーン(`wall_zone.gd`)からの押し出し（`GameRules.push_out_from_rect`）
+- こすり判定: ブラシの移動速度（平滑化した px/秒）で効果に倍率が掛かる
+  （`GameRules.rub_multiplier`、置きっぱなし 0.25倍〜素早く磨いて最大 1.5倍。快感・痛み両方に効く）。
+- 痛みの回復:
+  - アクティブなブラシが触れていない部位は毎秒 `PAIN_RECOVERY_PER_SEC`(2.0) 自然回復
+  - 癒し系ブラシ（羽 = `pain_soothe_per_sec` > 0）は当てている間、痛みを毎秒その量だけ減らす
+    （こすり速度に依存せず、特殊技の倍率は乗る）
 - FINISH: 2匹の polish 合計が `finish_threshold` を超えると発生。
   当日 FINISH 数を加算し、polish は保持率分だけ残して減少。pain は継続。
 - 1日の終了:
