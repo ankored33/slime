@@ -13,6 +13,7 @@
 ## 画面フロー
 
 タイトル → キャラ選択 → キャラ別オープニング（初回のみ） → 磨き画面 → リザルト → 選択へ戻る。
+タイトルからはオプション画面（音量設定）へも行ける。
 `main.gd` が可視切替で管理し、画面間は黒フェードを挟む（ヘッドレス時は即時切替）。
 
 ## ファイルの担当
@@ -34,6 +35,7 @@
 
 `user://slime_save_v2.json`。キャラ単位の `level` / `finish_total` / `pain_fail_total` /
 `opening_seen` のみ保存。詳細は `main.gd` の `_save_progress` / `_load_progress`。
+音量設定は別ファイル `user://audio_settings.json`（`game_audio.gd` が管理）。
 
 ## テスト
 

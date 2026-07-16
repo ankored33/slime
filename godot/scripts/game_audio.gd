@@ -14,6 +14,7 @@ extends Node
 
 static var _instance: GameAudio
 
+const SETTINGS_PATH := "user://audio_settings.json"
 const SE_POOL_SIZE := 8
 ## 表情替わりのたびにボイスが連射されないための最小間隔（秒）。
 const VOICE_MIN_INTERVAL := 0.8
@@ -31,6 +32,7 @@ var _voice_cooldown := 0.0
 
 func _ready() -> void:
 	_instance = self
+	_load_settings()
 	_bgm_player = _make_player("bgm")
 	for i in range(SE_POOL_SIZE):
 		_se_players.append(_make_player("se"))
@@ -144,6 +146,26 @@ func _set_volume(category: String, linear: float) -> void:
 	for child in get_children():
 		if child is AudioStreamPlayer and str(child.get_meta("category", "")) == category:
 			child.volume_db = linear_to_db(maxf(float(_volumes[category]), 0.0001))
+	_save_settings()
+
+func _load_settings() -> void:
+	if not FileAccess.file_exists(SETTINGS_PATH):
+		return
+	var file := FileAccess.open(SETTINGS_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var data: Variant = JSON.parse_string(file.get_as_text())
+	if data is Dictionary:
+		for category in _volumes.keys():
+			if data.has(category):
+				_volumes[category] = clampf(float(data[category]), 0.0, 1.0)
+
+func _save_settings() -> void:
+	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
+	if file == null:
+		push_warning("音量設定を保存できませんでした: %s" % SETTINGS_PATH)
+		return
+	file.store_string(JSON.stringify(_volumes))
 
 ## 拡張子なしのベースパスを受け取り ogg/wav/mp3 の順で探す。
 ## 見つからないパスは null をキャッシュして以後の存在チェックを省く。

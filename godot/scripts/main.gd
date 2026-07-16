@@ -37,10 +37,28 @@ var _fade_tween: Tween
 @onready var _opening_blackout: Control = $CanvasLayer/OpeningScreen/BlackoutView
 @onready var _opening_blackout_label: Label = $CanvasLayer/OpeningScreen/BlackoutView/BlackoutLabel
 @onready var _fade_rect: ColorRect = $CanvasLayer/FadeRect
+@onready var _title_options_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleOptionsButton
+@onready var _options_screen: Control = $CanvasLayer/OptionsScreen
+@onready var _options_back_button: Button = $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/OptionsBackButton
+@onready var _volume_sliders: Dictionary = {
+	"bgm": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow/BgmSlider,
+	"se": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow/SeSlider,
+	"voice": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow/VoiceSlider
+}
+@onready var _volume_value_labels: Dictionary = {
+	"bgm": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow/BgmValue,
+	"se": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow/SeValue,
+	"voice": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow/VoiceValue
+}
 
 func _ready() -> void:
 	_return_button.pressed.connect(_on_return_pressed)
 	_title_start_button.pressed.connect(_on_title_start_pressed)
+	_title_options_button.pressed.connect(_on_title_options_pressed)
+	_options_back_button.pressed.connect(_on_options_back_pressed)
+	for category: String in _volume_sliders.keys():
+		var slider: HSlider = _volume_sliders[category]
+		slider.value_changed.connect(_on_volume_changed.bind(category))
 	_opening_next_button.pressed.connect(_on_opening_next_pressed)
 	# 画面のどこをクリックしてもページが進む（暗転ページはこれが唯一の進行手段）。
 	_opening_screen.gui_input.connect(_on_opening_gui_input)
@@ -145,11 +163,36 @@ func _hide_all_screens() -> void:
 	_result_screen.visible = false
 	_title_screen.visible = false
 	_opening_screen.visible = false
+	_options_screen.visible = false
 
 func _show_title_screen() -> void:
 	_hide_all_screens()
 	_title_screen.visible = true
 	GameAudio.play_bgm("title")
+
+func _show_options_screen() -> void:
+	_hide_all_screens()
+	_options_screen.visible = true
+	# 現在値をスライダーへ反映（set_value_no_signal で保存の連鎖を避ける）。
+	for category: String in _volume_sliders.keys():
+		var volume := GameAudio.get_volume(category)
+		(_volume_sliders[category] as HSlider).set_value_no_signal(volume)
+		_update_volume_value_label(category, volume)
+
+func _on_title_options_pressed() -> void:
+	GameAudio.play_se("ui_click")
+	_transition(_show_options_screen)
+
+func _on_options_back_pressed() -> void:
+	GameAudio.play_se("ui_click")
+	_transition(_show_title_screen)
+
+func _on_volume_changed(value: float, category: String) -> void:
+	GameAudio.set_volume(category, value)
+	_update_volume_value_label(category, value)
+
+func _update_volume_value_label(category: String, volume: float) -> void:
+	(_volume_value_labels[category] as Label).text = "%d%%" % int(round(volume * 100.0))
 
 func _show_select_screen() -> void:
 	_hide_all_screens()

@@ -162,6 +162,12 @@ custom_minimum_size = Vector2(280, 52)
 theme_override_font_sizes/font_size = 22
 text = "はじめる"
 
+[node name="TitleOptionsButton" type="Button" parent="CanvasLayer/TitleScreen/Center/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(280, 44)
+theme_override_font_sizes/font_size = 17
+text = "オプション"
+
 [node name="OpeningScreen" type="Control" parent="CanvasLayer"]
 visible = false
 anchors_preset = 15
@@ -605,6 +611,133 @@ text = "状態リセット（DEBUG）"
 [node name="CharacterConfirmDialog" type="ConfirmationDialog" parent="CanvasLayer/SelectScreen"]
 title = "キャラクター選択"
 dialog_text = "このキャラクターを選択しますか？"
+
+[node name="OptionsScreen" type="Control" parent="CanvasLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bg" type="ColorRect" parent="CanvasLayer/OptionsScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0392157, 0.0431373, 0.0666667, 1)
+
+[node name="Center" type="CenterContainer" parent="CanvasLayer/OptionsScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Panel" type="PanelContainer" parent="CanvasLayer/OptionsScreen/Center"]
+layout_mode = 2
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/OptionsScreen/Center/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 28
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 28
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 18
+
+[node name="OptionsTitle" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+horizontal_alignment = 1
+text = "オプション"
+
+[node name="BgmRow" type="HBoxContainer" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="BgmLabel" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 0)
+vertical_alignment = 1
+text = "BGM"
+
+[node name="BgmSlider" type="HSlider" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(320, 24)
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+
+[node name="BgmValue" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 0)
+vertical_alignment = 1
+horizontal_alignment = 2
+text = "100%"
+
+[node name="SeRow" type="HBoxContainer" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="SeLabel" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 0)
+vertical_alignment = 1
+text = "効果音"
+
+[node name="SeSlider" type="HSlider" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(320, 24)
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+
+[node name="SeValue" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 0)
+vertical_alignment = 1
+horizontal_alignment = 2
+text = "100%"
+
+[node name="VoiceRow" type="HBoxContainer" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="VoiceLabel" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(90, 0)
+vertical_alignment = 1
+text = "ボイス"
+
+[node name="VoiceSlider" type="HSlider" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(320, 24)
+size_flags_vertical = 4
+max_value = 1.0
+step = 0.05
+
+[node name="VoiceValue" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(60, 0)
+vertical_alignment = 1
+horizontal_alignment = 2
+text = "100%"
+
+[node name="Spacer" type="Control" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 6)
+
+[node name="OptionsBackButton" type="Button" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(200, 44)
+theme_override_font_sizes/font_size = 17
+text = "戻る"
 
 [node name="FadeRect" type="ColorRect" parent="CanvasLayer"]
 visible = false
