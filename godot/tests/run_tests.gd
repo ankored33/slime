@@ -5,6 +5,7 @@ extends SceneTree
 
 const GameRules = preload("res://scripts/game_rules.gd")
 const ExpressionRules = preload("res://scripts/expression_rules.gd")
+const BrushScript = preload("res://scripts/brush.gd")
 
 var _failures := 0
 var _passes := 0
@@ -20,6 +21,7 @@ func _init() -> void:
 	_test_push_out_from_rect()
 	_test_expression_pick()
 	_test_rub_multiplier()
+	_test_brush_action()
 	print("---")
 	print("Passed: %d, Failed: %d" % [_passes, _failures])
 	quit(1 if _failures > 0 else 0)
@@ -85,6 +87,8 @@ func _test_brush_unlocks() -> void:
 	_check(not GameRules.is_brush_unlocked("brush-d", 4), "unlock: fine-point locked at Lv4")
 	_check(GameRules.is_brush_unlocked("brush-d", 5), "unlock: fine-point at Lv5")
 	_check_eq(GameRules.brush_unlock_level("brush-d"), 5, "unlock: fine-point level lookup")
+	_check(not GameRules.is_brush_unlocked("brush-e", 6), "unlock: rotating brush locked at Lv6")
+	_check(GameRules.is_brush_unlocked("brush-e", 7), "unlock: rotating brush at Lv7")
 	_check_eq(GameRules.brush_unlock_level("unknown"), 1, "unlock: unknown id defaults to Lv1")
 
 func _test_banked_finish() -> void:
@@ -158,8 +162,22 @@ func _test_expression_pick() -> void:
 	_check_eq(ExpressionRules.touch_loop_se(ExpressionRules.CLIMAX), "", "se: 絶頂中はループ無し")
 
 func _test_rub_multiplier() -> void:
-	_check_near(GameRules.rub_multiplier(0.0), GameRules.RUB_MIN_MULTIPLIER, "rub: parked brush at floor")
-	_check_near(GameRules.rub_multiplier(-50.0), GameRules.RUB_MIN_MULTIPLIER, "rub: negative speed clamps to floor")
+	_check_near(GameRules.rub_multiplier(0.0), 0.0, "rub: parked brush has no effect")
+	_check_near(GameRules.rub_multiplier(-50.0), 0.0, "rub: negative speed has no effect")
+	_check_near(GameRules.rub_multiplier(GameRules.RUB_START_SPEED), 0.0, "rub: tiny movement stays below threshold")
 	_check_near(GameRules.rub_multiplier(300.0), 1.0, "rub: brisk stroke reaches full effect")
 	_check_near(GameRules.rub_multiplier(500.0), GameRules.RUB_MAX_MULTIPLIER, "rub: fast stroke hits cap")
 	_check_near(GameRules.rub_multiplier(9999.0), GameRules.RUB_MAX_MULTIPLIER, "rub: capped at max")
+
+func _test_brush_action() -> void:
+	var brush = BrushScript.new()
+	brush._rub_speed = 0.0
+	_check_near(brush.get_action_multiplier(), 0.0, "brush: regular brush parked has no effect")
+	brush._rub_speed = 300.0
+	_check_near(brush.get_action_multiplier(), 1.0, "brush: regular brush works while rubbing")
+	brush.is_rotating = true
+	brush.is_active = false
+	_check_near(brush.get_action_multiplier(), 0.0, "brush: rotating brush off has no effect")
+	brush.is_active = true
+	_check_near(brush.get_action_multiplier(), 1.0, "brush: rotating brush on works while parked")
+	brush.free()

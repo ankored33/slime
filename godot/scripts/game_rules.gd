@@ -12,12 +12,14 @@ const PAIN_LIMIT := 100.0
 const PAIN_RECOVERY_PER_SEC := 2.0
 
 ## こすり判定: ブラシ移動速度(px/秒)による効果倍率。
-## 置きっぱなしでは最低倍率まで落ち、素早く磨くほど伸びる。
-const RUB_MIN_MULTIPLIER := 0.25
+## 微小な揺れは無視し、実際に動かしたときだけ効果が出る。
+const RUB_START_SPEED := 20.0
 const RUB_MAX_MULTIPLIER := 1.5
 
 static func rub_multiplier(speed: float) -> float:
-	return clampf(RUB_MIN_MULTIPLIER + speed * 0.0025, RUB_MIN_MULTIPLIER, RUB_MAX_MULTIPLIER)
+	if speed <= RUB_START_SPEED:
+		return 0.0
+	return clampf(0.25 + speed * 0.0025, 0.0, RUB_MAX_MULTIPLIER)
 
 ## Cumulative FINISH totals required to reach each level (index = level - 1).
 ## Gaps widen by one each level (2, 3, 4, ...) so progression stretches out:
@@ -52,7 +54,8 @@ const BRUSH_UNLOCK_LEVELS := {
 	"brush-a": 1,
 	"brush-c": 2,
 	"brush-b": 3,
-	"brush-d": 5
+	"brush-d": 5,
+	"brush-e": 7
 }
 
 static func brush_unlock_level(brush_id: String) -> int:

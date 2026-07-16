@@ -64,8 +64,11 @@ func _run_tests() -> void:
 
 	var brush_a: Node2D = main.get_node("GameScreen/Playfield/BrushA")
 	var brush_d: Node2D = main.get_node("GameScreen/Playfield/BrushD")
+	var brush_e: Node2D = main.get_node("GameScreen/Playfield/BrushE")
 	_check(brush_a.visible, "Lv1: soft brush available")
 	_check(not brush_d.visible, "Lv1: fine-point brush locked")
+	_check(not brush_e.visible, "Lv1: rotating brush locked")
+	_check(bool(brush_e.is_rotating), "rotating brush: scene marks it as rotating")
 
 	main._on_day_finished({
 		"species_id": "general",

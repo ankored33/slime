@@ -14,6 +14,9 @@ extends Area2D
 ## 当てている間、毎秒この量だけ痛みを減らす（癒し系ブラシ用）。
 @export var pain_soothe_per_sec := 0.0
 @export var special_multiplier := 1.75
+## 回転ブラシだけがON/OFFでき、静止中も回転によって効果を出す。
+@export var is_rotating := false
+@export var rotation_speed := 4.5
 @export var fill_color := Color(1, 0.862745, 0.529412, 0.95):
 	set(value):
 		fill_color = value
@@ -43,6 +46,8 @@ func _ready() -> void:
 	_sync_visuals()
 
 func _process(delta: float) -> void:
+	if is_rotating and is_active:
+		rotation += rotation_speed * delta
 	if special_time_left > 0.0:
 		special_time_left = max(0.0, special_time_left - delta)
 		_sync_visuals()
@@ -61,14 +66,22 @@ func _track_rub_speed(delta: float) -> void:
 func get_rub_speed() -> float:
 	return _rub_speed
 
+func get_action_multiplier() -> float:
+	if is_rotating:
+		return 1.0 if is_active else 0.0
+	return GameRules.rub_multiplier(_rub_speed)
+
+func is_effective() -> bool:
+	return get_action_multiplier() > 0.0
+
 func get_effective_polish_gain() -> float:
-	return polish_gain_per_sec * (_get_special_multiplier() if is_active else 1.0)
+	return polish_gain_per_sec * _get_special_multiplier()
 
 func get_effective_pain_gain() -> float:
-	return pain_gain_per_sec * (_get_special_multiplier() if is_active else 1.0)
+	return pain_gain_per_sec * _get_special_multiplier()
 
 func get_effective_soothe_gain() -> float:
-	return pain_soothe_per_sec * (_get_special_multiplier() if is_active else 1.0)
+	return pain_soothe_per_sec * _get_special_multiplier()
 
 func trigger_special(duration: float = 3.0) -> void:
 	special_time_left = max(special_time_left, duration)
@@ -87,7 +100,10 @@ func _sync_visuals() -> void:
 	var points := PackedVector2Array()
 	for i in range(20):
 		var angle := TAU * float(i) / 20.0
-		points.append(Vector2.RIGHT.rotated(angle) * hit_radius)
+		var point_radius := hit_radius
+		if is_rotating and i % 2 == 1:
+			point_radius *= 0.78
+		points.append(Vector2.RIGHT.rotated(angle) * point_radius)
 	_body.polygon = points
 	var tint := fill_color
 	if is_active:

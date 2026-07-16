@@ -39,7 +39,7 @@
 | pain 上限 | 100.0（到達で強制終了） |
 | 失敗ペナルティ | 当日 FINISH 数を半減（切り捨て） |
 | FINISH しきい値 | `max(90, 170 - (level-1) * 9)`（磨きターゲット2点の polish 合計） |
-| ブラシ解禁 | brush-a: Lv1 / brush-c: Lv2 / brush-b: Lv3 / brush-d: Lv5 |
+| ブラシ解禁 | brush-a: Lv1 / brush-c: Lv2 / brush-b: Lv3 / brush-d: Lv5 / brush-e（回転）: Lv7 |
 
 ## 4. 磨き画面（ゲームプレイ）
 
@@ -48,18 +48,20 @@
 
 - スライム2匹（left/right）それぞれが `polish` / `pain` ゲージ（0〜100）を持つ。
 - ブラシ（`brush.gd`）:
-  - ドラッグで移動（`follow_speed` による lerp 追従、プレイフィールド内にクランプ）
-  - 個別 ON/OFF トグル
+  - クリックで保持/解除し、保持中はマウスへ追従（プレイフィールド内にクランプ）
+  - 通常ブラシ4種はON/OFFなし。実際にこすったときだけ効果が出る
+  - 回転ブラシだけ個別ON/OFFでき、ON中は静止したまま効果が出る
   - 特殊技（一時ブースト）を手動発動
   - ブラシ同士の重なりは押し出しで解決（`_resolve_brush_overlaps`）
   - 壁ゾーン(`wall_zone.gd`)からの押し出し（`GameRules.push_out_from_rect`）
   - 収集・入力・解禁UI・衝突補正は `game_screen_brushes.gd` が担当
 - こすり判定: ブラシの移動速度（平滑化した px/秒）で効果に倍率が掛かる
-  （`GameRules.rub_multiplier`、置きっぱなし 0.25倍〜素早く磨いて最大 1.5倍。快感・痛み両方に効く）。
+  （`GameRules.rub_multiplier`、20px/秒以下は0倍、素早く磨いて最大1.5倍。快感・痛み・癒しに効く）。
+  回転ブラシはON中、移動速度にかかわらず1.0倍。
 - 痛みの回復:
   - アクティブなブラシが触れていない部位は毎秒 `PAIN_RECOVERY_PER_SEC`(2.0) 自然回復
-  - 癒し系ブラシ（羽 = `pain_soothe_per_sec` > 0）は当てている間、痛みを毎秒その量だけ減らす
-    （こすり速度に依存せず、特殊技の倍率は乗る）
+  - 癒し系ブラシ（羽 = `pain_soothe_per_sec` > 0）は、こすっている間に痛みを減らす
+    （こすり速度と特殊技の倍率が乗る）
 - FINISH: 2匹の polish 合計が `finish_threshold` を超えると発生。
   当日 FINISH 数を加算し、polish は保持率分だけ残して減少。pain は継続。
 - 1日の終了:

@@ -30,7 +30,8 @@
   - Forced fail at pain >= 100%
   - Fail penalty = banked finish halved
   - FINISH threshold + post-finish polish retention by level
-- Brushes can be dragged, toggled independently, and special-triggered.
+- Regular brushes work only while rubbing; the rotating brush alone has an on/off toggle.
+- All brushes use click-to-hold movement and can trigger temporary specials.
 - Brush overlap resolution and wall push-out are active in play.
 - Progress is saved/loaded via `user://slime_save_v2.json`.
 
