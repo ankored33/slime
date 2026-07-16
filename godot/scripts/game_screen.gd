@@ -11,6 +11,10 @@ const ExpressionRules = preload("res://scripts/expression_rules.gd")
 # FINISH演出が終わってから憔悴表情を保つ時間。
 const EXHAUST_DURATION := 4.0
 
+# 演出オーバーレイの色。FINISHは白ピンクの閃光、失敗は暗い赤の暗転。
+const FINISH_FLASH_COLOR := Color(1.0, 0.88, 0.93)
+const FAIL_FLASH_COLOR := Color(0.35, 0.02, 0.06)
+
 # Level-driven; refreshed in setup_species.
 var finish_threshold := GameRules.finish_threshold(1)
 
@@ -57,6 +61,7 @@ var _brush_special_buttons: Dictionary = {}
 @onready var _right_slime: SlimeTarget = $Playfield/RightSlime
 @onready var _chara_image: TextureRect = $Playfield/CharaImage
 @onready var _expression_label: Label = $Playfield/CharaImage/ExpressionLabel
+@onready var _flash_rect: ColorRect = $FlashRect
 
 func _ready() -> void:
 	_collect_gauges()
@@ -196,17 +201,52 @@ func _is_finish_fx_active() -> bool:
 	return _finish_fx_time_left > 0.0
 
 func _start_finish_fx() -> void:
-	# Foundation for the FINISH celebration; real presentation plugs in here.
 	_finish_fx_time_left = finish_fx_duration
 	_finish_label.visible = true
+	_finish_label.pivot_offset = _finish_label.size / 2.0
+	_finish_label.scale = Vector2(0.4, 0.4)
+	var tween := create_tween()
+	tween.tween_property(_finish_label, "scale", Vector2(1.3, 1.3), 0.35) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(_finish_label, "scale", Vector2.ONE, 0.3)
+	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+		slime.burst_hearts()
 
 func _update_finish_fx(delta: float) -> void:
 	if _finish_fx_time_left <= 0.0:
 		return
 	_finish_fx_time_left = maxf(0.0, _finish_fx_time_left - delta)
+	var elapsed := finish_fx_duration - _finish_fx_time_left
+	var flash := FINISH_FLASH_COLOR
+	flash.a = _finish_flash_alpha(elapsed)
+	_flash_rect.color = flash
+	_apply_shake(maxf(0.0, 1.0 - elapsed / 1.2) * 16.0)
 	if _finish_fx_time_left == 0.0:
 		_finish_label.visible = false
+		_clear_fx_overlay()
 		_exhaust_time_left = EXHAUST_DURATION
+
+## 閃光→急速フェード→余韻（薄いピンク）→演出終了までにゼロ、の3段カーブ。
+func _finish_flash_alpha(elapsed: float) -> float:
+	if elapsed < 0.2:
+		return lerpf(0.0, 0.9, elapsed / 0.2)
+	if elapsed < 1.6:
+		return lerpf(0.9, 0.16, (elapsed - 0.2) / 1.4)
+	var tail := maxf(finish_fx_duration - 1.6, 0.001)
+	return lerpf(0.16, 0.0, clampf((elapsed - 1.6) / tail, 0.0, 1.0))
+
+func _apply_shake(amplitude: float) -> void:
+	if amplitude <= 0.05:
+		_playfield.position = Vector2.ZERO
+		return
+	_playfield.position = Vector2(
+		randf_range(-amplitude, amplitude),
+		randf_range(-amplitude, amplitude)
+	)
+
+func _clear_fx_overlay() -> void:
+	_flash_rect.color = Color(1.0, 1.0, 1.0, 0.0)
+	_playfield.position = Vector2.ZERO
 
 func _is_fail_fx_active() -> bool:
 	return _fail_fx_time_left > 0.0
@@ -222,7 +262,13 @@ func _update_fail_fx(delta: float) -> void:
 	if _fail_fx_time_left <= 0.0:
 		return
 	_fail_fx_time_left = maxf(0.0, _fail_fx_time_left - delta)
+	var elapsed := fail_fx_duration - _fail_fx_time_left
+	var flash := FAIL_FLASH_COLOR
+	flash.a = minf(elapsed / 0.4, 1.0) * 0.5
+	_flash_rect.color = flash
+	_apply_shake(maxf(0.0, 1.0 - elapsed / 0.8) * 10.0)
 	if _fail_fx_time_left == 0.0:
+		_apply_shake(0.0)
 		_finish_day(true)
 
 func reset_day() -> void:
@@ -234,6 +280,8 @@ func reset_day() -> void:
 	_exhaust_time_left = 0.0
 	_current_expression = ""
 	_finish_label.visible = false
+	_finish_label.scale = Vector2.ONE
+	_clear_fx_overlay()
 	_slime_state = {
 		"left": {"polish": 0.0, "pain": 0.0},
 		"right": {"polish": 0.0, "pain": 0.0}

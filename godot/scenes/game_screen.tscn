@@ -158,6 +158,15 @@ pain_gain_per_sec = 18.0
 special_multiplier = 1.5
 fill_color = Color(0.9, 0.5, 1, 0.95)
 
+[node name="FlashRect" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(1, 1, 1, 0)
+
 [node name="Hud" type="Control" parent="." unique_id=1008816429]
 layout_mode = 1
 anchors_preset = 15
@@ -252,6 +261,8 @@ offset_right = 840.0
 offset_bottom = 370.0
 theme_override_font_sizes/font_size = 72
 theme_override_colors/font_color = Color(1, 0.72, 0.85, 1)
+theme_override_colors/font_outline_color = Color(0.32, 0.06, 0.18, 1)
+theme_override_constants/outline_size = 10
 horizontal_alignment = 1
 vertical_alignment = 1
 text = "FINISH!"

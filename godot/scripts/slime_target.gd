@@ -28,6 +28,7 @@ extends Area2D
 @onready var _label: Label = $Label
 
 var _hearts: CPUParticles2D
+var _heart_burst: CPUParticles2D
 
 func _ready() -> void:
 	add_to_group("slime_targets")
@@ -60,9 +61,40 @@ func _setup_heart_particles() -> void:
 	_hearts.color_ramp = fade
 	add_child(_hearts)
 
+	# FINISH瞬間の一斉バースト用。通常のハートより強く弾ける。
+	_heart_burst = CPUParticles2D.new()
+	_heart_burst.name = "HeartBurst"
+	_heart_burst.emitting = false
+	_heart_burst.one_shot = true
+	_heart_burst.explosiveness = 1.0
+	_heart_burst.amount = 36
+	_heart_burst.lifetime = 1.5
+	_heart_burst.local_coords = false
+	_heart_burst.texture = FxTextures.heart()
+	_heart_burst.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+	_heart_burst.direction = Vector2.UP
+	_heart_burst.spread = 180.0
+	_heart_burst.initial_velocity_min = 160.0
+	_heart_burst.initial_velocity_max = 320.0
+	_heart_burst.gravity = Vector2(0.0, 140.0)
+	_heart_burst.scale_amount_min = 0.8
+	_heart_burst.scale_amount_max = 1.7
+	_heart_burst.angular_velocity_min = -180.0
+	_heart_burst.angular_velocity_max = 180.0
+	_heart_burst.color = Color(1.0, 0.6, 0.75, 1.0)
+	var burst_fade := Gradient.new()
+	burst_fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
+	burst_fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
+	_heart_burst.color_ramp = burst_fade
+	add_child(_heart_burst)
+
 func set_hearts_active(on: bool) -> void:
 	if _hearts != null:
 		_hearts.emitting = on
+
+func burst_hearts() -> void:
+	if _heart_burst != null:
+		_heart_burst.restart()
 
 const SQUISH_STIFFNESS := 70.0
 const SQUISH_DAMPING := 5.0
@@ -145,6 +177,8 @@ func _sync_visuals() -> void:
 	if _hearts != null:
 		_hearts.emission_sphere_radius = radius * 0.6
 		_hearts.position = Vector2(0.0, -radius * 0.3)
+	if _heart_burst != null:
+		_heart_burst.emission_sphere_radius = radius * 0.5
 	_label.text = display_name
 	_label.position = Vector2(-radius, radius + 12.0)
 	_label.size = Vector2(radius * 2.0, 28.0)
