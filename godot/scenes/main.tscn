@@ -53,37 +53,6 @@ theme_override_font_sizes/font_size = 15
 modulate = Color(0.8, 0.84, 0.9, 0.92)
 text = "今日お手入れするスライムの種を選ぼう。"
 
-[node name="SelectScreen" type="VBoxContainer" parent="CanvasLayer/Frame/Margin/VBox"]
-theme_override_constants/separation = 16
-
-[node name="HBox" type="HBoxContainer" parent="CanvasLayer/Frame/Margin/VBox/SelectScreen"]
-custom_minimum_size = Vector2(0, 480)
-theme_override_constants/separation = 16
-
-[node name="SpeciesList" type="ItemList" parent="CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox"]
-custom_minimum_size = Vector2(168, 0)
-size_flags_horizontal = 3
-
-[node name="DetailPanel" type="PanelContainer" parent="CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox"]
-size_flags_horizontal = 3
-
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox/DetailPanel"]
-theme_override_constants/margin_left = 14
-theme_override_constants/margin_top = 14
-theme_override_constants/margin_right = 14
-theme_override_constants/margin_bottom = 14
-
-[node name="SpeciesDetail" type="RichTextLabel" parent="CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox/DetailPanel/Margin"]
-bbcode_enabled = true
-fit_content = true
-scroll_active = false
-
-[node name="Actions" type="HBoxContainer" parent="CanvasLayer/Frame/Margin/VBox/SelectScreen"]
-theme_override_constants/separation = 12
-
-[node name="StartButton" type="Button" parent="CanvasLayer/Frame/Margin/VBox/SelectScreen/Actions"]
-text = "1日をはじめる"
-
 [node name="ResultScreen" type="VBoxContainer" parent="CanvasLayer/Frame/Margin/VBox"]
 visible = false
 theme_override_constants/separation = 16
@@ -262,3 +231,204 @@ text = "1 / 1"
 layout_mode = 2
 custom_minimum_size = Vector2(160, 40)
 text = "次へ ▼"
+
+[node name="SelectScreen" type="Control" parent="CanvasLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bg" type="ColorRect" parent="CanvasLayer/SelectScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.0392157, 0.0431373, 0.0666667, 1)
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/SelectScreen"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 40
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 40
+theme_override_constants/margin_bottom = 22
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/SelectScreen/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="Header" type="VBoxContainer" parent="CanvasLayer/SelectScreen/Margin/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ScreenTitle" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 30
+text = "キャラ選択"
+
+[node name="ScreenSubtitle" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Header"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 15
+modulate = Color(0.8, 0.84, 0.9, 0.92)
+text = "今日はどちらをいじるか選ぼう。"
+
+[node name="Cards" type="HBoxContainer" parent="CanvasLayer/SelectScreen/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 28
+
+[node name="Card0" type="PanelContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PortraitArea" type="Control" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PortraitBg" type="ColorRect" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.09, 0.09, 0.14, 1)
+
+[node name="Portrait" type="TextureRect" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PortraitPlaceholder" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+modulate = Color(0.55, 0.58, 0.68, 0.8)
+text = "立ち絵（未設定）"
+
+[node name="NameLabel" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "？？？"
+
+[node name="EpithetLabel" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.8, 0.84, 0.9, 0.92)
+text = ""
+
+[node name="ProfileBody" type="RichTextLabel" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 150)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="StartButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 46)
+theme_override_font_sizes/font_size = 18
+text = "この娘をいじる"
+
+[node name="Card1" type="PanelContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="Margin" type="MarginContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="PortraitArea" type="Control" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PortraitBg" type="ColorRect" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.09, 0.09, 0.14, 1)
+
+[node name="Portrait" type="TextureRect" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PortraitPlaceholder" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+modulate = Color(0.55, 0.58, 0.68, 0.8)
+text = "立ち絵（未設定）"
+
+[node name="NameLabel" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 26
+text = "？？？"
+
+[node name="EpithetLabel" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.8, 0.84, 0.9, 0.92)
+text = ""
+
+[node name="ProfileBody" type="RichTextLabel" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 150)
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
+
+[node name="StartButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(0, 46)
+theme_override_font_sizes/font_size = 18
+text = "この娘をいじる"

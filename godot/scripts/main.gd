@@ -9,6 +9,8 @@ var _characters: Array[Dictionary] = [
 		"id": "general",
 		"name": "女将軍（仮名）",
 		"epithet": "無敵と呼ばれた女将軍",
+		"portrait": "",
+		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(1.0, 0.71, 0.78, 0.92),
 		"left": {
 			"position": Vector2(552.5, 480.0),
@@ -43,6 +45,8 @@ var _characters: Array[Dictionary] = [
 		"id": "admiral",
 		"name": "エルフ提督（仮名）",
 		"epithet": "無敗を誇った女エルフ提督",
+		"portrait": "",
+		"profile": "（プロフィール仮テキスト）\n所属・経歴・気性などをここに差し込む。",
 		"color": Color(0.47, 0.9, 0.78, 0.92),
 		"left": {
 			"position": Vector2(560.0, 474.0),
@@ -82,12 +86,9 @@ var _opening_page := 0
 @onready var _frame: Control = $CanvasLayer/Frame
 @onready var _screen_title: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenTitle
 @onready var _screen_subtitle: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenSubtitle
-@onready var _select_screen: Control = $CanvasLayer/Frame/Margin/VBox/SelectScreen
+@onready var _select_screen: Control = $CanvasLayer/SelectScreen
 @onready var _game_screen: Control = $GameScreen
 @onready var _result_screen: Control = $CanvasLayer/Frame/Margin/VBox/ResultScreen
-@onready var _character_list_ui: ItemList = $CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox/SpeciesList
-@onready var _character_detail: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/SelectScreen/HBox/DetailPanel/Margin/SpeciesDetail
-@onready var _start_button: Button = $CanvasLayer/Frame/Margin/VBox/SelectScreen/Actions/StartButton
 @onready var _result_body: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/ResultScreen/ResultPanel/Margin/ResultBody
 @onready var _return_button: Button = $CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions/ReturnButton
 @onready var _title_screen: Control = $CanvasLayer/TitleScreen
@@ -100,50 +101,55 @@ var _opening_page := 0
 @onready var _opening_next_button: Button = $CanvasLayer/OpeningScreen/Margin/VBox/TextPanel/Margin/TextVBox/Actions/OpeningNextButton
 
 func _ready() -> void:
-	_character_list_ui.item_selected.connect(_on_character_selected)
-	_start_button.pressed.connect(_on_start_pressed)
 	_return_button.pressed.connect(_on_return_pressed)
 	_title_start_button.pressed.connect(_on_title_start_pressed)
 	_opening_next_button.pressed.connect(_on_opening_next_pressed)
 	_game_screen.day_finished.connect(_on_day_finished)
+	for index in range(_characters.size()):
+		var card := _get_card(index)
+		var button: Button = card.get_node("Margin/VBox/StartButton")
+		button.pressed.connect(_on_character_start_pressed.bind(index))
 	_load_progress()
-	_refresh_character_list()
 	_show_title_screen()
 
-func _refresh_character_list() -> void:
-	_character_list_ui.clear()
-	for chara: Dictionary in _characters:
-		_character_list_ui.add_item("%s  Lv.%d" % [chara["name"], chara["level"]])
-	_character_list_ui.select(_selected_index)
-	_refresh_character_detail()
+func _get_card(index: int) -> Control:
+	return _select_screen.get_node("Margin/VBox/Cards/Card%d" % index)
 
-func _refresh_character_detail() -> void:
-	var chara: Dictionary = _characters[_selected_index]
-	var left_cfg: Dictionary = chara.get("left", {})
-	var left_radius := float(left_cfg.get("radius", 100.0))
-	var opening_state := "済" if bool(chara.get("opening_seen", false)) else "未"
-	_character_detail.text = (
-		"[b]%s[/b]\n"
-		+ "%s\n\n"
-		+ "レベル: %d / %d\n"
+func _refresh_character_cards() -> void:
+	for index in range(_characters.size()):
+		_refresh_character_card(index)
+
+func _refresh_character_card(index: int) -> void:
+	var chara: Dictionary = _characters[index]
+	var card := _get_card(index)
+	var name_label: Label = card.get_node("Margin/VBox/NameLabel")
+	var epithet_label: Label = card.get_node("Margin/VBox/EpithetLabel")
+	var profile_body: RichTextLabel = card.get_node("Margin/VBox/ProfileBody")
+	var portrait: TextureRect = card.get_node("Margin/VBox/PortraitArea/Portrait")
+	var placeholder: Label = card.get_node("Margin/VBox/PortraitArea/PortraitPlaceholder")
+	name_label.text = str(chara["name"])
+	epithet_label.text = str(chara.get("epithet", ""))
+	var opening_state := "済" if bool(chara.get("opening_seen", false)) else "未（開始時に再生）"
+	profile_body.text = (
+		"%s\n\n"
+		+ "レベル: [b]%d[/b] / %d\n"
 		+ "累計FINISH: %d\n"
 		+ "痛み失敗: %d\n"
-		+ "当たり判定半径: %d\n"
-		+ "オープニング: %s\n\n"
-		+ "成長で伸びるもの:\n"
-		+ "- 快感の上がりやすさ\n"
-		+ "- 痛みへの耐性\n"
-		+ "- FINISH後に残る快感量"
+		+ "オープニング: %s"
 	) % [
-		chara["name"],
-		str(chara.get("epithet", "")),
-		chara["level"],
+		str(chara.get("profile", "")),
+		int(chara["level"]),
 		GameRules.MAX_LEVEL,
-		chara["finish_total"],
-		chara["pain_fail_total"],
-		int(round(left_radius)),
+		int(chara["finish_total"]),
+		int(chara["pain_fail_total"]),
 		opening_state
 	]
+	var portrait_path := str(chara.get("portrait", ""))
+	var texture: Texture2D = null
+	if portrait_path != "" and ResourceLoader.exists(portrait_path):
+		texture = load(portrait_path)
+	portrait.texture = texture
+	placeholder.visible = texture == null
 
 func _hide_all_screens() -> void:
 	_frame.visible = false
@@ -159,11 +165,8 @@ func _show_title_screen() -> void:
 
 func _show_select_screen() -> void:
 	_hide_all_screens()
-	_screen_title.text = "キャラ選択"
-	_screen_subtitle.text = "今日はどちらをいじるか選ぼう。"
-	_frame.visible = true
 	_select_screen.visible = true
-	_refresh_character_list()
+	_refresh_character_cards()
 
 func _show_opening_screen() -> void:
 	_hide_all_screens()
@@ -186,11 +189,8 @@ func _show_result_screen() -> void:
 func _on_title_start_pressed() -> void:
 	_show_select_screen()
 
-func _on_character_selected(index: int) -> void:
+func _on_character_start_pressed(index: int) -> void:
 	_selected_index = index
-	_refresh_character_detail()
-
-func _on_start_pressed() -> void:
 	var chara: Dictionary = _characters[_selected_index]
 	if not bool(chara.get("opening_seen", false)):
 		_opening_page = 0

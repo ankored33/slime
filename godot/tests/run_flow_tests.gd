@@ -28,7 +28,7 @@ func _run_tests() -> void:
 	var title: Control = main.get_node("CanvasLayer/TitleScreen")
 	var opening: Control = main.get_node("CanvasLayer/OpeningScreen")
 	var frame: Control = main.get_node("CanvasLayer/Frame")
-	var select: Control = main.get_node("CanvasLayer/Frame/Margin/VBox/SelectScreen")
+	var select: Control = main.get_node("CanvasLayer/SelectScreen")
 	var result: Control = main.get_node("CanvasLayer/Frame/Margin/VBox/ResultScreen")
 	var game: Control = main.get_node("GameScreen")
 	var next_button: Button = main.get_node(
@@ -40,9 +40,13 @@ func _run_tests() -> void:
 	_check(title.visible and not frame.visible and not game.visible, "boot: title screen only")
 
 	main._on_title_start_pressed()
-	_check(select.visible and frame.visible and not title.visible, "title start -> select screen")
+	_check(select.visible and not frame.visible and not title.visible, "title start -> select screen")
 
-	main._on_start_pressed()
+	var card0_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/NameLabel")
+	var card1_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/NameLabel")
+	_check(card0_name.text != "？？？" and card1_name.text != "？？？", "select: both cards populated")
+
+	main._on_character_start_pressed(0)
 	_check(opening.visible and not select.visible, "first start -> opening screen")
 	_check_eq(main._opening_page, 0, "opening starts at page 0")
 
@@ -68,7 +72,7 @@ func _run_tests() -> void:
 	main._on_return_pressed()
 	_check(select.visible and not result.visible, "result return -> select screen")
 
-	main._on_start_pressed()
+	main._on_character_start_pressed(0)
 	_check(game.visible and not opening.visible, "second start skips opening")
 
 	# Opening flag survives a reload through the save file.
