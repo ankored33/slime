@@ -36,6 +36,20 @@ static func pain_resist(level: int) -> float:
 static func retention_ratio(level: int) -> float:
 	return minf(0.65, float(maxi(0, level - 1)) * 0.07)
 
+## Character level required to use each brush. Unknown ids unlock at Lv1.
+const BRUSH_UNLOCK_LEVELS := {
+	"brush-a": 1,
+	"brush-c": 2,
+	"brush-b": 3,
+	"brush-d": 5
+}
+
+static func brush_unlock_level(brush_id: String) -> int:
+	return int(BRUSH_UNLOCK_LEVELS.get(brush_id, 1))
+
+static func is_brush_unlocked(brush_id: String, level: int) -> bool:
+	return level >= brush_unlock_level(brush_id)
+
 static func banked_finish(day_finish_count: int, failed_by_pain: bool) -> int:
 	if failed_by_pain:
 		return int(floor(float(day_finish_count) * FAIL_PENALTY_RATIO))

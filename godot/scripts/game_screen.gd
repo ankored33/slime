@@ -160,9 +160,18 @@ func setup_species(species: Dictionary) -> void:
 	_right_slime.apply_species(_species, "R", right_config)
 	var level := int(_species.get("level", 1))
 	finish_threshold = GameRules.finish_threshold(level)
+	_apply_brush_unlocks(level)
 	_meta_label.text = "LV %d" % level
 	_day_label.text = "1日目"
 	reset_day()
+
+func _apply_brush_unlocks(level: int) -> void:
+	for brush: Brush in _brush_map.values():
+		var unlocked := GameRules.is_brush_unlocked(brush.brush_id, level)
+		brush.visible = unlocked
+		if not unlocked:
+			brush.is_active = false
+			brush.special_time_left = 0.0
 
 func _apply_slime_layout(slime: SlimeTarget, cfg: Dictionary) -> void:
 	var pos_variant: Variant = cfg.get("position", null)
@@ -223,6 +232,8 @@ func _pick_brush(mouse_position: Vector2) -> void:
 	var nearest: Brush
 	var nearest_distance: float = INF
 	for brush: Brush in _brush_map.values():
+		if not brush.visible:
+			continue
 		var distance: float = brush.position.distance_to(local_mouse)
 		if distance <= brush.hit_radius * 1.4 and distance < nearest_distance:
 			nearest = brush
@@ -235,6 +246,8 @@ func _update_slime_squish(delta: float) -> void:
 		var deepest := 0.0
 		var touched_by_active := false
 		for brush: Brush in _brush_map.values():
+			if not brush.visible:
+				continue
 			var overlap: float = brush.hit_radius + slime.radius - brush.global_position.distance_to(slime.global_position)
 			deepest = maxf(deepest, overlap)
 			if brush.is_active and overlap > 0.0:
@@ -288,14 +301,14 @@ func _on_end_day_pressed() -> void:
 
 func _on_brush_toggle_pressed(brush_id: String) -> void:
 	var brush: Brush = _brush_map.get(brush_id)
-	if brush == null:
+	if brush == null or not brush.visible:
 		return
 	brush.is_active = not brush.is_active
 	_update_brush_controls()
 
 func _on_brush_special_pressed(brush_id: String) -> void:
 	var brush: Brush = _brush_map.get(brush_id)
-	if brush == null:
+	if brush == null or not brush.visible:
 		return
 	brush.trigger_special()
 	_update_brush_controls()
@@ -306,12 +319,23 @@ func _update_brush_controls() -> void:
 		if brush == null:
 			continue
 		var toggle: Button = _brush_toggle_buttons[brush_id]
-		toggle.text = "%s: %s" % [_brush_display_name(brush), "ON" if brush.is_active else "OFF"]
 		var special: Button = _brush_special_buttons[brush_id]
-		special.text = "特殊技*" if brush.is_special_active() else "特殊技"
+		var locked := not brush.visible
+		toggle.disabled = locked
+		special.disabled = locked
+		if locked:
+			toggle.text = "%s: Lv%d解禁" % [_brush_display_name(brush), GameRules.brush_unlock_level(brush_id)]
+			special.text = "特殊技"
+		else:
+			toggle.text = "%s: %s" % [_brush_display_name(brush), "ON" if brush.is_active else "OFF"]
+			special.text = "特殊技*" if brush.is_special_active() else "特殊技"
 	var selected_brush: Brush = _held_brush
-	if selected_brush == null and not _brush_map.is_empty():
-		selected_brush = _brush_map.get(_sorted_brush_ids()[0])
+	if selected_brush == null:
+		for brush_id: String in _sorted_brush_ids():
+			var brush: Brush = _brush_map[brush_id]
+			if brush.visible:
+				selected_brush = brush
+				break
 	if selected_brush != null:
 		_brush_name_label.text = _brush_display_name(selected_brush)
 		_brush_spec_label.text = "快感 %d / 痛み %d / サイズ %d" % [
@@ -348,7 +372,8 @@ func _check_failure() -> void:
 func _resolve_brush_overlaps() -> void:
 	var brushes: Array[Brush] = []
 	for brush: Brush in _brush_map.values():
-		brushes.append(brush)
+		if brush.visible:
+			brushes.append(brush)
 	for i in range(brushes.size()):
 		for j in range(i + 1, brushes.size()):
 			var a := brushes[i]
@@ -368,12 +393,16 @@ func _apply_wall_push_out() -> void:
 	if _wall_zones.is_empty():
 		return
 	for brush: Brush in _brush_map.values():
+		if not brush.visible:
+			continue
 		for wall in _wall_zones:
 			brush.position = GameRules.push_out_from_rect(brush.position, brush.hit_radius, wall.get_rect())
 
 func _apply_slime_push_out() -> void:
 	# Brushes can sink into the squished radius but never pass through.
 	for brush: Brush in _brush_map.values():
+		if not brush.visible:
+			continue
 		for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 			var min_dist: float = brush.hit_radius + slime.get_hit_radius()
 			var delta_vec: Vector2 = brush.position - slime.position

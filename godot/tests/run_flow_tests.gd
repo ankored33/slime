@@ -36,6 +36,8 @@ func _run_tests() -> void:
 	)
 
 	main._characters[0]["opening_seen"] = false
+	main._characters[0]["level"] = 1
+	main._characters[0]["finish_total"] = 0
 
 	_check(title.visible and not frame.visible and not game.visible, "boot: title screen only")
 
@@ -59,6 +61,11 @@ func _run_tests() -> void:
 	main._on_opening_next_pressed()
 	_check(game.visible and not opening.visible, "opening end -> game screen")
 	_check(bool(main._characters[0]["opening_seen"]), "opening marked as seen")
+
+	var brush_a: Node2D = main.get_node("GameScreen/Playfield/BrushA")
+	var brush_d: Node2D = main.get_node("GameScreen/Playfield/BrushD")
+	_check(brush_a.visible, "Lv1: soft brush available")
+	_check(not brush_d.visible, "Lv1: fine-point brush locked")
 
 	main._on_day_finished({
 		"species_id": "general",

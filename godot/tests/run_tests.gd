@@ -14,6 +14,7 @@ func _init() -> void:
 	_test_polish_bonus()
 	_test_pain_resist()
 	_test_retention_ratio()
+	_test_brush_unlocks()
 	_test_banked_finish()
 	_test_push_out_from_rect()
 	print("---")
@@ -71,6 +72,17 @@ func _test_retention_ratio() -> void:
 	_check_near(GameRules.retention_ratio(4), 0.21, "retention: Lv4")
 	_check_near(GameRules.retention_ratio(10), 0.63, "retention: Lv10")
 	_check_near(GameRules.retention_ratio(100), 0.65, "retention: capped at 0.65")
+
+func _test_brush_unlocks() -> void:
+	_check(GameRules.is_brush_unlocked("brush-a", 1), "unlock: soft brush from Lv1")
+	_check(not GameRules.is_brush_unlocked("brush-c", 1), "unlock: feather locked at Lv1")
+	_check(GameRules.is_brush_unlocked("brush-c", 2), "unlock: feather at Lv2")
+	_check(not GameRules.is_brush_unlocked("brush-b", 2), "unlock: firm locked at Lv2")
+	_check(GameRules.is_brush_unlocked("brush-b", 3), "unlock: firm at Lv3")
+	_check(not GameRules.is_brush_unlocked("brush-d", 4), "unlock: fine-point locked at Lv4")
+	_check(GameRules.is_brush_unlocked("brush-d", 5), "unlock: fine-point at Lv5")
+	_check_eq(GameRules.brush_unlock_level("brush-d"), 5, "unlock: fine-point level lookup")
+	_check_eq(GameRules.brush_unlock_level("unknown"), 1, "unlock: unknown id defaults to Lv1")
 
 func _test_banked_finish() -> void:
 	_check_eq(GameRules.banked_finish(7, false), 7, "banked: voluntary end keeps all")
