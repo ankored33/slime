@@ -151,13 +151,14 @@ func _run_tests() -> void:
 	var candle_action: Dictionary = game._brushes.handle_input(right_click)
 	_check(candle_action.has("wax_origin"), "candle: right click requests a wax drop")
 	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/LeftSlime")
-	game._spawn_wax_drop(left_slime.position - Vector2(0.0, left_slime.get_hit_radius()))
-	game._update_wax_drops(0.05)
+	game._tool_actions.spawn_wax_drop(
+		left_slime.position - Vector2(0.0, left_slime.get_hit_radius()))
+	game._tool_actions.update_wax_drops(0.05, game._slime_state, game._current_level())
 	_check(float(game._slime_state["left"]["polish"]) > 0.0,
 		"candle: wax impact adds polish stimulus")
 	_check(float(game._slime_state["left"]["pain"]) > 0.0,
 		"candle: wax impact adds pain stimulus")
-	_check_eq(game._wax_drops.size(), 0, "candle: wax drop is consumed on impact")
+	_check_eq(game._tool_actions.wax_drop_count, 0, "candle: wax drop is consumed on impact")
 	game.reset_day()
 
 	# 歯の固有アクション: 接触中の右クリックだけが一回分の痛みを与える。
@@ -165,12 +166,12 @@ func _run_tests() -> void:
 	game._brushes.toggle_from_toolbox("teeth")
 	var teeth_action: Dictionary = game._brushes.handle_input(right_click)
 	_check(teeth_action.has("bite_requested"), "teeth: right click requests a bite")
-	game._apply_teeth_bite()
+	game._tool_actions.apply_teeth_bite(game._slime_state, game._current_level())
 	_check_eq(float(game._slime_state["left"]["pain"]), 0.0,
 		"teeth: bite does no damage away from a target")
 	brush_teeth.position = left_slime.position + Vector2(
 		left_slime.get_hit_radius() + brush_teeth.hit_radius, 0.0)
-	game._apply_teeth_bite()
+	game._tool_actions.apply_teeth_bite(game._slime_state, game._current_level())
 	_check(float(game._slime_state["left"]["pain"]) > 0.0,
 		"teeth: bite damages a target while touching")
 	_check_eq(float(game._slime_state["left"]["polish"]), 0.0,
@@ -202,13 +203,14 @@ func _run_tests() -> void:
 		- Vector2(left_slime.get_hit_radius() + brush_finger.hit_radius, 0.0)
 	var pinch_action: Dictionary = game._brushes.handle_input(right_click)
 	_check(pinch_action.has("pinch_requested"), "finger: right click requests a pinch")
-	game._start_pinch()
-	_check(game._pinch_slime == left_slime, "finger: pinch grabs the touching target")
+	game._tool_actions.start_pinch()
+	_check(game._tool_actions.pinch_slime == left_slime,
+		"finger: pinch grabs the touching target")
 	var grab_distance: float = brush_finger.position.distance_to(left_slime.position)
 	var pull_mouse: Vector2 = playfield.get_global_transform() \
 		* (brush_finger.position + Vector2(-200.0, 0.0))
 	for i in range(60):
-		game._update_pinch(pull_mouse, 1.0 / 60.0)
+		game._tool_actions.update_pinch(pull_mouse, 1.0 / 60.0)
 	_check(left_slime.position.x < slime_home.x - 10.0,
 		"finger: pulling drags the target along")
 	_check(left_slime.position.distance_to(slime_home) <= left_slime.MAX_PULL_DISTANCE + 0.001,
@@ -221,7 +223,7 @@ func _run_tests() -> void:
 	right_release.position = Vector2(640.0, 360.0)
 	var release_action: Dictionary = game._brushes.handle_input(right_release)
 	_check(release_action.has("pinch_released"), "finger: releasing right click lets go")
-	game._end_pinch()
+	game._tool_actions.end_pinch()
 	brush_finger.position = slime_home + Vector2(500.0, 0.0)
 	for i in range(120):
 		game._update_slime_squish(1.0 / 60.0)

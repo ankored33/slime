@@ -330,7 +330,7 @@ func _display_name(brush: Brush) -> String:
 		return brush.display_name
 	return brush.brush_id.capitalize().replace("-", " ")
 
-func resolve_collisions(slimes: Array[Node], pinch_brush: Brush = null) -> void:
+func resolve_collisions(slimes: Array[SlimeTarget], pinch_brush: Brush = null) -> void:
 	_resolve_brush_overlaps()
 	_apply_wall_push_out()
 	_apply_slime_push_out(slimes, pinch_brush)
@@ -362,7 +362,7 @@ func _apply_wall_push_out() -> void:
 		for wall in _wall_zones:
 			brush.position = GameRules.push_out_from_rect(brush.position, brush.hit_radius, wall.get_rect())
 
-func _apply_slime_push_out(slimes: Array[Node], pinch_brush: Brush = null) -> void:
+func _apply_slime_push_out(slimes: Array[SlimeTarget], pinch_brush: Brush = null) -> void:
 	for brush: Brush in brush_map.values():
 		if not brush.visible:
 			continue

@@ -27,7 +27,7 @@ func _run() -> void:
 	root.add_child(main)
 	await process_frame
 	main._characters[0]["opening_seen"] = true
-	main._on_character_start_pressed(0)
+	main._on_character_selected(0)
 	var game: Control = main.get_node("GameScreen")
 	await process_frame
 

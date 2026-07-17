@@ -5,8 +5,8 @@ signal day_finished(result: Dictionary)
 const ExpressionRules = preload("res://scripts/expression_rules.gd")
 const GameAudio = preload("res://scripts/game_audio.gd")
 const GameScreenBrushes = preload("res://scripts/game_screen_brushes.gd")
+const GameScreenToolActionsScript = preload("res://scripts/game_screen_tool_actions.gd")
 const DebugPanelScript = preload("res://scripts/debug_panel.gd")
-const WaxDropScript = preload("res://scripts/wax_drop.gd")
 
 @export var follow_speed := 16.0
 @export var finish_fx_duration := 5.0
@@ -31,6 +31,8 @@ var _exhaust_time_left := 0.0
 var _current_expression := ""
 var _gauge_map: Dictionary = {}
 var _brushes := GameScreenBrushes.new()
+var _tool_actions := GameScreenToolActionsScript.new()
+var _slimes: Array[SlimeTarget] = []
 var _slime_state := {
 	"left": {"polish": 0.0, "pain": 0.0},
 	"right": {"polish": 0.0, "pain": 0.0}
@@ -40,7 +42,6 @@ var _day_finish_count := 0
 var _is_running := false
 var _debug_panel: PanelContainer
 var _debug_expression_override := ""
-var _wax_drops: Array[WaxDrop] = []
 
 @onready var _playfield: Control = $Playfield
 @onready var _brush_rack: Control = $Playfield/BrushRack
@@ -61,9 +62,11 @@ var _wax_drops: Array[WaxDrop] = []
 @onready var _flash_rect: ColorRect = $FlashRect
 
 func _ready() -> void:
+	_slimes.assign([_left_slime, _right_slime])
 	_collect_gauges()
 	_end_day_button.pressed.connect(_on_end_day_pressed)
 	_brushes.setup(self, _playfield, _brush_rack, _end_day_button)
+	_tool_actions.setup(_playfield, _brushes, _slimes)
 	if OS.is_debug_build():
 		_debug_panel = DebugPanelScript.new(self)
 		_debug_panel.visible = false
@@ -81,20 +84,22 @@ func _input(event: InputEvent) -> void:
 	if not _is_running:
 		return
 	var action := _brushes.handle_input(event)
+	var blocked := _is_finish_fx_active() or _is_fail_fx_active()
 	if action.has("wax_origin"):
-		_spawn_wax_drop(action["wax_origin"])
+		_tool_actions.spawn_wax_drop(action["wax_origin"], blocked)
 	elif action.has("bite_requested"):
-		_apply_teeth_bite()
+		_tool_actions.apply_teeth_bite(_slime_state, _current_level(), blocked)
 	elif action.has("pinch_requested"):
-		_start_pinch()
+		_tool_actions.start_pinch(blocked)
 	elif action.has("pinch_released"):
-		_end_pinch()
+		_tool_actions.end_pinch()
 
 func _process(delta: float) -> void:
 	if not _is_running:
 		return
 	_brushes.update_drag(get_global_mouse_position(), follow_speed, delta)
-	_update_pinch(get_global_mouse_position(), delta)
+	_tool_actions.update_pinch(
+		get_global_mouse_position(), delta, _is_finish_fx_active() or _is_fail_fx_active())
 	_update_finish_fx(delta)
 	_update_fail_fx(delta)
 	_exhaust_time_left = maxf(0.0, _exhaust_time_left - delta)
@@ -103,11 +108,11 @@ func _process(delta: float) -> void:
 		for brush in _brushes.brush_map.values():
 			if brush.is_effective():
 				_apply_brush_effects(brush, delta)
-		_update_wax_drops(delta)
+		_tool_actions.update_wax_drops(delta, _slime_state, _current_level())
 	if not _is_fail_fx_active():
 		_apply_pain_recovery(touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
-	_brushes.resolve_collisions(get_tree().get_nodes_in_group("slime_targets"), _pinch_brush)
+	_brushes.resolve_collisions(_slimes, _tool_actions.pinch_brush)
 	if not _is_finish_fx_active() and not _is_fail_fx_active():
 		_check_finish()
 		_check_failure()
@@ -142,7 +147,7 @@ func _is_finish_fx_active() -> bool:
 
 func _start_finish_fx() -> void:
 	_finish_fx_time_left = finish_fx_duration
-	_clear_wax_drops()
+	_tool_actions.clear()
 	_finish_label.visible = true
 	_finish_label.pivot_offset = _finish_label.size / 2.0
 	_finish_label.scale = Vector2(0.4, 0.4)
@@ -150,7 +155,7 @@ func _start_finish_fx() -> void:
 	tween.tween_property(_finish_label, "scale", Vector2(1.3, 1.3), 0.35) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(_finish_label, "scale", Vector2.ONE, 0.3)
-	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+	for slime in _slimes:
 		slime.burst_hearts()
 	GameAudio.play_se("climax")
 
@@ -196,7 +201,7 @@ func _is_fail_fx_active() -> bool:
 func _start_fail_fx() -> void:
 	# 痛み限界: 絶望表情を見せてから日終了へ移る。
 	_fail_fx_time_left = fail_fx_duration
-	_clear_wax_drops()
+	_tool_actions.clear()
 	_brushes.deactivate_all()
 	GameAudio.play_se("despair")
 
@@ -223,14 +228,13 @@ func reset_day() -> void:
 	_finish_label.visible = false
 	_finish_label.scale = Vector2.ONE
 	_clear_fx_overlay()
-	_clear_wax_drops()
+	_tool_actions.clear()
 	_slime_state = {
 		"left": {"polish": 0.0, "pain": 0.0},
 		"right": {"polish": 0.0, "pain": 0.0}
 	}
-	_end_pinch()
 	_brushes.reset()
-	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+	for slime in _slimes:
 		slime.reset_pressure()
 		slime.set_hearts_active(false)
 	_update_expression()
@@ -243,7 +247,7 @@ func _collect_gauges() -> void:
 
 func _update_slime_squish(delta: float) -> void:
 	# Pressure depth uses the base radius so the spring has a stable input.
-	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+	for slime in _slimes:
 		var deepest := 0.0
 		var push := Vector2.ZERO
 		var touched_by_active := false
@@ -265,7 +269,7 @@ func _update_slime_squish(delta: float) -> void:
 		slime.set_hearts_active(touched_by_active and polish_winning)
 
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
-	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+	for slime in _slimes:
 		if brush.global_position.distance_to(slime.global_position) <= brush.hit_radius + slime.get_hit_radius():
 			var side := String(slime.side)
 			var state: Dictionary = _slime_state.get(side, {})
@@ -278,114 +282,6 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * rub * delta * PAIN_GAIN_SCALE, 0.0, 100.0)
 			state["pain"] = clamp(float(state["pain"]) - brush.get_effective_soothe_gain() * rub * delta, 0.0, 100.0)
 			_slime_state[side] = state
-
-func _spawn_wax_drop(origin: Vector2) -> void:
-	if _is_finish_fx_active() or _is_fail_fx_active():
-		return
-	var drop: WaxDrop = WaxDropScript.new()
-	drop.position = origin
-	_playfield.add_child(drop)
-	_wax_drops.append(drop)
-
-func _update_wax_drops(delta: float) -> void:
-	for index in range(_wax_drops.size() - 1, -1, -1):
-		var drop := _wax_drops[index]
-		var previous := drop.advance(delta)
-		var hit := false
-		for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
-			if _segment_distance_to_point(previous, drop.position, slime.position) \
-					<= drop.radius + slime.get_hit_radius():
-				_apply_wax_impact(String(slime.side))
-				hit = true
-				break
-		if hit or drop.is_expired(_playfield.size.y):
-			_wax_drops.remove_at(index)
-			drop.queue_free()
-
-func _apply_wax_impact(side: String) -> void:
-	var state: Dictionary = _slime_state[side]
-	var level := int(_species.get("level", 1))
-	state["polish"] = clampf(
-		float(state["polish"]) + GameRules.WAX_POLISH_IMPACT * GameRules.polish_bonus(level),
-		0.0, 100.0
-	)
-	state["pain"] = clampf(
-		float(state["pain"]) + GameRules.WAX_PAIN_IMPACT * GameRules.pain_resist(level),
-		0.0, 100.0
-	)
-	_slime_state[side] = state
-
-## 指の固有アクション: 右クリック押下で接触中の本体を挟んで固定し、
-## ボタンを離すまでマウスで引っ張れる（可動範囲は SlimeTarget 側が制限する）。
-var _pinch_brush: Brush
-var _pinch_slime: SlimeTarget
-var _pinch_grab_offset := Vector2.ZERO
-
-func _start_pinch() -> void:
-	if _is_finish_fx_active() or _is_fail_fx_active():
-		return
-	var finger := _brushes.held_brush
-	if finger == null or finger.brush_id != "finger":
-		return
-	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
-		# 衝突補正後は円同士がちょうど接するため、丸め誤差ぶんだけ許容する。
-		if finger.position.distance_to(slime.position) \
-				> finger.hit_radius + slime.get_hit_radius() + 1.0:
-			continue
-		_pinch_brush = finger
-		_pinch_slime = slime
-		_pinch_grab_offset = slime.position - finger.position
-		return
-
-func _end_pinch() -> void:
-	_pinch_brush = null
-	_pinch_slime = null
-
-func _update_pinch(global_mouse_position: Vector2, delta: float) -> void:
-	if _pinch_slime == null:
-		return
-	if _brushes.held_brush != _pinch_brush or not _pinch_brush.visible \
-			or _is_finish_fx_active() or _is_fail_fx_active():
-		_end_pinch()
-		return
-	var mouse_local: Vector2 = _playfield.get_global_transform().affine_inverse() \
-			* global_mouse_position
-	_pinch_slime.apply_pull(mouse_local + _pinch_grab_offset, delta)
-	# 指は挟んだ位置関係のまま本体に張り付く（可動範囲の先へは付いていかない）。
-	_pinch_brush.position = _pinch_slime.position - _pinch_grab_offset
-
-func _apply_teeth_bite() -> void:
-	if _is_finish_fx_active() or _is_fail_fx_active():
-		return
-	var teeth := _brushes.held_brush
-	if teeth == null or teeth.brush_id != "teeth":
-		return
-	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
-		# 衝突補正後は円同士がちょうど接するため、丸め誤差ぶんだけ許容する。
-		if teeth.position.distance_to(slime.position) \
-				> teeth.hit_radius + slime.get_hit_radius() + 1.0:
-			continue
-		var side := String(slime.side)
-		var state: Dictionary = _slime_state[side]
-		var level := int(_species.get("level", 1))
-		state["pain"] = clampf(
-			float(state["pain"]) + GameRules.BITE_PAIN_IMPACT * GameRules.pain_resist(level),
-			0.0, 100.0
-		)
-		_slime_state[side] = state
-
-func _segment_distance_to_point(start: Vector2, end: Vector2, point: Vector2) -> float:
-	var segment := end - start
-	if segment.length_squared() <= 0.0001:
-		return point.distance_to(start)
-	var t := clampf((point - start).dot(segment) / segment.length_squared(), 0.0, 1.0)
-	return point.distance_to(start + segment * t)
-
-func _clear_wax_drops() -> void:
-	for drop in _wax_drops:
-		if is_instance_valid(drop):
-			drop.queue_free()
-	_wax_drops.clear()
 
 ## アクティブなブラシが触れていない部位は痛みが自然回復する。
 func _apply_pain_recovery(touched_sides: Dictionary, delta: float) -> void:
@@ -409,7 +305,7 @@ func _compute_touch_info() -> Dictionary:
 	for brush: Brush in _brushes.brush_map.values():
 		if not brush.visible or not brush.is_effective():
 			continue
-		for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+		for slime in _slimes:
 			if brush.global_position.distance_to(slime.global_position) <= brush.hit_radius + slime.get_hit_radius():
 				touching = true
 				touched_sides[String(slime.side)] = true
@@ -514,6 +410,9 @@ func _update_brush_controls() -> void:
 func _get_combined_polish() -> float:
 	return float(_slime_state["left"]["polish"]) + float(_slime_state["right"]["polish"])
 
+func _current_level() -> int:
+	return int(_species.get("level", 1))
+
 func _check_finish() -> void:
 	if _get_combined_polish() < finish_threshold:
 		return
@@ -592,12 +491,12 @@ func _finish_day(failed_by_pain: bool) -> void:
 	if not _is_running:
 		return
 	_is_running = false
-	_clear_wax_drops()
+	_tool_actions.clear()
 	# デバッグの倍速を磨き画面の外へ持ち出さない。
 	Engine.time_scale = 1.0
 	GameAudio.update_loop("brush", "")
 	GameAudio.update_loop("heartbeat", "")
-	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+	for slime in _slimes:
 		slime.set_hearts_active(false)
 	var banked_finish := GameRules.banked_finish(_day_finish_count, failed_by_pain)
 	day_finished.emit({
