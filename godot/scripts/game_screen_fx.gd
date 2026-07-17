@@ -9,6 +9,11 @@ const EXHAUST_DURATION := 4.0
 const FINISH_FLASH_COLOR := Color(1.0, 0.88, 0.93)
 const FAIL_FLASH_COLOR := Color(0.35, 0.02, 0.06)
 
+## 連鎖FINISH用の軽量パルス。進行を止めず、薄いフラッシュが打たれるだけ。
+## 高速連鎖では毎フレーム呼ばれるため、ハート演出はクールダウンで間引く。
+const CHAIN_PULSE_DURATION := 0.18
+const CHAIN_HEARTS_COOLDOWN := 0.5
+
 var _host: Node
 var _playfield: Control
 var _flash_rect: ColorRect
@@ -19,6 +24,8 @@ var _fail_duration := 2.5
 var _finish_time_left := 0.0
 var _fail_time_left := 0.0
 var _exhaust_time_left := 0.0
+var _chain_pulse_left := 0.0
+var _chain_hearts_cooldown := 0.0
 
 var finish_active: bool:
 	get:
@@ -53,6 +60,8 @@ func reset() -> void:
 	_finish_time_left = 0.0
 	_fail_time_left = 0.0
 	_exhaust_time_left = 0.0
+	_chain_pulse_left = 0.0
+	_chain_hearts_cooldown = 0.0
 	_finish_label.visible = false
 	_finish_label.scale = Vector2.ONE
 	_clear_overlay()
@@ -74,9 +83,17 @@ func start_fail() -> void:
 	_fail_time_left = _fail_duration
 	GameAudio.play_se("despair")
 
+func pulse_chain() -> void:
+	_chain_pulse_left = CHAIN_PULSE_DURATION
+	if _chain_hearts_cooldown <= 0.0:
+		_chain_hearts_cooldown = CHAIN_HEARTS_COOLDOWN
+		for slime in _slimes:
+			slime.burst_hearts()
+
 func update(delta: float) -> void:
 	_update_finish(delta)
 	_update_fail(delta)
+	_update_chain_pulse(delta)
 	_exhaust_time_left = maxf(0.0, _exhaust_time_left - delta)
 
 func _update_finish(delta: float) -> void:
@@ -105,6 +122,21 @@ func _update_fail(delta: float) -> void:
 	if _fail_time_left == 0.0:
 		_apply_shake(0.0)
 		fail_finished.emit()
+
+func _update_chain_pulse(delta: float) -> void:
+	_chain_hearts_cooldown = maxf(0.0, _chain_hearts_cooldown - delta)
+	if _chain_pulse_left <= 0.0:
+		return
+	# フル演出・失敗演出が走っている間はそちらのフラッシュを優先する。
+	if finish_active or fail_active:
+		_chain_pulse_left = 0.0
+		return
+	_chain_pulse_left = maxf(0.0, _chain_pulse_left - delta)
+	var flash := FINISH_FLASH_COLOR
+	flash.a = 0.22 * (_chain_pulse_left / CHAIN_PULSE_DURATION)
+	_flash_rect.color = flash
+	if _chain_pulse_left == 0.0:
+		_clear_overlay()
 
 func _finish_flash_alpha(elapsed: float) -> float:
 	if elapsed < 0.2:

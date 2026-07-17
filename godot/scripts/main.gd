@@ -210,10 +210,10 @@ func _render_result() -> void:
 	_result_body.text = (
 		"[b]%s[/b]\n"
 		+ "%s\n\n"
-		+ "本日のFINISH: %d\n"
-		+ "持ち帰りFINISH: %d\n"
+		+ "本日のFINISH: %s\n"
+		+ "持ち帰りFINISH: %s\n"
 		+ "レベル: %d / %d\n"
-		+ "累計FINISH: %d\n"
+		+ "累計FINISH: %s\n"
 		+ "痛み失敗: %d\n\n"
 		+ "成長で伸びるもの:\n"
 		+ "- 感度（快感の上がりやすさ）\n"
@@ -223,11 +223,11 @@ func _render_result() -> void:
 	) % [
 		str(_last_result.get("species_name", "？？？")),
 		status_text,
-		int(_last_result.get("day_finish_count", 0)),
-		int(_last_result.get("banked_finish_count", 0)),
+		NumberFormat.group(int(_last_result.get("day_finish_count", 0))),
+		NumberFormat.group(int(_last_result.get("banked_finish_count", 0))),
 		int(chara["level"]),
 		GameRules.MAX_LEVEL,
-		int(chara["finish_total"]),
+		NumberFormat.group(int(chara["finish_total"])),
 		int(chara["pain_fail_total"])
 	]
 

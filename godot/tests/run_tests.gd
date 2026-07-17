@@ -6,6 +6,7 @@ extends SceneTree
 const GameRules = preload("res://scripts/game_rules.gd")
 const ExpressionRules = preload("res://scripts/expression_rules.gd")
 const BrushScript = preload("res://scripts/brush.gd")
+const NumberFormat = preload("res://scripts/number_format.gd")
 
 var _failures := 0
 var _passes := 0
@@ -16,6 +17,8 @@ func _init() -> void:
 	_test_polish_bonus()
 	_test_pain_resist()
 	_test_retention_ratio()
+	_test_chain_finishes()
+	_test_number_format()
 	_test_brush_unlocks()
 	_test_banked_finish()
 	_test_push_out_from_rect()
@@ -46,9 +49,13 @@ func _test_level_for_finish_total() -> void:
 	_check_eq(GameRules.level_for_finish_total(4), 2, "level: 4 finish -> Lv2")
 	_check_eq(GameRules.level_for_finish_total(5), 3, "level: 5 finish -> Lv3")
 	_check_eq(GameRules.level_for_finish_total(20), 6, "level: 20 finish -> Lv6")
-	_check_eq(GameRules.level_for_finish_total(53), 9, "level: 53 finish -> Lv9")
-	_check_eq(GameRules.level_for_finish_total(54), 10, "level: 54 finish -> Lv10")
-	_check_eq(GameRules.level_for_finish_total(999), GameRules.MAX_LEVEL, "level: capped at MAX_LEVEL")
+	_check_eq(GameRules.level_for_finish_total(299), 6, "level: 299 finish -> Lv6")
+	_check_eq(GameRules.level_for_finish_total(300), 7, "level: 300 finish -> Lv7")
+	_check_eq(GameRules.level_for_finish_total(10000), 8, "level: 10000 finish -> Lv8")
+	_check_eq(GameRules.level_for_finish_total(300000), 9, "level: 300000 finish -> Lv9")
+	_check_eq(GameRules.level_for_finish_total(9999999), 9, "level: 9999999 finish -> Lv9")
+	_check_eq(GameRules.level_for_finish_total(10000000), 10, "level: 10000000 finish -> Lv10")
+	_check_eq(GameRules.level_for_finish_total(10000000000), GameRules.MAX_LEVEL, "level: capped at MAX_LEVEL")
 	_check_eq(GameRules.level_for_finish_total(-5), 1, "level: negative finish clamps to Lv1")
 	_check_eq(GameRules.level_for_finish_total(0, 5), 5, "level: saved level wins when higher")
 	_check_eq(GameRules.level_for_finish_total(0, 99), GameRules.MAX_LEVEL, "level: saved level capped")
@@ -69,14 +76,54 @@ func _test_polish_bonus() -> void:
 func _test_pain_resist() -> void:
 	_check_near(GameRules.pain_resist(1), 1.0, "pain_resist: Lv1 baseline")
 	_check_near(GameRules.pain_resist(5), 0.8, "pain_resist: Lv5")
-	_check_near(GameRules.pain_resist(10), 0.55, "pain_resist: Lv10")
-	_check_near(GameRules.pain_resist(100), 0.5, "pain_resist: floored at 0.5")
+	_check_near(GameRules.pain_resist(10), 0.0, "pain_resist: Lv10 is fully immune")
+	_check_near(GameRules.pain_resist(100), 0.0, "pain_resist: clamped to Lv10 value")
 
 func _test_retention_ratio() -> void:
 	_check_near(GameRules.retention_ratio(1), 0.0, "retention: Lv1 keeps nothing")
-	_check_near(GameRules.retention_ratio(4), 0.21, "retention: Lv4")
-	_check_near(GameRules.retention_ratio(10), 0.63, "retention: Lv10")
-	_check_near(GameRules.retention_ratio(100), 0.65, "retention: capped at 0.65")
+	_check_near(GameRules.retention_ratio(4), 0.35, "retention: Lv4")
+	_check_near(GameRules.retention_ratio(10), 0.9999967, "retention: Lv10 chains at ~100k/sec")
+	_check_near(GameRules.retention_ratio(100), 0.9999967, "retention: clamped to Lv10 value")
+
+func _test_chain_finishes() -> void:
+	var below: Dictionary = GameRules.chain_finishes(500.0, 900.0, 0.63)
+	_check_eq(int(below["count"]), 0, "chain: below threshold yields nothing")
+	_check_near(float(below["factor"]), 1.0, "chain: below threshold keeps polish")
+
+	var no_retention: Dictionary = GameRules.chain_finishes(1700.0, 1700.0, 0.0)
+	_check_eq(int(no_retention["count"]), 1, "chain: zero retention is a single finish")
+	_check_near(float(no_retention["factor"]), 0.0, "chain: zero retention drains polish")
+
+	var single: Dictionary = GameRules.chain_finishes(1000.0, 900.0, 0.63)
+	_check_eq(int(single["count"]), 1, "chain: one crossing is one finish")
+	_check_near(float(single["factor"]), 0.63, "chain: single finish keeps retention ratio")
+
+	var multi: Dictionary = GameRules.chain_finishes(1000.0, 900.0, 0.95)
+	_check_eq(int(multi["count"]), 3, "chain: high retention chains within one frame")
+	_check_near(float(multi["factor"]), pow(0.95, 3), "chain: factor is retention^count")
+
+	# 終盤想定: 1フレームの供給超過で千回超のFINISHが立つ。
+	var endgame_r := GameRules.retention_ratio(10)
+	var endgame: Dictionary = GameRules.chain_finishes(906.5, 900.0, endgame_r)
+	var count := int(endgame["count"])
+	var remaining: float = 906.5 * float(endgame["factor"])
+	_check(count > 1000, "chain: endgame frame yields 1000+ finishes (got %d)" % count)
+	_check(remaining < 900.0, "chain: remaining polish drops below threshold")
+	_check(remaining / endgame_r >= 900.0, "chain: count is minimal (one less would still cross)")
+
+func _test_number_format() -> void:
+	_check_eq(NumberFormat.group(0), "0", "format: zero")
+	_check_eq(NumberFormat.group(999), "999", "format: no separator under 1000")
+	_check_eq(NumberFormat.group(1234567), "1,234,567", "format: comma grouping")
+	_check_eq(NumberFormat.group(-9876), "-9,876", "format: negative grouping")
+	_check_eq(NumberFormat.ja_unit(0.4), "0.4", "format: sub-10 rate keeps a decimal")
+	_check_eq(NumberFormat.ja_unit(5.0), "5", "format: whole rate drops .0")
+	_check_eq(NumberFormat.ja_unit(42.0), "42", "format: two digits plain")
+	_check_eq(NumberFormat.ja_unit(9999.0), "9999", "format: below 1万 stays plain")
+	_check_eq(NumberFormat.ja_unit(100000.0), "10万", "format: 10万 flat")
+	_check_eq(NumberFormat.ja_unit(123456.0), "12.3万", "format: 万 with decimal")
+	_check_eq(NumberFormat.ja_unit(320000000.0), "3.2億", "format: 億")
+	_check_eq(NumberFormat.ja_unit(1500000000000.0), "1.5兆", "format: 兆")
 
 func _test_brush_unlocks() -> void:
 	for brush_id: String in GameRules.BRUSH_UNLOCK_LEVELS:

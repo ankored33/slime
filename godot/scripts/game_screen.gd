@@ -16,6 +16,14 @@ const DebugPanelScript = preload("res://scripts/debug_panel.gd")
 # 痛み上昇の全体係数（快感とのバランス調整用）。
 const PAIN_GAIN_SCALE := 0.35
 
+# 前回FINISHからこの秒数以上空いた単発FINISHは5秒のフル演出（儀式期）。
+# それ未満で連続する場合は進行を止めない軽量パルスに切り替え、
+# 数字の伸びそのものを主役にする（連鎖期）。
+const FULL_FINISH_FX_MIN_INTERVAL := 3.0
+
+# FINISHレート表示の集計間隔（この秒数ごとに回数を平均してレート更新）。
+const RATE_SAMPLE_WINDOW := 0.5
+
 # Level-driven; refreshed in setup_species.
 var finish_threshold := GameRules.finish_threshold(1)
 
@@ -31,6 +39,11 @@ var _slime_state := {
 }
 var _species: Dictionary = {}
 var _day_finish_count := 0
+var _day_time := 0.0
+var _last_finish_at := -1000.0
+var _rate_accum := 0
+var _rate_window := 0.0
+var _finish_rate := 0.0
 var _is_running := false
 var _menu_paused := false
 var _debug_panel: PanelContainer
@@ -94,6 +107,8 @@ func _input(event: InputEvent) -> void:
 func _process(delta: float) -> void:
 	if not _is_running or _menu_paused:
 		return
+	_day_time += delta
+	_update_finish_rate(delta)
 	_brushes.update_drag(get_global_mouse_position(), follow_speed, delta)
 	_tool_actions.update_pinch(
 		get_global_mouse_position(), delta, _fx.finish_active or _fx.fail_active)
@@ -171,6 +186,11 @@ func abandon_day() -> void:
 
 func reset_day() -> void:
 	_day_finish_count = 0
+	_day_time = 0.0
+	_last_finish_at = -1000.0
+	_rate_accum = 0
+	_rate_window = 0.0
+	_finish_rate = 0.0
 	_is_running = true
 	_menu_paused = false
 	_current_expression = ""
@@ -277,7 +297,7 @@ func _update_expression(info: Dictionary = {}) -> void:
 		"polish_ratio": polish_ratio,
 		"polish_rate": float(info["polish_rate"]),
 		"pain_rate": float(info["pain_rate"]),
-		"climax": _fx.finish_active,
+		"climax": _fx.finish_active or _is_chain_climax(),
 		"despair": _fx.fail_active,
 		"exhausted": _fx.exhausted
 	})
@@ -330,7 +350,10 @@ func _update_gauges() -> void:
 	_set_gauge("pain-R", _slime_state["right"]["pain"])
 	_finish_progress.max_value = finish_threshold
 	_finish_progress.value = _get_combined_polish()
-	_day_finish_label.text = "本日のFINISH: %d" % _day_finish_count
+	var day_text := "本日のFINISH: %s" % NumberFormat.group(_day_finish_count)
+	if _finish_rate >= 0.5:
+		day_text += "（毎秒 %s）" % NumberFormat.ja_unit(_finish_rate)
+	_day_finish_label.text = day_text
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
 	if peak_pain >= GameRules.GAUGE_MAX * 0.8:
 		_danger_label.text = "[b]状態[/b]\n痛み：限界寸前"
@@ -361,16 +384,36 @@ func _current_level() -> int:
 	return int(_species.get("level", 1))
 
 func _check_finish() -> void:
-	if _get_combined_polish() < finish_threshold:
-		return
-	_day_finish_count += 1
 	var level := int(_species.get("level", 1))
-	var retention_ratio := GameRules.retention_ratio(level)
+	var chain := GameRules.chain_finishes(
+		_get_combined_polish(), finish_threshold, GameRules.retention_ratio(level))
+	var count := int(chain["count"])
+	if count <= 0:
+		return
+	_day_finish_count += count
+	_rate_accum += count
 	for side in ["left", "right"]:
 		var state: Dictionary = _slime_state[side]
-		state["polish"] = float(state["polish"]) * retention_ratio
+		state["polish"] = float(state["polish"]) * float(chain["factor"])
 		_slime_state[side] = state
-	_start_finish_fx()
+	if count == 1 and _day_time - _last_finish_at >= FULL_FINISH_FX_MIN_INTERVAL:
+		_start_finish_fx()
+	else:
+		_fx.pulse_chain()
+	_last_finish_at = _day_time
+
+## 直近の集計窓のFINISH回数からレート（回/秒）を更新する。
+func _update_finish_rate(delta: float) -> void:
+	_rate_window += delta
+	if _rate_window < RATE_SAMPLE_WINDOW:
+		return
+	_finish_rate = float(_rate_accum) / _rate_window
+	_rate_accum = 0
+	_rate_window = 0.0
+
+## 連鎖中（直前のFINISHから間もない）は絶頂表情に張り付かせる。
+func _is_chain_climax() -> bool:
+	return _day_finish_count > 0 and (_day_time - _last_finish_at) < 0.5
 
 func _check_failure() -> void:
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
