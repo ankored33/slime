@@ -117,7 +117,8 @@ func _process(delta: float) -> void:
 
 func setup_species(species: Dictionary) -> void:
 	_species = species.duplicate(true)
-	_title_label.text = str(_species.get("name", "スライム"))
+	var display_name := CharacterDefs.display_name(_species)
+	_title_label.text = display_name if display_name != "" else "スライム"
 	var left_config: Dictionary = _species.get("left", {})
 	var right_config: Dictionary = _species.get("right", {})
 	_apply_slime_layout(_left_slime, left_config)
@@ -482,7 +483,7 @@ func _finish_day(failed_by_pain: bool) -> void:
 	var banked_finish := GameRules.banked_finish(_day_finish_count, failed_by_pain)
 	day_finished.emit({
 		"species_id": str(_species.get("id", "")),
-		"species_name": str(_species.get("name", "Slime")),
+		"species_name": CharacterDefs.display_name(_species),
 		"day_finish_count": _day_finish_count,
 		"banked_finish_count": banked_finish,
 		"failed_by_pain": failed_by_pain

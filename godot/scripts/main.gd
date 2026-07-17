@@ -104,9 +104,15 @@ func _refresh_character_card(index: int) -> void:
 	var profile_body: RichTextLabel = info.get_node("ProfileBody")
 	var portrait: TextureRect = card.get_node("Margin/VBox/PortraitArea/Portrait")
 	var placeholder: Label = card.get_node("Margin/VBox/PortraitArea/PortraitPlaceholder")
-	name_label.text = str(chara["name"])
-	epithet_label.text = str(chara.get("epithet", ""))
-	var opening_state := "済" if bool(chara.get("opening_seen", false)) else "未（開始時に再生）"
+	var opening_seen := bool(chara.get("opening_seen", false))
+	# 既読後は本名・二つ名を出さず、虜囚番号・虜囚区分の表記に置き換える。
+	name_label.text = CharacterDefs.display_name(chara)
+	epithet_label.text = CharacterDefs.display_epithet(chara)
+	var opening_state := "済" if opening_seen else "未（開始時に再生）"
+	# ポートレートと同様、オープニング済ならプロフィール文も差し替える（未設定なら通常文）。
+	var profile_text := str(chara.get("profile_after_opening", "")) if opening_seen else ""
+	if profile_text == "":
+		profile_text = str(chara.get("profile", ""))
 	profile_body.text = (
 		"%s\n\n"
 		+ "レベル: [b]%d[/b] / %d\n"
@@ -114,7 +120,7 @@ func _refresh_character_card(index: int) -> void:
 		+ "痛み失敗: %d\n"
 		+ "オープニング: %s"
 	) % [
-		str(chara.get("profile", "")),
+		profile_text,
 		int(chara["level"]),
 		GameRules.MAX_LEVEL,
 		int(chara["finish_total"]),
@@ -122,7 +128,7 @@ func _refresh_character_card(index: int) -> void:
 		opening_state
 	]
 	var portrait_path := str(chara.get(
-		"portrait_after_opening" if bool(chara.get("opening_seen", false)) else "portrait",
+		"portrait_after_opening" if opening_seen else "portrait",
 		""
 	))
 	if portrait_path == "":

@@ -54,6 +54,11 @@ func _run_tests() -> void:
 	var card0_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
 	var card1_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
 	_check(card0_name.text != "？？？" and card1_name.text != "？？？", "select: both cards populated")
+	var card0_epithet: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/EpithetLabel")
+	_check_eq(card0_name.text, String(main._characters[0]["name"]),
+		"select: real name before opening")
+	_check_eq(card0_epithet.text, String(main._characters[0]["epithet"]),
+		"select: epithet shown before opening")
 	var card0_portrait: TextureRect = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/Portrait")
 	var card1_portrait: TextureRect = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/Portrait")
 	_check(card0_portrait.texture != null, "select: general portrait loaded")
@@ -62,6 +67,8 @@ func _run_tests() -> void:
 		"select: general uses initial portrait before opening")
 	var profile_body: RichTextLabel = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/ProfileBody")
 	_check(profile_body.fit_content, "select: profile overlay shrinks to its content")
+	_check(profile_body.text.begins_with(String(main._characters[0]["profile"])),
+		"select: profile shows pre-opening text")
 	var instruction: Label = main.get_node("CanvasLayer/SelectScreen/InstructionOverlay/Label")
 	_check_eq(instruction.text, "キャラクターを選択してください。", "select: instruction is overlaid")
 	var card0_info: PanelContainer = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay")
@@ -131,6 +138,12 @@ func _run_tests() -> void:
 	_check(select.visible and not result.visible, "result return -> select screen")
 	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait_after_opening.png"),
 		"select: general portrait changes after opening")
+	_check(profile_body.text.begins_with(String(main._characters[0]["profile_after_opening"])),
+		"select: profile switches after opening")
+	_check_eq(card0_name.text, String(main._characters[0]["name_after_opening"]),
+		"select: prisoner number replaces name after opening")
+	_check_eq(card0_epithet.text, String(main._characters[0]["epithet_after_opening"]),
+		"select: epithet becomes prisoner class after opening")
 
 	main._characters[1]["level"] = 5
 	main._characters[1]["finish_total"] = 14
@@ -140,7 +153,10 @@ func _run_tests() -> void:
 	var admiral_reset: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugResetButton")
 	# headless テストは常にデバッグビルドで走る。リリース時の非表示はここでは検証できない。
 	_check(admiral_reset.visible, "debug reset: visible in debug builds")
+	_check_eq(card1_name.text, String(main._characters[1]["name_after_opening"]),
+		"select: admiral card shows prisoner number when opening seen")
 	admiral_reset.emit_signal("pressed")
+	_check_eq(card1_name.text, String(main._characters[1]["name"]), "debug reset: real name restored")
 	_check_eq(int(main._characters[1]["level"]), 1, "debug reset: level")
 	_check_eq(int(main._characters[1]["finish_total"]), 0, "debug reset: finish total")
 	_check_eq(int(main._characters[1]["pain_fail_total"]), 0, "debug reset: pain failures")

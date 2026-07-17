@@ -11,7 +11,25 @@ class_name CharacterDefs
 ##   climax（絶頂）, despair（絶望）, exhausted（憔悴）。詳細は expression_rules.gd。
 ## - opening_pages: style = "split"（左に立ち絵・右にテキスト）| "blackout"（暗転＋中央テキスト）。
 ##   split の portrait にはキャラ定義のキー名（portrait / portrait_after_opening）を書く。
+## - profile はオープニング未読時、profile_after_opening は既読時に選択画面へ出る
+##   （after 側が空文字なら profile を使い回す）。
+## - name_after_opening / epithet_after_opening: オープニング既読後の表示名と肩書き
+##   （虜囚番号・虜囚区分）。既読後は全画面で本名・二つ名の代わりにこれが出る。
 ## - level / finish_total / pain_fail_total / opening_seen は初期値。実際の値はセーブが上書きする。
+
+## 表示名の解決だけここに置く（どの画面も同じ規則で名前を出すため）。
+static func display_name(chara: Dictionary) -> String:
+	return _resolve_after_opening(chara, "name", "name_after_opening")
+
+static func display_epithet(chara: Dictionary) -> String:
+	return _resolve_after_opening(chara, "epithet", "epithet_after_opening")
+
+static func _resolve_after_opening(chara: Dictionary, base_key: String, after_key: String) -> String:
+	if bool(chara.get("opening_seen", false)):
+		var after := str(chara.get(after_key, ""))
+		if after != "":
+			return after
+	return str(chara.get(base_key, ""))
 
 static func create() -> Array[Dictionary]:
 	return [
@@ -19,11 +37,14 @@ static func create() -> Array[Dictionary]:
 			"id": "general",
 			"name": "アリスティア",
 			"epithet": "《眩耀たる漆黒》",
+			"name_after_opening": "虜囚番号N10564",
+			"epithet_after_opening": "帝国の一般虜囚",
 			"portrait": "res://assets/chara/general/portrait.png",
 			"portrait_after_opening": "res://assets/chara/general/portrait_after_opening.png",
 			"game_background": "res://assets/chara/general/game_background.png",
 			"expressions": {},
-			"profile": "虜囚番号Ｎ１０５６４　帝国の一般虜囚。\n性別：女　年齢：21　捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院\n\n膂力　S　　技巧　SS　　魔力　S\n策略　B　　戦略　A\n\nネブラレア王国最強の将軍。その剣は帝国にとって敗北を運ぶ魔剣であり、彼女自身が帝国を穿つ最強の矛であった。",
+			"profile": "膂力　S　　技巧　SS　　魔力　S\n策略　B　　戦略　A\n\nネブラレア王国最強の将軍。その剣は帝国にとって敗北を運ぶ魔剣であり、彼女自身が帝国を穿つ最強の矛であった。",
+			"profile_after_opening": "虜囚番号N10564　帝国の一般虜囚。\n性別：女　年齢：21　捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(1.0, 0.71, 0.78, 0.92),
 			"left": {
 				"position": Vector2(377.0, 592.0),
@@ -60,11 +81,14 @@ static func create() -> Array[Dictionary]:
 			"id": "admiral",
 			"name": "チチカ・エルマ",
 			"epithet": "《緋色の方程式》",
+			"name_after_opening": "虜囚番号C39312",
+			"epithet_after_opening": "帝国の一般虜囚",
 			"portrait": "res://assets/chara/admiral/portrait.png",
 			"portrait_after_opening": "res://assets/chara/admiral/portrait_after_opening.png",
 			"game_background": "res://assets/chara/admiral/game_background.png",
 			"expressions": {},
-			"profile": "虜囚番号Ｃ３９３１２　帝国の一般虜囚。\n性別：女　年齢：155　捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院\n\n膂力　C　　技巧　C　　魔力　B\n策略　S　　戦略　SSS\n\nザコチック条約機構軍を統べる総督。その軍略は完璧であり、帝国の敗北は彼女がペンを走らせたその瞬間に約束されていた。",
+			"profile": "膂力　C　　技巧　C　　魔力　B\n策略　S　　戦略　SSS\n\nザコチック条約機構軍総督。",
+			"profile_after_opening": "虜囚番号C39312　帝国の一般虜囚。\n性別：女　年齢：155　捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(0.47, 0.9, 0.78, 0.92),
 			"left": {
 				"position": Vector2(341.0, 455.0),
