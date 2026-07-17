@@ -35,11 +35,31 @@ var is_held := false:
 var _prev_position := Vector2.INF
 var _rub_speed := 0.0
 
+# 画像素材のドロップイン先。<brush_id>.png を置くだけでプレースホルダ多角形と差し替わる。
+const TEXTURE_DIR := "res://assets/brushes"
+
+var _sprite: Sprite2D
+
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _body: Polygon2D = $Body
 
 func _ready() -> void:
 	add_to_group("brushes")
+	_load_texture()
+	_sync_visuals()
+
+func _load_texture() -> void:
+	if brush_id == "":
+		return
+	var path := "%s/%s.png" % [TEXTURE_DIR, brush_id]
+	if ResourceLoader.exists(path, "Texture2D"):
+		_apply_texture(load(path))
+
+func _apply_texture(texture: Texture2D) -> void:
+	if _sprite == null:
+		_sprite = Sprite2D.new()
+		add_child(_sprite)
+	_sprite.texture = texture
 	_sync_visuals()
 
 func _process(delta: float) -> void:
@@ -83,6 +103,19 @@ func _sync_visuals() -> void:
 	var shape := CircleShape2D.new()
 	shape.radius = hit_radius
 	_collision.shape = shape
+
+	_body.visible = _sprite == null
+	if _sprite != null:
+		# 画像の最大辺を当たり判定の直径に合わせて伸縮する（キャンバス余白込みで発注済み）。
+		var tex_size: Vector2 = _sprite.texture.get_size()
+		_sprite.scale = Vector2.ONE * (hit_radius * 2.0 / maxf(tex_size.x, tex_size.y))
+		var brightness := 1.0
+		if is_active:
+			brightness += 0.18
+		if is_held:
+			brightness += 0.12
+		_sprite.modulate = Color(brightness, brightness, brightness, 1.0)
+		return
 
 	var points := PackedVector2Array()
 	for i in range(20):

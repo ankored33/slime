@@ -6,12 +6,18 @@ extends SceneTree
 var _failures := 0
 var _passes := 0
 var _done := false
+var _completed := false
 
 func _process(_delta: float) -> bool:
 	if _done:
 		return true
 	_done = true
 	_run_tests()
+	# スクリプトエラーで _run_tests が途中中断すると quit が呼ばれず exit 0 で
+	# 成功扱いになってしまうため、完走フラグで検出して確実に落とす。
+	if not _completed:
+		printerr("FAIL: flow tests aborted before completion (script error above)")
+		quit(1)
 	return true
 
 func _run_tests() -> void:
@@ -101,6 +107,17 @@ func _run_tests() -> void:
 	_check(not brush_rotary.visible, "Lv1: rotating brush locked")
 	_check(bool(brush_rotary.is_rotating), "rotating brush: scene marks it as rotating")
 
+	# ブラシ画像フック: 素材の有無とプレースホルダ表示が対応していること。
+	var finger_has_texture := ResourceLoader.exists("res://assets/brushes/finger.png", "Texture2D")
+	_check(brush_finger._body.visible == not finger_has_texture,
+		"brush: placeholder shown exactly when no texture asset exists")
+	var brush_texture := ImageTexture.create_from_image(
+		Image.create(128, 128, false, Image.FORMAT_RGBA8))
+	brush_fude._apply_texture(brush_texture)
+	_check(not brush_fude._body.visible, "brush: placeholder hidden when texture applied")
+	_check(absf(brush_fude._sprite.scale.x - brush_fude.hit_radius * 2.0 / 128.0) < 0.001,
+		"brush: texture scaled to hit-circle diameter")
+
 	main._on_day_finished({
 		"species_id": "general",
 		"species_name": "test",
@@ -146,6 +163,7 @@ func _run_tests() -> void:
 	else:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
 
+	_completed = true
 	print("---")
 	print("Passed: %d, Failed: %d" % [_passes, _failures])
 	quit(1 if _failures > 0 else 0)
