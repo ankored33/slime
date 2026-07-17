@@ -43,8 +43,8 @@ static func create() -> Array[Dictionary]:
 			"portrait_after_opening": "res://assets/chara/general/portrait_after_opening.png",
 			"game_background": "res://assets/chara/general/game_background.png",
 			"expressions": {},
-			"profile": "膂力　S　　技巧　SS　　魔力　S\n策略　B　　戦略　A\n\nネブラレア王国最強の将軍。その剣は帝国にとって敗北を運ぶ魔剣であり、彼女自身が帝国を穿つ最強の矛であった。",
-			"profile_after_opening": "虜囚番号N10564　帝国の一般虜囚。\n性別：女　年齢：21　捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
+			"profile": "ネブラレア王国将軍／同国軍総司令官\n\n能力評価：\n膂力　S\n技巧　SS\n魔力　S\n策略　B\n戦略　A",
+			"profile_after_opening": "種族：人間\n性別：女\n年齢：21\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(1.0, 0.71, 0.78, 0.92),
 			"left": {
 				"position": Vector2(377.0, 592.0),
@@ -87,8 +87,8 @@ static func create() -> Array[Dictionary]:
 			"portrait_after_opening": "res://assets/chara/admiral/portrait_after_opening.png",
 			"game_background": "res://assets/chara/admiral/game_background.png",
 			"expressions": {},
-			"profile": "膂力　C　　技巧　C　　魔力　B\n策略　S　　戦略　SSS\n\nザコチック条約機構軍総督。",
-			"profile_after_opening": "虜囚番号C39312　帝国の一般虜囚。\n性別：女　年齢：155　捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
+			"profile": "ザコチック条約機構 軍事委員会議長\n\n能力評価：\n膂力　C\n技巧　C\n魔力　B\n策略　S\n戦略　SSS",
+			"profile_after_opening": "種族：ハイエルフ\n性別：女\n年齢：455\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(0.47, 0.9, 0.78, 0.92),
 			"left": {
 				"position": Vector2(341.0, 455.0),

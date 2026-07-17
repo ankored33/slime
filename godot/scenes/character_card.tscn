@@ -104,15 +104,15 @@ theme_override_constants/margin_bottom = 14
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="NameLabel" type="Label" parent="Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "？？？"
-
 [node name="EpithetLabel" type="Label" parent="Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 modulate = Color(0.8, 0.84, 0.9, 0.92)
+
+[node name="NameLabel" type="Label" parent="Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "？？？"
 
 [node name="ProfileBody" type="RichTextLabel" parent="Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
 layout_mode = 2

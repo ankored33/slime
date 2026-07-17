@@ -64,24 +64,23 @@ func refresh_character_card(index: int, force_original: bool = false) -> void:
 	var use_after_opening := opening_seen and not force_original
 	name_label.text = str(chara.get("name", "")) if force_original else CharacterDefs.display_name(chara)
 	epithet_label.text = str(chara.get("epithet", "")) if force_original else CharacterDefs.display_epithet(chara)
-	var opening_state := "済" if opening_seen else "未（開始時に再生）"
 	var profile_text := str(chara.get("profile_after_opening", "")) if use_after_opening else ""
 	if profile_text == "":
 		profile_text = str(chara.get("profile", ""))
-	profile_body.text = (
-		"%s\n\n"
-		+ "レベル: [b]%d[/b] / %d\n"
-		+ "累計FINISH: %d\n"
-		+ "痛み失敗: %d\n"
-		+ "オープニング: %s"
-	) % [
-		profile_text,
-		int(chara["level"]),
-		GameRules.MAX_LEVEL,
-		int(chara["finish_total"]),
-		int(chara["pain_fail_total"]),
-		opening_state
-	]
+	var stats_text := ""
+	if use_after_opening:
+		stats_text = (
+			"\n\n"
+			+ "レベル: [b]%d[/b] / %d\n"
+			+ "累計FINISH: %d\n"
+			+ "痛み失敗: %d"
+		) % [
+			int(chara["level"]),
+			GameRules.MAX_LEVEL,
+			int(chara["finish_total"]),
+			int(chara["pain_fail_total"])
+		]
+	profile_body.text = profile_text + stats_text
 	var portrait_path := str(chara.get(
 		"portrait_after_opening" if use_after_opening else "portrait",
 		""
