@@ -173,6 +173,58 @@ func _run_tests() -> void:
 		"teeth: bite has no polish effect")
 	game.reset_day()
 
+	# 押し込み変位: 接触中は押された方向へ少し動き、離すとバネで元の位置へ戻る。
+	var slime_home: Vector2 = left_slime.position
+	game._brushes.toggle_from_toolbox("finger")
+	brush_finger.position = left_slime.position - Vector2(left_slime.radius, 0.0)
+	for i in range(30):
+		game._update_slime_squish(1.0 / 60.0)
+	_check(left_slime.position.x > slime_home.x + 1.0,
+		"push: slime is displaced away from a pressing brush")
+	_check(left_slime.position.distance_to(slime_home) <= left_slime.MAX_PUSH_DISTANCE + 0.001,
+		"push: displacement stays within the max range")
+	brush_finger.position = slime_home + Vector2(500.0, 0.0)
+	for i in range(120):
+		game._update_slime_squish(1.0 / 60.0)
+	_check(left_slime.position.distance_to(slime_home) < 1.0,
+		"push: slime springs back home after release")
+	game.reset_day()
+	_check_eq(left_slime.position, slime_home, "push: reset restores the home position")
+
+	# 指の固有アクション: 接触中に右クリックで挟んで固定し、可動範囲まで引っ張れる。
+	var playfield: Control = main.get_node("GameScreen/Playfield")
+	game._brushes.toggle_from_toolbox("finger")
+	brush_finger.position = left_slime.position \
+		- Vector2(left_slime.get_hit_radius() + brush_finger.hit_radius, 0.0)
+	var pinch_action: Dictionary = game._brushes.handle_input(right_click)
+	_check(pinch_action.has("pinch_requested"), "finger: right click requests a pinch")
+	game._start_pinch()
+	_check(game._pinch_slime == left_slime, "finger: pinch grabs the touching target")
+	var grab_distance: float = brush_finger.position.distance_to(left_slime.position)
+	var pull_mouse: Vector2 = playfield.get_global_transform() \
+		* (brush_finger.position + Vector2(-200.0, 0.0))
+	for i in range(60):
+		game._update_pinch(pull_mouse, 1.0 / 60.0)
+	_check(left_slime.position.x < slime_home.x - 10.0,
+		"finger: pulling drags the target along")
+	_check(left_slime.position.distance_to(slime_home) <= left_slime.MAX_PULL_DISTANCE + 0.001,
+		"finger: pull stops at the max range")
+	_check(absf(brush_finger.position.distance_to(left_slime.position) - grab_distance) < 0.5,
+		"finger: pinched finger stays attached to the target")
+	var right_release := InputEventMouseButton.new()
+	right_release.button_index = MOUSE_BUTTON_RIGHT
+	right_release.pressed = false
+	right_release.position = Vector2(640.0, 360.0)
+	var release_action: Dictionary = game._brushes.handle_input(right_release)
+	_check(release_action.has("pinch_released"), "finger: releasing right click lets go")
+	game._end_pinch()
+	brush_finger.position = slime_home + Vector2(500.0, 0.0)
+	for i in range(120):
+		game._update_slime_squish(1.0 / 60.0)
+	_check(left_slime.position.distance_to(slime_home) < 1.0,
+		"finger: target springs back home after the pinch ends")
+	game.reset_day()
+
 	main._on_day_finished({
 		"species_id": "general",
 		"species_name": "test",

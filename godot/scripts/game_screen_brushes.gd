@@ -161,7 +161,12 @@ func _find_control_descendants(root: Node) -> Array[Control]:
 
 ## 通常の持ち替えを処理し、右クリック時は保持中の道具に対応する固有アクションを返す。
 func handle_input(event: InputEvent) -> Dictionary:
-	if not (event is InputEventMouseButton and event.pressed):
+	if not (event is InputEventMouseButton):
+		return {}
+	if event.button_index == MOUSE_BUTTON_RIGHT and not event.pressed:
+		# 挟んでいる最中はUIの上で離しても必ず解放する。
+		return {"pinch_released": true}
+	if not event.pressed:
 		return {}
 	if _is_over_interactive_ui(event.position):
 		return {}
@@ -172,6 +177,8 @@ func handle_input(event: InputEvent) -> Dictionary:
 			return {"wax_origin": held_brush.position + Vector2(0.0, held_brush.hit_radius * 0.7)}
 		if held_brush.brush_id == "teeth":
 			return {"bite_requested": true}
+		if held_brush.brush_id == "finger":
+			return {"pinch_requested": true}
 		return {}
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		_toggle_held_brush(_pick_brush(event.position))
@@ -292,6 +299,8 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 	spec += " / サイズ %d" % int(round(selected_brush.hit_radius))
 	if selected_brush.is_rotating:
 		spec += " / 自動回転"
+	if selected_brush.brush_id == "finger":
+		spec += " / 右クリック長押し：挟んで引っ張る"
 	spec_label.text = spec
 
 func _update_tool_button_states() -> void:
@@ -321,10 +330,10 @@ func _display_name(brush: Brush) -> String:
 		return brush.display_name
 	return brush.brush_id.capitalize().replace("-", " ")
 
-func resolve_collisions(slimes: Array[Node]) -> void:
+func resolve_collisions(slimes: Array[Node], pinch_brush: Brush = null) -> void:
 	_resolve_brush_overlaps()
 	_apply_wall_push_out()
-	_apply_slime_push_out(slimes)
+	_apply_slime_push_out(slimes, pinch_brush)
 
 func _resolve_brush_overlaps() -> void:
 	var brushes: Array[Brush] = []
@@ -353,9 +362,12 @@ func _apply_wall_push_out() -> void:
 		for wall in _wall_zones:
 			brush.position = GameRules.push_out_from_rect(brush.position, brush.hit_radius, wall.get_rect())
 
-func _apply_slime_push_out(slimes: Array[Node]) -> void:
+func _apply_slime_push_out(slimes: Array[Node], pinch_brush: Brush = null) -> void:
 	for brush: Brush in brush_map.values():
 		if not brush.visible:
+			continue
+		if brush == pinch_brush:
+			# 挟んで固定中の指は本体に食い込んだままでよい。
 			continue
 		for slime: SlimeTarget in slimes:
 			var min_dist: float = brush.hit_radius + slime.get_hit_radius()

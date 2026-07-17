@@ -85,11 +85,16 @@ func _input(event: InputEvent) -> void:
 		_spawn_wax_drop(action["wax_origin"])
 	elif action.has("bite_requested"):
 		_apply_teeth_bite()
+	elif action.has("pinch_requested"):
+		_start_pinch()
+	elif action.has("pinch_released"):
+		_end_pinch()
 
 func _process(delta: float) -> void:
 	if not _is_running:
 		return
 	_brushes.update_drag(get_global_mouse_position(), follow_speed, delta)
+	_update_pinch(get_global_mouse_position(), delta)
 	_update_finish_fx(delta)
 	_update_fail_fx(delta)
 	_exhaust_time_left = maxf(0.0, _exhaust_time_left - delta)
@@ -102,7 +107,7 @@ func _process(delta: float) -> void:
 	if not _is_fail_fx_active():
 		_apply_pain_recovery(touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
-	_brushes.resolve_collisions(get_tree().get_nodes_in_group("slime_targets"))
+	_brushes.resolve_collisions(get_tree().get_nodes_in_group("slime_targets"), _pinch_brush)
 	if not _is_finish_fx_active() and not _is_fail_fx_active():
 		_check_finish()
 		_check_failure()
@@ -223,6 +228,7 @@ func reset_day() -> void:
 		"left": {"polish": 0.0, "pain": 0.0},
 		"right": {"polish": 0.0, "pain": 0.0}
 	}
+	_end_pinch()
 	_brushes.reset()
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		slime.reset_pressure()
@@ -239,15 +245,21 @@ func _update_slime_squish(delta: float) -> void:
 	# Pressure depth uses the base radius so the spring has a stable input.
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		var deepest := 0.0
+		var push := Vector2.ZERO
 		var touched_by_active := false
 		for brush: Brush in _brushes.brush_map.values():
 			if not brush.visible:
 				continue
 			var overlap: float = brush.hit_radius + slime.radius - brush.global_position.distance_to(slime.global_position)
 			deepest = maxf(deepest, overlap)
+			if overlap > 0.0:
+				var away := slime.global_position - brush.global_position
+				if away.length() <= 0.0001:
+					away = Vector2.DOWN
+				push += away.normalized() * overlap
 			if brush.is_effective() and overlap > 0.0:
 				touched_by_active = true
-		slime.apply_pressure(deepest, delta)
+		slime.apply_pressure(deepest, delta, push)
 		var state: Dictionary = _slime_state.get(String(slime.side), {})
 		var polish_winning: bool = float(state.get("polish", 0.0)) > float(state.get("pain", 0.0))
 		slime.set_hearts_active(touched_by_active and polish_winning)
@@ -302,6 +314,45 @@ func _apply_wax_impact(side: String) -> void:
 		0.0, 100.0
 	)
 	_slime_state[side] = state
+
+## 指の固有アクション: 右クリック押下で接触中の本体を挟んで固定し、
+## ボタンを離すまでマウスで引っ張れる（可動範囲は SlimeTarget 側が制限する）。
+var _pinch_brush: Brush
+var _pinch_slime: SlimeTarget
+var _pinch_grab_offset := Vector2.ZERO
+
+func _start_pinch() -> void:
+	if _is_finish_fx_active() or _is_fail_fx_active():
+		return
+	var finger := _brushes.held_brush
+	if finger == null or finger.brush_id != "finger":
+		return
+	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+		# 衝突補正後は円同士がちょうど接するため、丸め誤差ぶんだけ許容する。
+		if finger.position.distance_to(slime.position) \
+				> finger.hit_radius + slime.get_hit_radius() + 1.0:
+			continue
+		_pinch_brush = finger
+		_pinch_slime = slime
+		_pinch_grab_offset = slime.position - finger.position
+		return
+
+func _end_pinch() -> void:
+	_pinch_brush = null
+	_pinch_slime = null
+
+func _update_pinch(global_mouse_position: Vector2, delta: float) -> void:
+	if _pinch_slime == null:
+		return
+	if _brushes.held_brush != _pinch_brush or not _pinch_brush.visible \
+			or _is_finish_fx_active() or _is_fail_fx_active():
+		_end_pinch()
+		return
+	var mouse_local: Vector2 = _playfield.get_global_transform().affine_inverse() \
+			* global_mouse_position
+	_pinch_slime.apply_pull(mouse_local + _pinch_grab_offset, delta)
+	# 指は挟んだ位置関係のまま本体に張り付く（可動範囲の先へは付いていかない）。
+	_pinch_brush.position = _pinch_slime.position - _pinch_grab_offset
 
 func _apply_teeth_bite() -> void:
 	if _is_finish_fx_active() or _is_fail_fx_active():

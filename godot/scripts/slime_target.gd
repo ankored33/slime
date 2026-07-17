@@ -100,14 +100,23 @@ const SQUISH_DAMPING := 5.0
 const MAX_SQUISH_RATIO := 0.25
 const PRESS_RESPONSE := 10.0
 
+## 押されたときの位置ずれ。押し込み量に比例し、離すとバネで元の位置へ戻る。
+const PUSH_RATIO := 0.35
+const MAX_PUSH_DISTANCE := 16.0
+## 挟んで引っ張られたときの最大変位。押されたときより大きく動く。
+const MAX_PULL_DISTANCE := 48.0
+
 var _squish := 0.0
 var _squish_velocity := 0.0
+var _push_offset := Vector2.ZERO
+var _push_velocity := Vector2.ZERO
+var _pull_active := false
 
 func get_hit_radius() -> float:
 	# Squishy hitbox: compressed while pressed, briefly overshoots on release.
 	return clampf(radius - _squish, radius * (1.0 - MAX_SQUISH_RATIO), radius * (1.0 + MAX_SQUISH_RATIO * 0.5))
 
-func apply_pressure(depth: float, delta: float) -> void:
+func apply_pressure(depth: float, delta: float, push := Vector2.ZERO) -> void:
 	if depth > 0.0:
 		var target := minf(depth * 0.6, radius * MAX_SQUISH_RATIO)
 		_squish = lerpf(_squish, target, minf(1.0, PRESS_RESPONSE * delta))
@@ -116,10 +125,45 @@ func apply_pressure(depth: float, delta: float) -> void:
 		var accel := -SQUISH_STIFFNESS * _squish - SQUISH_DAMPING * _squish_velocity
 		_squish_velocity += accel * delta
 		_squish += _squish_velocity * delta
+	_update_push(push, delta)
+
+## 挟まれて引っ張られている間の位置更新。望みの位置へ寄せるが、
+## 可動範囲（MAX_PULL_DISTANCE）を超える分は届かず、引っ張り抵抗になる。
+## apply_pressure より先に毎フレーム呼ぶこと（そのフレームの押し込み変位を上書きする）。
+func apply_pull(desired_position: Vector2, delta: float) -> void:
+	var target := (_push_offset + desired_position - position).limit_length(MAX_PULL_DISTANCE)
+	var next := _push_offset.lerp(target, minf(1.0, PRESS_RESPONSE * delta))
+	_push_velocity = Vector2.ZERO
+	position += next - _push_offset
+	_push_offset = next
+	_pull_active = true
+
+## 位置は「元の位置 + _push_offset」を保つよう差分で動かす。
+## 元の位置を別途持たないため、レイアウト変更で位置が変わっても追従する。
+func _update_push(push: Vector2, delta: float) -> void:
+	if _pull_active:
+		# このフレームは apply_pull が変位を決めた。押し込みやバネ戻りで上書きしない。
+		_pull_active = false
+		return
+	var next := _push_offset
+	if push != Vector2.ZERO:
+		var target := (push * PUSH_RATIO).limit_length(MAX_PUSH_DISTANCE)
+		next = _push_offset.lerp(target, minf(1.0, PRESS_RESPONSE * delta))
+		_push_velocity = Vector2.ZERO
+	else:
+		var accel := -SQUISH_STIFFNESS * _push_offset - SQUISH_DAMPING * _push_velocity
+		_push_velocity += accel * delta
+		next = _push_offset + _push_velocity * delta
+	position += next - _push_offset
+	_push_offset = next
 
 func reset_pressure() -> void:
 	_squish = 0.0
 	_squish_velocity = 0.0
+	position -= _push_offset
+	_push_offset = Vector2.ZERO
+	_push_velocity = Vector2.ZERO
+	_pull_active = false
 
 func apply_species(species: Dictionary, side_label: String, side_config: Dictionary = {}) -> void:
 	slime_id = str(species.get("id", ""))
