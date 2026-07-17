@@ -420,7 +420,7 @@ anchor_bottom = 1.0
 offset_left = 0.0
 offset_top = -334.0
 offset_right = -14.0
-offset_bottom = -14.0
+offset_bottom = -48.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_select_info")
@@ -484,6 +484,24 @@ mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 13
 text = "状態リセット（DEBUG）"
 
+[node name="ViewOriginalButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 0.666667
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = -42.0
+offset_right = -14.0
+offset_bottom = -14.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+text = "元の経歴を見る"
+
 [node name="Card1" type="PanelContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -544,7 +562,7 @@ anchor_bottom = 1.0
 offset_left = 0.0
 offset_top = -334.0
 offset_right = -14.0
-offset_bottom = -14.0
+offset_bottom = -48.0
 grow_horizontal = 0
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_select_info")
@@ -607,6 +625,24 @@ grow_vertical = 0
 mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 13
 text = "状態リセット（DEBUG）"
+
+[node name="ViewOriginalButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer"]
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 0.666667
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 0.0
+offset_top = -42.0
+offset_right = -14.0
+offset_bottom = -14.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+focus_mode = 0
+theme_override_font_sizes/font_size = 13
+text = "元の経歴を見る"
 
 [node name="CharacterConfirmDialog" type="ConfirmationDialog" parent="CanvasLayer/SelectScreen"]
 title = "キャラクター選択"

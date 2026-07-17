@@ -77,6 +77,9 @@ func _ready() -> void:
 		reset_button.disabled = not show_debug_tools
 		if show_debug_tools:
 			reset_button.pressed.connect(_on_character_reset_pressed.bind(index))
+		var view_original_button: Button = card.get_node("InteractionLayer/ViewOriginalButton")
+		view_original_button.button_down.connect(_on_view_original_button_down.bind(index))
+		view_original_button.button_up.connect(_on_view_original_button_up.bind(index))
 	_load_progress()
 	_show_title_screen()
 	# 起動時はタイトルへフェードインで入る。
@@ -95,7 +98,9 @@ func _refresh_character_cards() -> void:
 	for index in range(_characters.size()):
 		_refresh_character_card(index)
 
-func _refresh_character_card(index: int) -> void:
+## force_original: 「元の経歴を見る」ボタン押下中に名前・二つ名・立ち絵・プロフィール文を
+## すべて初回（オープニング未読時）のものへ一時的に戻す。
+func _refresh_character_card(index: int, force_original: bool = false) -> void:
 	var chara: Dictionary = _characters[index]
 	var card := _get_card(index)
 	var info: VBoxContainer = card.get_node("Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox")
@@ -104,13 +109,17 @@ func _refresh_character_card(index: int) -> void:
 	var profile_body: RichTextLabel = info.get_node("ProfileBody")
 	var portrait: TextureRect = card.get_node("Margin/VBox/PortraitArea/Portrait")
 	var placeholder: Label = card.get_node("Margin/VBox/PortraitArea/PortraitPlaceholder")
+	var view_original_button: Button = card.get_node("InteractionLayer/ViewOriginalButton")
 	var opening_seen := bool(chara.get("opening_seen", false))
-	# 既読後は本名・二つ名を出さず、虜囚番号・虜囚区分の表記に置き換える。
-	name_label.text = CharacterDefs.display_name(chara)
-	epithet_label.text = CharacterDefs.display_epithet(chara)
+	view_original_button.visible = opening_seen
+	var use_after_opening := opening_seen and not force_original
+	# 既読後は本名・二つ名を出さず、虜囚番号・虜囚区分の表記に置き換える
+	# （「元の経歴を見る」押下中は強制的に本名・二つ名を出す）。
+	name_label.text = str(chara.get("name", "")) if force_original else CharacterDefs.display_name(chara)
+	epithet_label.text = str(chara.get("epithet", "")) if force_original else CharacterDefs.display_epithet(chara)
 	var opening_state := "済" if opening_seen else "未（開始時に再生）"
 	# ポートレートと同様、オープニング済ならプロフィール文も差し替える（未設定なら通常文）。
-	var profile_text := str(chara.get("profile_after_opening", "")) if opening_seen else ""
+	var profile_text := str(chara.get("profile_after_opening", "")) if use_after_opening else ""
 	if profile_text == "":
 		profile_text = str(chara.get("profile", ""))
 	profile_body.text = (
@@ -128,7 +137,7 @@ func _refresh_character_card(index: int) -> void:
 		opening_state
 	]
 	var portrait_path := str(chara.get(
-		"portrait_after_opening" if opening_seen else "portrait",
+		"portrait_after_opening" if use_after_opening else "portrait",
 		""
 	))
 	if portrait_path == "":
@@ -269,6 +278,12 @@ func _on_character_reset_pressed(index: int) -> void:
 	_characters[index] = chara
 	_save_progress()
 	_refresh_character_card(index)
+
+func _on_view_original_button_down(index: int) -> void:
+	_refresh_character_card(index, true)
+
+func _on_view_original_button_up(index: int) -> void:
+	_refresh_character_card(index, false)
 
 func _on_character_start_pressed(index: int) -> void:
 	GameAudio.play_se("ui_click")

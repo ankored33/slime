@@ -68,6 +68,10 @@ func _run_tests() -> void:
 	var profile_body: RichTextLabel = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/ProfileBody")
 	_check(profile_body.text.begins_with(String(main._characters[0]["profile"])),
 		"select: profile shows pre-opening text")
+	var card0_view_original: Button = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/ViewOriginalButton")
+	_check(not card0_view_original.visible,
+		"view original: hidden before the opening has been seen")
 	var instruction: Label = main.get_node("CanvasLayer/SelectScreen/InstructionOverlay/Label")
 	_check_eq(instruction.text, "キャラクターを選択してください。", "select: instruction is overlaid")
 	var card0_button: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/CardButton")
@@ -244,6 +248,30 @@ func _run_tests() -> void:
 		"select: prisoner number replaces name after opening")
 	_check_eq(card0_epithet.text, String(main._characters[0]["epithet_after_opening"]),
 		"select: epithet becomes prisoner class after opening")
+
+	# 「元の経歴を見る」ボタン: 押している間だけ本名・二つ名・立ち絵・プロフィール文が
+	# すべて初回のものに戻る。
+	var view_original: Button = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/ViewOriginalButton")
+	_check(view_original.visible, "view original: visible once opening is seen")
+	view_original.emit_signal("button_down")
+	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait.png"),
+		"view original: portrait reverts to the initial art while held")
+	_check(profile_body.text.begins_with(String(main._characters[0]["profile"])),
+		"view original: profile text reverts to the initial one while held")
+	_check_eq(card0_name.text, String(main._characters[0]["name"]),
+		"view original: real name shown while held")
+	_check_eq(card0_epithet.text, String(main._characters[0]["epithet"]),
+		"view original: real epithet shown while held")
+	view_original.emit_signal("button_up")
+	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait_after_opening.png"),
+		"view original: portrait returns to the post-opening art on release")
+	_check(profile_body.text.begins_with(String(main._characters[0]["profile_after_opening"])),
+		"view original: profile text returns to the post-opening one on release")
+	_check_eq(card0_name.text, String(main._characters[0]["name_after_opening"]),
+		"view original: name returns to the prisoner record on release")
+	_check_eq(card0_epithet.text, String(main._characters[0]["epithet_after_opening"]),
+		"view original: epithet returns to the prisoner class on release")
 
 	main._characters[1]["level"] = 5
 	main._characters[1]["finish_total"] = 14
