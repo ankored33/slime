@@ -1,10 +1,13 @@
-[gd_scene load_steps=7 format=3]
+[gd_scene load_steps=9 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/game_screen.tscn" id="2"]
 [ext_resource type="Script" path="res://scripts/game_audio.gd" id="3"]
 [ext_resource type="Script" path="res://scripts/select_screen.gd" id="4"]
 [ext_resource type="PackedScene" path="res://scenes/character_card.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/opening_screen.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/options_screen.tscn" id="7"]
+
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_select_info"]
 bg_color = Color(0.025, 0.03, 0.05, 0.9)
@@ -152,141 +155,8 @@ custom_minimum_size = Vector2(280, 44)
 theme_override_font_sizes/font_size = 17
 text = "オプション"
 
-[node name="OpeningScreen" type="Control" parent="CanvasLayer"]
+[node name="OpeningScreen" parent="CanvasLayer" instance=ExtResource("6")]
 visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Bg" type="ColorRect" parent="CanvasLayer/OpeningScreen"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.0235294, 0.0235294, 0.0392157, 1)
-mouse_filter = 2
-
-[node name="SplitView" type="Control" parent="CanvasLayer/OpeningScreen"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="PortraitRect" type="TextureRect" parent="CanvasLayer/OpeningScreen/SplitView"]
-layout_mode = 1
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = 24.0
-offset_top = 24.0
-offset_right = -12.0
-offset_bottom = -24.0
-expand_mode = 1
-stretch_mode = 5
-mouse_filter = 2
-
-[node name="PortraitPlaceholder" type="Label" parent="CanvasLayer/OpeningScreen/SplitView"]
-layout_mode = 1
-anchor_right = 0.5
-anchor_bottom = 1.0
-horizontal_alignment = 1
-vertical_alignment = 1
-modulate = Color(0.55, 0.58, 0.68, 0.8)
-text = "立ち絵（未設定）"
-
-[node name="TextPanel" type="PanelContainer" parent="CanvasLayer/OpeningScreen/SplitView"]
-layout_mode = 1
-anchor_left = 0.5
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 12.0
-offset_top = 24.0
-offset_right = -24.0
-offset_bottom = -24.0
-mouse_filter = 2
-
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/OpeningScreen/SplitView/TextPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 14
-mouse_filter = 2
-
-[node name="TextVBox" type="VBoxContainer" parent="CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 10
-mouse_filter = 2
-
-[node name="OpeningText" type="RichTextLabel" parent="CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox"]
-layout_mode = 2
-size_flags_vertical = 3
-bbcode_enabled = true
-scroll_active = false
-mouse_filter = 2
-
-[node name="Actions" type="HBoxContainer" parent="CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox"]
-layout_mode = 2
-theme_override_constants/separation = 12
-mouse_filter = 2
-
-[node name="PageLabel" type="Label" parent="CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions"]
-layout_mode = 2
-size_flags_horizontal = 3
-modulate = Color(0.7, 0.74, 0.82, 0.9)
-text = "1 / 1"
-
-[node name="OpeningNextButton" type="Button" parent="CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions"]
-layout_mode = 2
-custom_minimum_size = Vector2(160, 40)
-text = "次へ ▼"
-
-[node name="BlackoutView" type="Control" parent="CanvasLayer/OpeningScreen"]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_filter = 2
-
-[node name="BlackBg" type="ColorRect" parent="CanvasLayer/OpeningScreen/BlackoutView"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0, 0, 0, 1)
-mouse_filter = 2
-
-[node name="BlackoutLabel" type="Label" parent="CanvasLayer/OpeningScreen/BlackoutView"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-horizontal_alignment = 1
-vertical_alignment = 1
-theme_override_font_sizes/font_size = 44
-text = "だが捕らえた。"
-
-[node name="ClickHint" type="Label" parent="CanvasLayer/OpeningScreen/BlackoutView"]
-layout_mode = 1
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_top = -60.0
-offset_bottom = -28.0
-horizontal_alignment = 1
-modulate = Color(0.6, 0.6, 0.65, 0.5)
-text = "クリックで次へ"
 
 [node name="SelectScreen" type="Control" parent="CanvasLayer"]
 visible = false
@@ -355,132 +225,9 @@ layout_mode = 2
 title = "キャラクター選択"
 dialog_text = "このキャラクターを選択しますか？"
 
-[node name="OptionsScreen" type="Control" parent="CanvasLayer"]
+[node name="OptionsScreen" parent="CanvasLayer" instance=ExtResource("7")]
 visible = false
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
-[node name="Bg" type="ColorRect" parent="CanvasLayer/OptionsScreen"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.0392157, 0.0431373, 0.0666667, 1)
-
-[node name="Center" type="CenterContainer" parent="CanvasLayer/OptionsScreen"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Panel" type="PanelContainer" parent="CanvasLayer/OptionsScreen/Center"]
-layout_mode = 2
-
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/OptionsScreen/Center/Panel"]
-layout_mode = 2
-theme_override_constants/margin_left = 36
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_right = 36
-theme_override_constants/margin_bottom = 28
-
-[node name="VBox" type="VBoxContainer" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 18
-
-[node name="OptionsTitle" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 32
-horizontal_alignment = 1
-text = "オプション"
-
-[node name="BgmRow" type="HBoxContainer" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="BgmLabel" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
-vertical_alignment = 1
-text = "BGM"
-
-[node name="BgmSlider" type="HSlider" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(320, 24)
-size_flags_vertical = 4
-max_value = 1.0
-step = 0.05
-
-[node name="BgmValue" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(60, 0)
-vertical_alignment = 1
-horizontal_alignment = 2
-text = "100%"
-
-[node name="SeRow" type="HBoxContainer" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="SeLabel" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
-vertical_alignment = 1
-text = "効果音"
-
-[node name="SeSlider" type="HSlider" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(320, 24)
-size_flags_vertical = 4
-max_value = 1.0
-step = 0.05
-
-[node name="SeValue" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(60, 0)
-vertical_alignment = 1
-horizontal_alignment = 2
-text = "100%"
-
-[node name="VoiceRow" type="HBoxContainer" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 14
-
-[node name="VoiceLabel" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
-vertical_alignment = 1
-text = "ボイス"
-
-[node name="VoiceSlider" type="HSlider" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(320, 24)
-size_flags_vertical = 4
-max_value = 1.0
-step = 0.05
-
-[node name="VoiceValue" type="Label" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow"]
-layout_mode = 2
-custom_minimum_size = Vector2(60, 0)
-vertical_alignment = 1
-horizontal_alignment = 2
-text = "100%"
-
-[node name="Spacer" type="Control" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
-layout_mode = 2
-custom_minimum_size = Vector2(0, 6)
-
-[node name="OptionsBackButton" type="Button" parent="CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox"]
-layout_mode = 2
-custom_minimum_size = Vector2(200, 44)
-theme_override_font_sizes/font_size = 17
-text = "戻る"
 
 [node name="FadeRect" type="ColorRect" parent="CanvasLayer"]
 visible = false

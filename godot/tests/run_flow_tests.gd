@@ -32,7 +32,8 @@ func _run_tests() -> void:
 	root.add_child(main)
 
 	var title: Control = main.get_node("CanvasLayer/TitleScreen")
-	var opening: Control = main.get_node("CanvasLayer/OpeningScreen")
+	var opening: OpeningScreen = main.get_node("CanvasLayer/OpeningScreen")
+	var options: OptionsScreen = main.get_node("CanvasLayer/OptionsScreen")
 	var frame: Control = main.get_node("CanvasLayer/Frame")
 	var select: SelectScreen = main.get_node("CanvasLayer/SelectScreen")
 	var result: Control = main.get_node("CanvasLayer/Frame/Margin/VBox/ResultScreen")
@@ -47,6 +48,10 @@ func _run_tests() -> void:
 	main._characters[1]["opening_seen"] = false
 
 	_check(title.visible and not frame.visible and not game.visible, "boot: title screen only")
+	main._on_title_options_pressed()
+	_check(options.visible and not title.visible, "title options -> options screen")
+	options._on_back_pressed()
+	_check(title.visible and not options.visible, "options back -> title screen")
 
 	main._on_title_start_pressed()
 	_check(select.visible and not frame.visible and not title.visible, "title start -> select screen")
@@ -81,15 +86,15 @@ func _run_tests() -> void:
 	_check_eq(confirm_dialog.dialog_text, "このキャラクターを選択しますか？", "select: confirmation message")
 	confirm_dialog.emit_signal("confirmed")
 	_check(opening.visible and not select.visible, "first start -> opening screen")
-	_check_eq(main._opening_page, 0, "opening starts at page 0")
+	_check_eq(opening.page_index, 0, "opening starts at page 0")
 
 	var pages: Array = main._characters[0]["opening_pages"]
 	for i in range(pages.size() - 1):
-		main._on_opening_next_pressed()
+		opening.advance()
 	_check(opening.visible, "opening: still open on last page")
 	_check_eq(String(next_button.text), "はじめる ▶", "opening: last page button label")
 
-	main._on_opening_next_pressed()
+	opening.advance()
 	_check(game.visible and not opening.visible, "opening end -> game screen")
 	_check(bool(main._characters[0]["opening_seen"]), "opening marked as seen")
 	var game_background: TextureRect = main.get_node("GameScreen/Playfield/CharaImage")
@@ -230,6 +235,21 @@ func _run_tests() -> void:
 	_check(left_slime.position.distance_to(slime_home) < 1.0,
 		"finger: target springs back home after the pinch ends")
 	game.reset_day()
+
+	# 演出ヘルパー: FINISH後は憔悴へ遷移し、失敗演出もリセット可能。
+	game._start_finish_fx()
+	_check(game._fx.finish_active, "fx: finish effect starts")
+	_check(game._finish_label.visible, "fx: finish label is shown")
+	for i in range(int(ceil(game.finish_fx_duration * 60.0)) + 1):
+		game._fx.update(1.0 / 60.0)
+	_check(not game._fx.finish_active and game._fx.exhausted,
+		"fx: finish effect transitions to exhausted")
+	_check(not game._finish_label.visible, "fx: finish label hides after effect")
+	game.reset_day()
+	game._start_fail_fx()
+	_check(game._fx.fail_active, "fx: fail effect starts")
+	game.reset_day()
+	_check(not game._fx.fail_active, "fx: reset clears fail effect")
 
 	main._on_day_finished({
 		"species_id": "general",

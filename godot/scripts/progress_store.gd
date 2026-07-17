@@ -1,0 +1,56 @@
+class_name ProgressStore
+extends RefCounted
+
+const SAVE_PATH := "user://slime_save_v2.json"
+
+func save(characters: Array[Dictionary]) -> void:
+	var payload := {
+		"version": 2,
+		"characters": []
+	}
+	for chara in characters:
+		payload["characters"].append({
+			"id": str(chara.get("id", "")),
+			"level": int(chara.get("level", 1)),
+			"finish_total": int(chara.get("finish_total", 0)),
+			"pain_fail_total": int(chara.get("pain_fail_total", 0)),
+			"opening_seen": bool(chara.get("opening_seen", false))
+		})
+	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		push_warning("Failed to save progress to %s" % SAVE_PATH)
+		return
+	file.store_string(JSON.stringify(payload))
+	file.close()
+
+func load_into(characters: Array[Dictionary]) -> void:
+	if not FileAccess.file_exists(SAVE_PATH):
+		return
+	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		push_warning("Failed to open save file: %s" % SAVE_PATH)
+		return
+	var raw := file.get_as_text()
+	file.close()
+	var parsed: Variant = JSON.parse_string(raw)
+	if typeof(parsed) != TYPE_DICTIONARY:
+		push_warning("Save format is invalid; ignoring save file.")
+		return
+	var loaded: Array = parsed.get("characters", [])
+	var by_id: Dictionary = {}
+	for entry in loaded:
+		if typeof(entry) == TYPE_DICTIONARY:
+			by_id[str(entry.get("id", ""))] = entry
+	for index in range(characters.size()):
+		var chara: Dictionary = characters[index]
+		var character_id := str(chara.get("id", ""))
+		if not by_id.has(character_id):
+			continue
+		var saved: Dictionary = by_id[character_id]
+		chara["finish_total"] = max(0, int(saved.get("finish_total", 0)))
+		chara["pain_fail_total"] = max(0, int(saved.get("pain_fail_total", 0)))
+		chara["opening_seen"] = bool(saved.get("opening_seen", false))
+		var saved_level := int(saved.get("level", 1))
+		chara["level"] = GameRules.level_for_finish_total(
+			int(chara["finish_total"]), saved_level)
+		characters[index] = chara

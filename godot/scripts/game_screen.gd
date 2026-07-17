@@ -5,6 +5,7 @@ signal day_finished(result: Dictionary)
 const ExpressionRules = preload("res://scripts/expression_rules.gd")
 const GameAudio = preload("res://scripts/game_audio.gd")
 const GameScreenBrushes = preload("res://scripts/game_screen_brushes.gd")
+const GameScreenFxScript = preload("res://scripts/game_screen_fx.gd")
 const GameScreenToolActionsScript = preload("res://scripts/game_screen_tool_actions.gd")
 const DebugPanelScript = preload("res://scripts/debug_panel.gd")
 
@@ -12,25 +13,16 @@ const DebugPanelScript = preload("res://scripts/debug_panel.gd")
 @export var finish_fx_duration := 5.0
 @export var fail_fx_duration := 2.5
 
-# FINISH演出が終わってから憔悴表情を保つ時間。
-const EXHAUST_DURATION := 4.0
-
 # 痛み上昇の全体係数（快感とのバランス調整用）。
 const PAIN_GAIN_SCALE := 0.35
-
-# 演出オーバーレイの色。FINISHは白ピンクの閃光、失敗は暗い赤の暗転。
-const FINISH_FLASH_COLOR := Color(1.0, 0.88, 0.93)
-const FAIL_FLASH_COLOR := Color(0.35, 0.02, 0.06)
 
 # Level-driven; refreshed in setup_species.
 var finish_threshold := GameRules.finish_threshold(1)
 
-var _finish_fx_time_left := 0.0
-var _fail_fx_time_left := 0.0
-var _exhaust_time_left := 0.0
 var _current_expression := ""
 var _gauge_map: Dictionary = {}
 var _brushes := GameScreenBrushes.new()
+var _fx := GameScreenFxScript.new()
 var _tool_actions := GameScreenToolActionsScript.new()
 var _slimes: Array[SlimeTarget] = []
 var _slime_state := {
@@ -67,6 +59,10 @@ func _ready() -> void:
 	_end_day_button.pressed.connect(_on_end_day_pressed)
 	_brushes.setup(self, _playfield, _brush_rack, _end_day_button)
 	_tool_actions.setup(_playfield, _brushes, _slimes)
+	_fx.setup(
+		self, _playfield, _flash_rect, _finish_label, _slimes,
+		finish_fx_duration, fail_fx_duration)
+	_fx.fail_finished.connect(_finish_day.bind(true))
 	if OS.is_debug_build():
 		_debug_panel = DebugPanelScript.new(self)
 		_debug_panel.visible = false
@@ -84,7 +80,7 @@ func _input(event: InputEvent) -> void:
 	if not _is_running:
 		return
 	var action := _brushes.handle_input(event)
-	var blocked := _is_finish_fx_active() or _is_fail_fx_active()
+	var blocked := _fx.finish_active or _fx.fail_active
 	if action.has("wax_origin"):
 		_tool_actions.spawn_wax_drop(action["wax_origin"], blocked)
 	elif action.has("bite_requested"):
@@ -99,21 +95,19 @@ func _process(delta: float) -> void:
 		return
 	_brushes.update_drag(get_global_mouse_position(), follow_speed, delta)
 	_tool_actions.update_pinch(
-		get_global_mouse_position(), delta, _is_finish_fx_active() or _is_fail_fx_active())
-	_update_finish_fx(delta)
-	_update_fail_fx(delta)
-	_exhaust_time_left = maxf(0.0, _exhaust_time_left - delta)
+		get_global_mouse_position(), delta, _fx.finish_active or _fx.fail_active)
+	_fx.update(delta)
 	var touch_info := _compute_touch_info()
-	if not _is_finish_fx_active() and not _is_fail_fx_active():
+	if not _fx.finish_active and not _fx.fail_active:
 		for brush in _brushes.brush_map.values():
 			if brush.is_effective():
 				_apply_brush_effects(brush, delta)
 		_tool_actions.update_wax_drops(delta, _slime_state, _current_level())
-	if not _is_fail_fx_active():
+	if not _fx.fail_active:
 		_apply_pain_recovery(touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
 	_brushes.resolve_collisions(_slimes, _tool_actions.pinch_brush)
-	if not _is_finish_fx_active() and not _is_fail_fx_active():
+	if not _fx.finish_active and not _fx.fail_active:
 		_check_finish()
 		_check_failure()
 	_update_expression(touch_info)
@@ -142,92 +136,21 @@ func _apply_slime_layout(slime: SlimeTarget, cfg: Dictionary) -> void:
 	if pos_variant is Vector2:
 		slime.position = pos_variant
 
-func _is_finish_fx_active() -> bool:
-	return _finish_fx_time_left > 0.0
-
 func _start_finish_fx() -> void:
-	_finish_fx_time_left = finish_fx_duration
 	_tool_actions.clear()
-	_finish_label.visible = true
-	_finish_label.pivot_offset = _finish_label.size / 2.0
-	_finish_label.scale = Vector2(0.4, 0.4)
-	var tween := create_tween()
-	tween.tween_property(_finish_label, "scale", Vector2(1.3, 1.3), 0.35) \
-		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(_finish_label, "scale", Vector2.ONE, 0.3)
-	for slime in _slimes:
-		slime.burst_hearts()
-	GameAudio.play_se("climax")
-
-func _update_finish_fx(delta: float) -> void:
-	if _finish_fx_time_left <= 0.0:
-		return
-	_finish_fx_time_left = maxf(0.0, _finish_fx_time_left - delta)
-	var elapsed := finish_fx_duration - _finish_fx_time_left
-	var flash := FINISH_FLASH_COLOR
-	flash.a = _finish_flash_alpha(elapsed)
-	_flash_rect.color = flash
-	_apply_shake(maxf(0.0, 1.0 - elapsed / 1.2) * 16.0)
-	if _finish_fx_time_left == 0.0:
-		_finish_label.visible = false
-		_clear_fx_overlay()
-		_exhaust_time_left = EXHAUST_DURATION
-
-## 閃光→急速フェード→余韻（薄いピンク）→演出終了までにゼロ、の3段カーブ。
-func _finish_flash_alpha(elapsed: float) -> float:
-	if elapsed < 0.2:
-		return lerpf(0.0, 0.9, elapsed / 0.2)
-	if elapsed < 1.6:
-		return lerpf(0.9, 0.16, (elapsed - 0.2) / 1.4)
-	var tail := maxf(finish_fx_duration - 1.6, 0.001)
-	return lerpf(0.16, 0.0, clampf((elapsed - 1.6) / tail, 0.0, 1.0))
-
-func _apply_shake(amplitude: float) -> void:
-	if amplitude <= 0.05:
-		_playfield.position = Vector2.ZERO
-		return
-	_playfield.position = Vector2(
-		randf_range(-amplitude, amplitude),
-		randf_range(-amplitude, amplitude)
-	)
-
-func _clear_fx_overlay() -> void:
-	_flash_rect.color = Color(1.0, 1.0, 1.0, 0.0)
-	_playfield.position = Vector2.ZERO
-
-func _is_fail_fx_active() -> bool:
-	return _fail_fx_time_left > 0.0
+	_fx.start_finish()
 
 func _start_fail_fx() -> void:
 	# 痛み限界: 絶望表情を見せてから日終了へ移る。
-	_fail_fx_time_left = fail_fx_duration
 	_tool_actions.clear()
 	_brushes.deactivate_all()
-	GameAudio.play_se("despair")
-
-func _update_fail_fx(delta: float) -> void:
-	if _fail_fx_time_left <= 0.0:
-		return
-	_fail_fx_time_left = maxf(0.0, _fail_fx_time_left - delta)
-	var elapsed := fail_fx_duration - _fail_fx_time_left
-	var flash := FAIL_FLASH_COLOR
-	flash.a = minf(elapsed / 0.4, 1.0) * 0.5
-	_flash_rect.color = flash
-	_apply_shake(maxf(0.0, 1.0 - elapsed / 0.8) * 10.0)
-	if _fail_fx_time_left == 0.0:
-		_apply_shake(0.0)
-		_finish_day(true)
+	_fx.start_fail()
 
 func reset_day() -> void:
 	_day_finish_count = 0
 	_is_running = true
-	_finish_fx_time_left = 0.0
-	_fail_fx_time_left = 0.0
-	_exhaust_time_left = 0.0
 	_current_expression = ""
-	_finish_label.visible = false
-	_finish_label.scale = Vector2.ONE
-	_clear_fx_overlay()
+	_fx.reset()
 	_tool_actions.clear()
 	_slime_state = {
 		"left": {"polish": 0.0, "pain": 0.0},
@@ -330,9 +253,9 @@ func _update_expression(info: Dictionary = {}) -> void:
 		"polish_ratio": polish_ratio,
 		"polish_rate": float(info["polish_rate"]),
 		"pain_rate": float(info["pain_rate"]),
-		"climax": _is_finish_fx_active(),
-		"despair": _is_fail_fx_active(),
-		"exhausted": _exhaust_time_left > 0.0
+		"climax": _fx.finish_active,
+		"despair": _fx.fail_active,
+		"exhausted": _fx.exhausted
 	})
 	if _debug_expression_override != "":
 		expression = _debug_expression_override
@@ -454,7 +377,7 @@ func debug_reset_gauges() -> void:
 	}
 
 func debug_trigger_finish() -> void:
-	if not _is_running or _is_finish_fx_active() or _is_fail_fx_active():
+	if not _is_running or _fx.finish_active or _fx.fail_active:
 		return
 	for side in ["left", "right"]:
 		var state: Dictionary = _slime_state[side]
@@ -463,7 +386,7 @@ func debug_trigger_finish() -> void:
 	_check_finish()
 
 func debug_trigger_fail() -> void:
-	if not _is_running or _is_fail_fx_active():
+	if not _is_running or _fx.fail_active:
 		return
 	var state: Dictionary = _slime_state["left"]
 	state["pain"] = GameRules.PAIN_LIMIT

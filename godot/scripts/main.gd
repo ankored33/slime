@@ -1,18 +1,17 @@
 extends Control
 
 const GameAudio = preload("res://scripts/game_audio.gd")
-
-const SAVE_PATH := "user://slime_save_v2.json"
+const ProgressStoreScript = preload("res://scripts/progress_store.gd")
 
 # キャラ定義データは characters.gd（CharacterDefs）に分離。テキスト推敲はそちらで。
 # ここでは初期値として読み込み、セーブデータ（level 等）で上書きしていく。
 var _characters: Array[Dictionary] = CharacterDefs.create()
+var _progress_store := ProgressStoreScript.new()
 
 const SCREEN_FADE_DURATION := 0.25
 
 var _selected_index := 0
 var _last_result: Dictionary = {}
-var _opening_page := 0
 var _fade_tween: Tween
 
 @onready var _frame: Control = $CanvasLayer/Frame
@@ -25,46 +24,22 @@ var _fade_tween: Tween
 @onready var _return_button: Button = $CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions/ReturnButton
 @onready var _title_screen: Control = $CanvasLayer/TitleScreen
 @onready var _title_start_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleStartButton
-@onready var _opening_screen: Control = $CanvasLayer/OpeningScreen
-@onready var _opening_split: Control = $CanvasLayer/OpeningScreen/SplitView
-@onready var _opening_portrait: TextureRect = $CanvasLayer/OpeningScreen/SplitView/PortraitRect
-@onready var _opening_portrait_placeholder: Label = $CanvasLayer/OpeningScreen/SplitView/PortraitPlaceholder
-@onready var _opening_text: RichTextLabel = $CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/OpeningText
-@onready var _opening_page_label: Label = $CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions/PageLabel
-@onready var _opening_next_button: Button = $CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions/OpeningNextButton
-@onready var _opening_blackout: Control = $CanvasLayer/OpeningScreen/BlackoutView
-@onready var _opening_blackout_label: Label = $CanvasLayer/OpeningScreen/BlackoutView/BlackoutLabel
+@onready var _opening_screen: OpeningScreen = $CanvasLayer/OpeningScreen
 @onready var _fade_rect: ColorRect = $CanvasLayer/FadeRect
 @onready var _title_options_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleOptionsButton
-@onready var _options_screen: Control = $CanvasLayer/OptionsScreen
-@onready var _options_back_button: Button = $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/OptionsBackButton
-@onready var _volume_sliders: Dictionary = {
-	"bgm": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow/BgmSlider,
-	"se": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow/SeSlider,
-	"voice": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow/VoiceSlider
-}
-@onready var _volume_value_labels: Dictionary = {
-	"bgm": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/BgmRow/BgmValue,
-	"se": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/SeRow/SeValue,
-	"voice": $CanvasLayer/OptionsScreen/Center/Panel/Margin/VBox/VoiceRow/VoiceValue
-}
+@onready var _options_screen: OptionsScreen = $CanvasLayer/OptionsScreen
 
 func _ready() -> void:
 	_return_button.pressed.connect(_on_return_pressed)
 	_title_start_button.pressed.connect(_on_title_start_pressed)
 	_title_options_button.pressed.connect(_on_title_options_pressed)
-	_options_back_button.pressed.connect(_on_options_back_pressed)
-	for category: String in _volume_sliders.keys():
-		var slider: HSlider = _volume_sliders[category]
-		slider.value_changed.connect(_on_volume_changed.bind(category))
-	_opening_next_button.pressed.connect(_on_opening_next_pressed)
-	# 画面のどこをクリックしてもページが進む（暗転ページはこれが唯一の進行手段）。
-	_opening_screen.gui_input.connect(_on_opening_gui_input)
+	_options_screen.back_requested.connect(_on_options_back_requested)
+	_opening_screen.finished.connect(_on_opening_finished)
 	_game_screen.day_finished.connect(_on_day_finished)
 	_select_screen.character_selected.connect(_on_character_selected)
 	_select_screen.progress_changed.connect(_save_progress)
 	_select_screen.setup(_characters)
-	_load_progress()
+	_progress_store.load_into(_characters)
 	_show_title_screen()
 	# 起動時はタイトルへフェードインで入る。
 	if DisplayServer.get_name() != "headless":
@@ -111,27 +86,14 @@ func _show_title_screen() -> void:
 
 func _show_options_screen() -> void:
 	_hide_all_screens()
-	_options_screen.visible = true
-	# 現在値をスライダーへ反映（set_value_no_signal で保存の連鎖を避ける）。
-	for category: String in _volume_sliders.keys():
-		var volume := GameAudio.get_volume(category)
-		(_volume_sliders[category] as HSlider).set_value_no_signal(volume)
-		_update_volume_value_label(category, volume)
+	_options_screen.show_options()
 
 func _on_title_options_pressed() -> void:
 	GameAudio.play_se("ui_click")
 	_transition(_show_options_screen)
 
-func _on_options_back_pressed() -> void:
-	GameAudio.play_se("ui_click")
+func _on_options_back_requested() -> void:
 	_transition(_show_title_screen)
-
-func _on_volume_changed(value: float, category: String) -> void:
-	GameAudio.set_volume(category, value)
-	_update_volume_value_label(category, value)
-
-func _update_volume_value_label(category: String, volume: float) -> void:
-	(_volume_value_labels[category] as Label).text = "%d%%" % int(round(volume * 100.0))
 
 func _show_select_screen() -> void:
 	_hide_all_screens()
@@ -140,9 +102,7 @@ func _show_select_screen() -> void:
 
 func _show_opening_screen() -> void:
 	_hide_all_screens()
-	_opening_screen.visible = true
-	_render_opening_page()
-	GameAudio.play_bgm("opening_%s" % str(_characters[_selected_index].get("id", "")))
+	_opening_screen.start(_characters[_selected_index])
 
 func _show_game_screen() -> void:
 	# Hide the side frame entirely; the play screen has its own HUD.
@@ -168,7 +128,6 @@ func _on_character_selected(index: int) -> void:
 	_selected_index = index
 	var chara: Dictionary = _characters[_selected_index]
 	if not bool(chara.get("opening_seen", false)):
-		_opening_page = 0
 		_transition(_show_opening_screen)
 	else:
 		_begin_day()
@@ -178,50 +137,12 @@ func _begin_day() -> void:
 	_game_screen.setup_species(chara)
 	_transition(_show_game_screen)
 
-func _on_opening_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton \
-			and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		_on_opening_next_pressed()
-
-func _on_opening_next_pressed() -> void:
-	GameAudio.play_se("ui_click")
+func _on_opening_finished() -> void:
 	var chara: Dictionary = _characters[_selected_index]
-	var pages: Array = chara.get("opening_pages", [])
-	if _opening_page + 1 < pages.size():
-		_opening_page += 1
-		_render_opening_page()
-		return
 	chara["opening_seen"] = true
 	_characters[_selected_index] = chara
 	_save_progress()
 	_begin_day()
-
-func _render_opening_page() -> void:
-	var chara: Dictionary = _characters[_selected_index]
-	var pages: Array = chara.get("opening_pages", [])
-	if pages.is_empty():
-		_opening_split.visible = false
-		_opening_blackout.visible = false
-		return
-	var page: Dictionary = pages[_opening_page]
-	var is_blackout := str(page.get("style", "split")) == "blackout"
-	_opening_split.visible = not is_blackout
-	_opening_blackout.visible = is_blackout
-	if is_blackout:
-		_opening_blackout_label.text = str(page.get("text", ""))
-		return
-	_opening_text.text = str(page.get("text", ""))
-	_opening_page_label.text = "%d / %d" % [_opening_page + 1, pages.size()]
-	# 左半分にはキャラ選択と同じ立ち絵を出す。page["portrait"] はキャラ定義のキー名。
-	var portrait_key := str(page.get("portrait", "portrait"))
-	var image_path := str(chara.get(portrait_key, ""))
-	var texture: Texture2D = null
-	if image_path != "" and ResourceLoader.exists(image_path):
-		texture = load(image_path)
-	_opening_portrait.texture = texture
-	_opening_portrait_placeholder.visible = texture == null
-	var is_last := _opening_page + 1 >= pages.size()
-	_opening_next_button.text = "はじめる ▶" if is_last else "次へ ▼"
 
 func _on_return_pressed() -> void:
 	GameAudio.play_se("ui_click")
@@ -267,52 +188,4 @@ func _render_result() -> void:
 	]
 
 func _save_progress() -> void:
-	var payload := {
-		"version": 2,
-		"characters": []
-	}
-	for chara: Dictionary in _characters:
-		payload["characters"].append({
-			"id": str(chara.get("id", "")),
-			"level": int(chara.get("level", 1)),
-			"finish_total": int(chara.get("finish_total", 0)),
-			"pain_fail_total": int(chara.get("pain_fail_total", 0)),
-			"opening_seen": bool(chara.get("opening_seen", false))
-		})
-	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
-	if file == null:
-		push_warning("Failed to save progress to %s" % SAVE_PATH)
-		return
-	file.store_string(JSON.stringify(payload))
-	file.close()
-
-func _load_progress() -> void:
-	if not FileAccess.file_exists(SAVE_PATH):
-		return
-	var file := FileAccess.open(SAVE_PATH, FileAccess.READ)
-	if file == null:
-		push_warning("Failed to open save file: %s" % SAVE_PATH)
-		return
-	var raw := file.get_as_text()
-	file.close()
-	var parsed: Variant = JSON.parse_string(raw)
-	if typeof(parsed) != TYPE_DICTIONARY:
-		push_warning("Save format is invalid; ignoring save file.")
-		return
-	var loaded: Array = parsed.get("characters", [])
-	var by_id: Dictionary = {}
-	for entry in loaded:
-		if typeof(entry) == TYPE_DICTIONARY:
-			by_id[str(entry.get("id", ""))] = entry
-	for index in range(_characters.size()):
-		var chara: Dictionary = _characters[index]
-		var cid := str(chara.get("id", ""))
-		if not by_id.has(cid):
-			continue
-		var saved: Dictionary = by_id[cid]
-		chara["finish_total"] = max(0, int(saved.get("finish_total", 0)))
-		chara["pain_fail_total"] = max(0, int(saved.get("pain_fail_total", 0)))
-		chara["opening_seen"] = bool(saved.get("opening_seen", false))
-		var saved_level := int(saved.get("level", 1))
-		chara["level"] = GameRules.level_for_finish_total(int(chara["finish_total"]), saved_level)
-		_characters[index] = chara
+	_progress_store.save(_characters)
