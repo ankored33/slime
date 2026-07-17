@@ -7,6 +7,9 @@ extends RefCounted
 const MAX_LEVEL := 10
 const FAIL_PENALTY_RATIO := 0.5
 const PAIN_LIMIT := 100.0
+## 痛みゲージの表示・保持上限。PAIN_LIMIT より高く取ることで、ゲージ表示の
+## 丸め込み（99.5以上は「100」に見える）が失敗ラインと重ならないようにする。
+const PAIN_CAP := 110.0
 
 ## アクティブなブラシが触れていない部位の痛み自然回復量（毎秒）。
 const PAIN_RECOVERY_PER_SEC := 2.0

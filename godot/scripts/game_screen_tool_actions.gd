@@ -59,7 +59,7 @@ func apply_teeth_bite(slime_state: Dictionary, level: int, blocked: bool = false
 		var state: Dictionary = slime_state[side]
 		state["pain"] = clampf(
 			float(state["pain"]) + GameRules.BITE_PAIN_IMPACT * GameRules.pain_resist(level),
-			0.0, 100.0
+			0.0, GameRules.PAIN_CAP
 		)
 		slime_state[side] = state
 
@@ -110,7 +110,7 @@ func _apply_wax_impact(slime_state: Dictionary, side: String, level: int) -> voi
 	)
 	state["pain"] = clampf(
 		float(state["pain"]) + GameRules.WAX_PAIN_IMPACT * GameRules.pain_resist(level),
-		0.0, 100.0
+		0.0, GameRules.PAIN_CAP
 	)
 	slime_state[side] = state
 

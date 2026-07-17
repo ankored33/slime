@@ -202,8 +202,8 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 			# 通常ブラシはこすった速度、回転ブラシはON中の自動回転で効く。
 			var rub := brush.get_action_multiplier()
 			state["polish"] = clamp(float(state.get("polish", 0.0)) + brush.get_effective_polish_gain() * polish_bonus * rub * delta, 0.0, 100.0)
-			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * rub * delta * PAIN_GAIN_SCALE, 0.0, 100.0)
-			state["pain"] = clamp(float(state["pain"]) - brush.get_effective_soothe_gain() * rub * delta, 0.0, 100.0)
+			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * rub * delta * PAIN_GAIN_SCALE, 0.0, GameRules.PAIN_CAP)
+			state["pain"] = clamp(float(state["pain"]) - brush.get_effective_soothe_gain() * rub * delta, 0.0, GameRules.PAIN_CAP)
 			_slime_state[side] = state
 
 ## アクティブなブラシが触れていない部位は痛みが自然回復する。
@@ -367,7 +367,8 @@ func debug_set_level(level: int) -> void:
 
 func debug_add_gauge(side: String, key: String, amount: float) -> void:
 	var state: Dictionary = _slime_state[side]
-	state[key] = clampf(float(state[key]) + amount, 0.0, 100.0)
+	var ceiling := GameRules.PAIN_CAP if key == "pain" else 100.0
+	state[key] = clampf(float(state[key]) + amount, 0.0, ceiling)
 	_slime_state[side] = state
 
 func debug_reset_gauges() -> void:
