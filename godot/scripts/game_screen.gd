@@ -56,6 +56,7 @@ var _debug_expression_override := ""
 var _wax_drops: Array[WaxDrop] = []
 
 @onready var _playfield: Control = $Playfield
+@onready var _brush_rack: Control = $Playfield/BrushRack
 @onready var _title_label: Label = $Hud/CharaNameLabel
 @onready var _meta_label: Label = $Hud/LevelLabel
 @onready var _danger_label: RichTextLabel = $Hud/ConditionLabel
@@ -75,7 +76,7 @@ var _wax_drops: Array[WaxDrop] = []
 func _ready() -> void:
 	_collect_gauges()
 	_end_day_button.pressed.connect(_on_end_day_pressed)
-	_brushes.setup(self, _playfield, _end_day_button)
+	_brushes.setup(self, _playfield, _brush_rack, _end_day_button)
 	if OS.is_debug_build():
 		_debug_panel = DebugPanelScript.new(self)
 		_debug_panel.visible = false
@@ -95,6 +96,8 @@ func _input(event: InputEvent) -> void:
 	var action := _brushes.handle_input(event)
 	if action.has("wax_origin"):
 		_spawn_wax_drop(action["wax_origin"])
+	elif action.has("bite_requested"):
+		_apply_teeth_bite()
 
 func _process(delta: float) -> void:
 	if not _is_running:
@@ -312,6 +315,26 @@ func _apply_wax_impact(side: String) -> void:
 		0.0, 100.0
 	)
 	_slime_state[side] = state
+
+func _apply_teeth_bite() -> void:
+	if _is_finish_fx_active() or _is_fail_fx_active():
+		return
+	var teeth := _brushes.held_brush
+	if teeth == null or teeth.brush_id != "teeth":
+		return
+	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+		# 衝突補正後は円同士がちょうど接するため、丸め誤差ぶんだけ許容する。
+		if teeth.position.distance_to(slime.position) \
+				> teeth.hit_radius + slime.get_hit_radius() + 1.0:
+			continue
+		var side := String(slime.side)
+		var state: Dictionary = _slime_state[side]
+		var level := int(_species.get("level", 1))
+		state["pain"] = clampf(
+			float(state["pain"]) + GameRules.BITE_PAIN_IMPACT * GameRules.pain_resist(level),
+			0.0, 100.0
+		)
+		_slime_state[side] = state
 
 func _segment_distance_to_point(start: Vector2, end: Vector2, point: Vector2) -> float:
 	var segment := end - start

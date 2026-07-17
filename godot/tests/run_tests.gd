@@ -181,4 +181,6 @@ func _test_brush_action() -> void:
 	brush.brush_id = "candle"
 	brush._rub_speed = 500.0
 	_check_near(brush.get_action_multiplier(), 0.0, "brush: candle has no rubbing effect")
+	brush.brush_id = "teeth"
+	_check_near(brush.get_action_multiplier(), 0.0, "brush: teeth have no rubbing effect")
 	brush.free()

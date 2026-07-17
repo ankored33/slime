@@ -151,8 +151,8 @@ position = Vector2(1050, 280)
 brush_id = "teeth"
 display_name = "歯"
 hit_radius = 18.0
-polish_gain_per_sec = 30.0
-pain_gain_per_sec = 15.0
+polish_gain_per_sec = 0.0
+pain_gain_per_sec = 0.0
 fill_color = Color(0.95, 0.95, 0.88, 0.95)
 
 [node name="BrushToothbrush" parent="Playfield" instance=ExtResource("5")]
@@ -188,7 +188,6 @@ position = Vector2(1122, 375)
 brush_id = "candle"
 display_name = "ろうそく"
 hit_radius = 18.0
-polish_gain_per_sec = 26.0
 polish_gain_per_sec = 0.0
 pain_gain_per_sec = 0.0
 fill_color = Color(1, 0.68, 0.3, 0.95)

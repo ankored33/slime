@@ -5,16 +5,24 @@ extends RefCounted
 
 const GameRules = preload("res://scripts/game_rules.gd")
 
+## HUDで未選択時に表示する順序。シーンのブラシ棚と同じ並びにする。
+const BRUSH_DISPLAY_ORDER: Array[String] = [
+	"finger", "tongue", "feather", "fude", "teeth",
+	"toothbrush", "rotary", "tawashi", "candle"
+]
+
 var brush_map: Dictionary = {}
 var held_brush: Brush
 
 var _wall_zones: Array[WallZone] = []
 var _playfield: Control
+var _brush_rack: Control
 var _end_day_button: Button
 var _extra_interactive: Array[Control] = []
 
-func setup(root: Control, playfield: Control, end_day_button: Button) -> void:
+func setup(root: Control, playfield: Control, brush_rack: Control, end_day_button: Button) -> void:
 	_playfield = playfield
+	_brush_rack = brush_rack
 	_end_day_button = end_day_button
 	_collect_nodes(root)
 	_configure_mouse_filters(root)
@@ -27,9 +35,16 @@ func _collect_nodes(root: Node) -> void:
 	for wall: WallZone in root.get_tree().get_nodes_in_group("wall_zones"):
 		_wall_zones.append(wall)
 
-func _sorted_ids() -> Array:
-	var ids := brush_map.keys()
-	ids.sort()
+func _display_ordered_ids() -> Array[String]:
+	var ids: Array[String] = []
+	for brush_id in BRUSH_DISPLAY_ORDER:
+		if brush_map.has(brush_id):
+			ids.append(brush_id)
+	var extras := brush_map.keys()
+	extras.sort()
+	for brush_id: String in extras:
+		if not ids.has(brush_id):
+			ids.append(brush_id)
 	return ids
 
 ## セットアップ後に追加されるUI（デバッグパネル等）をクリック透過の対象外にする。
@@ -59,15 +74,19 @@ func _find_control_descendants(root: Node) -> Array[Control]:
 		out.append_array(_find_control_descendants(child))
 	return out
 
-## 通常の持ち替えを処理する。ろうそくの固有アクション時は滴の生成位置を返す。
+## 通常の持ち替えを処理し、右クリック時は保持中の道具に対応する固有アクションを返す。
 func handle_input(event: InputEvent) -> Dictionary:
 	if not (event is InputEventMouseButton and event.pressed):
 		return {}
 	if _is_over_interactive_ui(event.position):
 		return {}
 	if event.button_index == MOUSE_BUTTON_RIGHT:
-		if held_brush != null and held_brush.brush_id == "candle":
+		if held_brush == null:
+			return {}
+		if held_brush.brush_id == "candle":
 			return {"wax_origin": held_brush.position + Vector2(0.0, held_brush.hit_radius * 0.7)}
+		if held_brush.brush_id == "teeth":
+			return {"bite_requested": true}
 		return {}
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		_toggle_held_brush(_pick_brush(event.position))
@@ -115,15 +134,21 @@ func _set_held_brush(brush: Brush) -> void:
 		return
 	if held_brush != null:
 		held_brush.is_held = false
-		# 回転ブラシは置いた場所で自動回転を始める。
+		# 回転ブラシはプレイ領域に置いた時だけ自動回転を始める。
 		if held_brush.is_rotating:
-			held_brush.is_active = true
+			held_brush.is_active = not _is_brush_in_rack(held_brush)
 	held_brush = brush
 	if held_brush != null:
 		held_brush.is_held = true
 		# 持ち上げている間は回転を止める。
 		if held_brush.is_rotating:
 			held_brush.is_active = false
+
+func _is_brush_in_rack(brush: Brush) -> bool:
+	if _brush_rack == null:
+		return false
+	# 円全体が棚の内側に収まっている場合だけ収納扱いにする。
+	return _brush_rack.get_rect().grow(-brush.hit_radius).has_point(brush.position)
 
 func _to_playfield_local(global_position: Vector2) -> Vector2:
 	return _playfield.get_global_transform().affine_inverse() * global_position
@@ -158,7 +183,7 @@ func get_brush(brush_id: String) -> Brush:
 func update_controls(name_label: Label, spec_label: Label) -> void:
 	var selected_brush := held_brush
 	if selected_brush == null:
-		for brush_id: String in _sorted_ids():
+		for brush_id: String in _display_ordered_ids():
 			var brush: Brush = brush_map[brush_id]
 			if brush.visible:
 				selected_brush = brush
@@ -170,6 +195,9 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 		name_label.text += " [保持中]"
 	if selected_brush.brush_id == "candle":
 		spec_label.text = "磨き効果なし / 保持して右クリック：ろうを落とす"
+		return
+	if selected_brush.brush_id == "teeth":
+		spec_label.text = "磨き効果なし / 接触中に右クリック：噛む（痛み %d）" % int(GameRules.BITE_PAIN_IMPACT)
 		return
 	var spec := "快感 %d / 痛み %d" % [
 		int(round(selected_brush.polish_gain_per_sec)),

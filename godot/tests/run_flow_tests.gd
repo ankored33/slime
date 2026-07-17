@@ -113,6 +113,8 @@ func _run_tests() -> void:
 	_check(brush_fude.visible, "Lv1: fude brush temporarily available")
 	_check(brush_rotary.visible, "Lv1: rotating brush temporarily available")
 	_check(bool(brush_rotary.is_rotating), "rotating brush: scene marks it as rotating")
+	var brush_name_label: Label = main.get_node("GameScreen/Hud/BrushNameLabel")
+	_check_eq(brush_name_label.text, "指", "brush HUD: finger is the default display")
 
 	# ブラシ画像フック: 素材の有無とプレースホルダ表示が対応していること。
 	var finger_has_texture := ResourceLoader.exists("res://assets/brushes/finger.png", "Texture2D")
@@ -124,6 +126,17 @@ func _run_tests() -> void:
 	_check(not brush_fude._body.visible, "brush: placeholder hidden when texture applied")
 	_check(absf(brush_fude._sprite.scale.x - brush_fude.hit_radius * 2.0 / 128.0) < 0.001,
 		"brush: texture scaled to hit-circle diameter")
+
+	# 回転ブラシは棚へ戻すと停止し、棚の外へ置いた時だけ回転する。
+	game._brushes._set_held_brush(brush_rotary)
+	brush_rotary.position = Vector2(1050.0, 345.0)
+	game._brushes._set_held_brush(null)
+	_check(not brush_rotary.is_active, "rotating brush: stays stopped in rack")
+	game._brushes._set_held_brush(brush_rotary)
+	brush_rotary.position = Vector2(900.0, 400.0)
+	game._brushes._set_held_brush(null)
+	_check(brush_rotary.is_active, "rotating brush: starts outside rack")
+	game.reset_day()
 
 	# ろうそく固有アクション: 本体では磨けず、保持中の右クリックで滴を作る。
 	var brush_candle: Brush = main.get_node("GameScreen/Playfield/BrushCandle")
@@ -143,6 +156,23 @@ func _run_tests() -> void:
 	_check(float(game._slime_state["left"]["pain"]) > 0.0,
 		"candle: wax impact adds pain stimulus")
 	_check_eq(game._wax_drops.size(), 0, "candle: wax drop is consumed on impact")
+	game.reset_day()
+
+	# 歯の固有アクション: 接触中の右クリックだけが一回分の痛みを与える。
+	var brush_teeth: Brush = main.get_node("GameScreen/Playfield/BrushTeeth")
+	game._brushes._set_held_brush(brush_teeth)
+	var teeth_action: Dictionary = game._brushes.handle_input(right_click)
+	_check(teeth_action.has("bite_requested"), "teeth: right click requests a bite")
+	game._apply_teeth_bite()
+	_check_eq(float(game._slime_state["left"]["pain"]), 0.0,
+		"teeth: bite does no damage away from a target")
+	brush_teeth.position = left_slime.position + Vector2(
+		left_slime.get_hit_radius() + brush_teeth.hit_radius, 0.0)
+	game._apply_teeth_bite()
+	_check(float(game._slime_state["left"]["pain"]) > 0.0,
+		"teeth: bite damages a target while touching")
+	_check_eq(float(game._slime_state["left"]["polish"]), 0.0,
+		"teeth: bite has no polish effect")
 	game.reset_day()
 
 	main._on_day_finished({

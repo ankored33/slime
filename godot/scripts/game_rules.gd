@@ -16,8 +16,11 @@ const WAX_POLISH_IMPACT := 12.0
 const WAX_PAIN_IMPACT := 8.0
 const WAX_DROP_SPEED := 90.0
 const WAX_DROP_GRAVITY := 420.0
-const WAX_DROP_RADIUS := 7.0
+const WAX_DROP_RADIUS := 10.0
 const WAX_DROP_LIFETIME := 3.0
+
+## 歯を接触させて右クリックした時の一回分の痛みダメージ。
+const BITE_PAIN_IMPACT := 24.0
 
 ## こすり判定: ブラシ移動速度(px/秒)による効果倍率。
 ## 微小な揺れは無視し、実際に動かしたときだけ効果が出る。
