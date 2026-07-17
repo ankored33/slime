@@ -7,6 +7,7 @@
 [ext_resource type="PackedScene" path="res://scenes/character_card.tscn" id="5"]
 [ext_resource type="PackedScene" path="res://scenes/opening_screen.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/options_screen.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/pause_menu.tscn" id="8"]
 
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_select_info"]
@@ -224,6 +225,9 @@ layout_mode = 2
 [node name="CharacterConfirmDialog" type="ConfirmationDialog" parent="CanvasLayer/SelectScreen"]
 title = "キャラクター選択"
 dialog_text = "このキャラクターを選択しますか？"
+
+[node name="PauseMenu" parent="CanvasLayer" instance=ExtResource("8")]
+visible = false
 
 [node name="OptionsScreen" parent="CanvasLayer" instance=ExtResource("7")]
 visible = false

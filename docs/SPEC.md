@@ -13,8 +13,12 @@
 ## 画面フロー
 
 タイトル → キャラ選択 → キャラ別オープニング（初回のみ） → 磨き画面 → リザルト → 選択へ戻る。
-タイトルからはオプション画面（音量設定）へも行ける。
 `main.gd` が可視切替で管理し、画面間は黒フェードを挟む（ヘッドレス時は即時切替）。
+
+オプション画面は常にオーバーレイ（現在の画面を隠さず上に被せる）。タイトルの
+「オプション」ボタンからも、ESCメニューからも同じオーバーレイを開く。
+ESCメニュー（タイトル画面以外の全画面で開く）は `main.gd` が管理し、開いている間は
+磨き画面のゲージ進行を止める。
 
 ## ファイルの担当
 
@@ -23,7 +27,8 @@
 | `scripts/main.gd` | 画面フロー（可視切替・フェード）と各画面間の橋渡し |
 | `scripts/select_screen.gd` | キャラ選択画面（カード表示・確認ダイアログ・元の経歴を見る） |
 | `scripts/opening_screen.gd` | オープニングのページ送り・split/blackout 表示 |
-| `scripts/options_screen.gd` | オプション画面（音量スライダー） |
+| `scripts/options_screen.gd` | オプション画面（音量スライダー）。常にオーバーレイ表示 |
+| `scripts/pause_menu.gd` | ESCメニュー（オプション/タイトルに戻る/ゲーム終了、確認ダイアログ込み） |
 | `scripts/progress_store.gd` | セーブの書き出し・読み込み |
 | `scripts/characters.gd` | キャラ定義データ（テキスト・座標・パス）。推敲はここだけ |
 | `scripts/game_rules.gd` | 純粋なルール計算・バランス定数（Node非依存・テスト対象） |
@@ -39,7 +44,7 @@
 | `scripts/debug_panel.gd` | 開発用チートパネル（磨き画面でF1。デバッグビルドのみ生成） |
 
 画面のシーンは `scenes/` に分割（`opening_screen.tscn` / `options_screen.tscn` /
-キャラカードは `character_card.tscn` を選択画面が2インスタンス使用）。
+`pause_menu.tscn` / キャラカードは `character_card.tscn` を選択画面が2インスタンス使用）。
 
 ## セーブ
 

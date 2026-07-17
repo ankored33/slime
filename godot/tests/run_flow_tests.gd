@@ -49,7 +49,7 @@ func _run_tests() -> void:
 
 	_check(title.visible and not frame.visible and not game.visible, "boot: title screen only")
 	main._on_title_options_pressed()
-	_check(options.visible and not title.visible, "title options -> options screen")
+	_check(options.visible and title.visible, "title options -> overlay on top of title")
 	options._on_back_pressed()
 	_check(title.visible and not options.visible, "options back -> title screen")
 
@@ -316,6 +316,53 @@ func _run_tests() -> void:
 
 	main._on_character_selected(0)
 	_check(game.visible and not opening.visible, "second start skips opening")
+
+	# ESCメニュー: タイトルでは出さず、ゲーム中はオーバーレイでゲージ進行を止める。
+	var pause_menu: PauseMenu = main.get_node("CanvasLayer/PauseMenu")
+	var esc_event := InputEventKey.new()
+	esc_event.keycode = KEY_ESCAPE
+	esc_event.pressed = true
+	main._unhandled_input(esc_event)
+	_check(pause_menu.visible and game.visible, "esc: pause menu overlays the game screen")
+	_check(bool(game._menu_paused), "esc: pause menu freezes gauge progress")
+
+	pause_menu._on_options_pressed()
+	_check(options.visible and pause_menu.visible and game.visible,
+		"pause menu: options overlays on top of the pause menu")
+	options._on_back_pressed()
+	_check(not options.visible and pause_menu.visible, "pause menu: options back returns to pause menu")
+
+	main._unhandled_input(esc_event)
+	_check(not pause_menu.visible, "esc: second press closes the pause menu")
+	_check(not bool(game._menu_paused), "esc: closing the pause menu resumes gauge progress")
+
+	main._unhandled_input(esc_event)
+	pause_menu._on_title_pressed()
+	_check(pause_menu._confirm_dialog.visible, "pause menu: title button asks for confirmation")
+	pause_menu._confirm_dialog.emit_signal("canceled")
+	_check(game.visible, "pause menu: canceling the title confirmation stays in game")
+
+	pause_menu._on_title_pressed()
+	pause_menu._confirm_dialog.emit_signal("confirmed")
+	_check(title.visible and not game.visible, "pause menu: confirmed title return leaves the game")
+	_check(not bool(game._is_running), "pause menu: returning to title abandons the running day")
+	_check(not pause_menu.visible, "pause menu: hidden after returning to title")
+
+	# 「ゲーム終了」は main の実配線を経由すると get_tree().quit() を呼んでしまうため、
+	# main に繋がっていない別インスタンスでシグナル配線だけを検証する。
+	var pause_menu_probe: PauseMenu = load("res://scenes/pause_menu.tscn").instantiate()
+	root.add_child(pause_menu_probe)
+	# GDScript のラムダはローカル変数を値でキャプチャするため、書き換え検知には配列を使う。
+	var quit_signaled := [false]
+	pause_menu_probe.quit_requested.connect(func() -> void: quit_signaled[0] = true)
+	pause_menu_probe._on_quit_pressed()
+	pause_menu_probe._confirm_dialog.emit_signal("confirmed")
+	_check(quit_signaled[0], "pause menu: quit button emits quit_requested after confirmation")
+	pause_menu_probe.queue_free()
+
+	main._on_character_selected(0)
+	_check(game.visible and bool(game._is_running) and not bool(game._menu_paused),
+		"select after title return: a fresh day starts cleanly")
 
 	# Opening flag survives a reload through the save file.
 	var reloaded: Control = main_scene.instantiate()

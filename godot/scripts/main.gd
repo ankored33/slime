@@ -28,12 +28,16 @@ var _fade_tween: Tween
 @onready var _fade_rect: ColorRect = $CanvasLayer/FadeRect
 @onready var _title_options_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleOptionsButton
 @onready var _options_screen: OptionsScreen = $CanvasLayer/OptionsScreen
+@onready var _pause_menu: PauseMenu = $CanvasLayer/PauseMenu
 
 func _ready() -> void:
 	_return_button.pressed.connect(_on_return_pressed)
 	_title_start_button.pressed.connect(_on_title_start_pressed)
 	_title_options_button.pressed.connect(_on_title_options_pressed)
 	_options_screen.back_requested.connect(_on_options_back_requested)
+	_pause_menu.options_requested.connect(_on_pause_options_requested)
+	_pause_menu.title_requested.connect(_on_pause_title_confirmed)
+	_pause_menu.quit_requested.connect(_on_pause_quit_confirmed)
 	_opening_screen.finished.connect(_on_opening_finished)
 	_game_screen.day_finished.connect(_on_day_finished)
 	_select_screen.character_selected.connect(_on_character_selected)
@@ -49,6 +53,42 @@ func _ready() -> void:
 		_fade_tween = create_tween()
 		_fade_tween.tween_property(_fade_rect, "color:a", 0.0, SCREEN_FADE_DURATION * 2)
 		_fade_tween.tween_callback(_on_fade_finished)
+
+## ESCメニュー: タイトル画面では出さない。オプションが開いていれば先にそれを閉じる。
+func _unhandled_input(event: InputEvent) -> void:
+	if not event.is_action_pressed("ui_cancel"):
+		return
+	if _options_screen.visible:
+		_on_options_back_requested()
+		get_viewport().set_input_as_handled()
+		return
+	if _title_screen.visible:
+		return
+	_toggle_pause_menu()
+	get_viewport().set_input_as_handled()
+
+func _toggle_pause_menu() -> void:
+	if _pause_menu.visible:
+		_close_pause_menu()
+	else:
+		_open_pause_menu()
+
+func _open_pause_menu() -> void:
+	GameAudio.play_se("ui_click")
+	_pause_menu.open()
+	_game_screen.pause_for_menu()
+
+func _close_pause_menu() -> void:
+	_pause_menu.close()
+	_game_screen.resume_from_menu()
+
+func _on_pause_title_confirmed() -> void:
+	_pause_menu.close()
+	_game_screen.abandon_day()
+	_transition(_show_title_screen)
+
+func _on_pause_quit_confirmed() -> void:
+	get_tree().quit()
 
 ## 暗転フェードを挟んで画面を切り替える。switcher は _show_*_screen 系の Callable。
 ## ヘッドレス（テスト）実行時は即時切替。フェード中の再要求は無視する。
@@ -78,22 +118,26 @@ func _hide_all_screens() -> void:
 	_title_screen.visible = false
 	_opening_screen.visible = false
 	_options_screen.visible = false
+	_pause_menu.visible = false
 
 func _show_title_screen() -> void:
 	_hide_all_screens()
 	_title_screen.visible = true
 	GameAudio.play_bgm("title")
 
-func _show_options_screen() -> void:
-	_hide_all_screens()
+## オプションはどの画面からもその上に被せるオーバーレイなので、他の画面は隠さない。
+func _open_options_overlay() -> void:
 	_options_screen.show_options()
 
 func _on_title_options_pressed() -> void:
 	GameAudio.play_se("ui_click")
-	_transition(_show_options_screen)
+	_open_options_overlay()
 
 func _on_options_back_requested() -> void:
-	_transition(_show_title_screen)
+	_options_screen.visible = false
+
+func _on_pause_options_requested() -> void:
+	_open_options_overlay()
 
 func _show_select_screen() -> void:
 	_hide_all_screens()

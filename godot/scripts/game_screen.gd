@@ -32,6 +32,7 @@ var _slime_state := {
 var _species: Dictionary = {}
 var _day_finish_count := 0
 var _is_running := false
+var _menu_paused := false
 var _debug_panel: PanelContainer
 var _debug_expression_override := ""
 
@@ -77,7 +78,7 @@ func _input(event: InputEvent) -> void:
 			and event.pressed and not event.echo and event.keycode == KEY_F1:
 		_debug_panel.visible = not _debug_panel.visible
 		return
-	if not _is_running:
+	if not _is_running or _menu_paused:
 		return
 	var action := _brushes.handle_input(event)
 	var blocked := _fx.finish_active or _fx.fail_active
@@ -91,7 +92,7 @@ func _input(event: InputEvent) -> void:
 		_tool_actions.end_pinch()
 
 func _process(delta: float) -> void:
-	if not _is_running:
+	if not _is_running or _menu_paused:
 		return
 	_brushes.update_drag(get_global_mouse_position(), follow_speed, delta)
 	_tool_actions.update_pinch(
@@ -146,9 +147,32 @@ func _start_fail_fx() -> void:
 	_brushes.deactivate_all()
 	_fx.start_fail()
 
+## ESCメニューが開いている間、ゲージ進行やブラシ操作を止める。日の状態は保持したまま。
+func pause_for_menu() -> void:
+	_menu_paused = true
+	GameAudio.update_loop("brush", "")
+	GameAudio.update_loop("heartbeat", "")
+
+func resume_from_menu() -> void:
+	_menu_paused = false
+
+## ESCメニューからタイトルへ戻る時に、その日の進行を保存せず打ち切る。
+func abandon_day() -> void:
+	if not _is_running:
+		return
+	_is_running = false
+	_menu_paused = false
+	_tool_actions.clear()
+	Engine.time_scale = 1.0
+	GameAudio.update_loop("brush", "")
+	GameAudio.update_loop("heartbeat", "")
+	for slime in _slimes:
+		slime.set_hearts_active(false)
+
 func reset_day() -> void:
 	_day_finish_count = 0
 	_is_running = true
+	_menu_paused = false
 	_current_expression = ""
 	_fx.reset()
 	_tool_actions.clear()
