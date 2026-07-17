@@ -4,8 +4,9 @@ extends RefCounted
 ## Brush-side runtime for GameScreen: discovery, input, controls, unlocks and collision correction.
 
 const GameRules = preload("res://scripts/game_rules.gd")
+const GameAudio = preload("res://scripts/game_audio.gd")
 
-## HUDで未選択時に表示する順序。シーンのブラシ棚と同じ並びにする。
+## ツールボックスのボタン表示順。HUDで未選択時に表示する順序も兼ねる。
 const BRUSH_DISPLAY_ORDER: Array[String] = [
 	"finger", "tongue", "feather", "fude", "teeth",
 	"toothbrush", "rotary", "tawashi", "candle"
@@ -19,13 +20,63 @@ var _playfield: Control
 var _brush_rack: Control
 var _end_day_button: Button
 var _extra_interactive: Array[Control] = []
+var _tool_buttons: Dictionary = {}
+var _unlocked: Dictionary = {}
 
 func setup(root: Control, playfield: Control, brush_rack: Control, end_day_button: Button) -> void:
 	_playfield = playfield
 	_brush_rack = brush_rack
 	_end_day_button = end_day_button
 	_collect_nodes(root)
+	_create_tool_buttons()
 	_configure_mouse_filters(root)
+
+## ツールボックス内に道具ごとのボタンを縦に並べる。押すと保持状態でブラシが出る。
+func _create_tool_buttons() -> void:
+	_tool_buttons.clear()
+	var list := VBoxContainer.new()
+	list.name = "ToolButtons"
+	list.set_anchors_preset(Control.PRESET_FULL_RECT)
+	list.offset_left = 12.0
+	list.offset_top = 34.0
+	list.offset_right = -12.0
+	list.offset_bottom = -12.0
+	list.add_theme_constant_override("separation", 8)
+	_brush_rack.add_child(list)
+	for brush_id in _display_ordered_ids():
+		var button := Button.new()
+		button.text = _display_name(brush_map[brush_id])
+		button.focus_mode = Control.FOCUS_NONE
+		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		button.add_theme_font_size_override("font_size", 18)
+		button.pressed.connect(toggle_from_toolbox.bind(brush_id))
+		list.add_child(button)
+		_tool_buttons[brush_id] = button
+
+## ツールボックスのボタン操作。収納中なら保持状態で出現させ、
+## 配置中なら拾い上げ、保持中なら収納する。
+func toggle_from_toolbox(brush_id: String) -> void:
+	var brush: Brush = brush_map.get(brush_id)
+	if brush == null or not bool(_unlocked.get(brush_id, false)):
+		return
+	GameAudio.play_se("ui_click")
+	if held_brush == brush:
+		_set_held_brush(null)
+		_stow(brush)
+		return
+	if not brush.visible:
+		brush.visible = true
+		brush.position = clamp_to_playfield(
+			_to_playfield_local(_playfield.get_global_mouse_position()), brush)
+	_set_held_brush(brush)
+
+func get_tool_button(brush_id: String) -> Button:
+	return _tool_buttons.get(brush_id)
+
+func _stow(brush: Brush) -> void:
+	brush.visible = false
+	brush.is_active = false
+	brush.is_held = false
 
 func _collect_nodes(root: Node) -> void:
 	brush_map.clear()
@@ -53,6 +104,8 @@ func register_interactive(control: Control) -> void:
 
 func _interactive_controls() -> Array[Control]:
 	var controls: Array[Control] = [_end_day_button]
+	for button: Control in _tool_buttons.values():
+		controls.append(button)
 	controls.append_array(_extra_interactive)
 	return controls
 
@@ -134,9 +187,12 @@ func _set_held_brush(brush: Brush) -> void:
 		return
 	if held_brush != null:
 		held_brush.is_held = false
-		# 回転ブラシはプレイ領域に置いた時だけ自動回転を始める。
-		if held_brush.is_rotating:
-			held_brush.is_active = not _is_brush_in_rack(held_brush)
+		if _is_brush_in_rack(held_brush):
+			# ツールボックスの上で放した道具は収納する。
+			_stow(held_brush)
+		elif held_brush.is_rotating:
+			# 回転ブラシはプレイ領域に置いた時だけ自動回転を始める。
+			held_brush.is_active = true
 	held_brush = brush
 	if held_brush != null:
 		held_brush.is_held = true
@@ -147,7 +203,7 @@ func _set_held_brush(brush: Brush) -> void:
 func _is_brush_in_rack(brush: Brush) -> bool:
 	if _brush_rack == null:
 		return false
-	# 円全体が棚の内側に収まっている場合だけ収納扱いにする。
+	# 円全体がツールボックスの内側に収まっている場合だけ収納扱いにする。
 	return _brush_rack.get_rect().grow(-brush.hit_radius).has_point(brush.position)
 
 func _to_playfield_local(global_position: Vector2) -> Vector2:
@@ -156,20 +212,19 @@ func _to_playfield_local(global_position: Vector2) -> Vector2:
 func apply_unlocks(level: int) -> void:
 	for brush: Brush in brush_map.values():
 		var unlocked := GameRules.is_brush_unlocked(brush.brush_id, level)
-		brush.visible = unlocked
+		_unlocked[brush.brush_id] = unlocked
+		var button: Button = _tool_buttons.get(brush.brush_id)
+		if button != null:
+			button.visible = unlocked
 		if not unlocked:
-			brush.is_active = false
-			brush.is_held = false
 			if held_brush == brush:
 				_set_held_brush(null)
+			_stow(brush)
 
-func reset(rack_slots: Dictionary) -> void:
+func reset() -> void:
 	_set_held_brush(null)
 	for brush: Brush in brush_map.values():
-		brush.is_active = false
-		brush.is_held = false
-		if rack_slots.has(brush.brush_id):
-			brush.position = rack_slots[brush.brush_id]
+		_stow(brush)
 
 func deactivate_all() -> void:
 	_set_held_brush(null)
@@ -181,12 +236,12 @@ func get_brush(brush_id: String) -> Brush:
 	return brush_map.get(brush_id)
 
 func update_controls(name_label: Label, spec_label: Label) -> void:
+	_update_tool_button_labels()
 	var selected_brush := held_brush
 	if selected_brush == null:
 		for brush_id: String in _display_ordered_ids():
-			var brush: Brush = brush_map[brush_id]
-			if brush.visible:
-				selected_brush = brush
+			if bool(_unlocked.get(brush_id, false)):
+				selected_brush = brush_map[brush_id]
 				break
 	if selected_brush == null:
 		return
@@ -209,6 +264,17 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 	if selected_brush.is_rotating:
 		spec += " / 置くと自動回転"
 	spec_label.text = spec
+
+func _update_tool_button_labels() -> void:
+	for brush_id: String in _tool_buttons:
+		var brush: Brush = brush_map[brush_id]
+		var button: Button = _tool_buttons[brush_id]
+		var text := _display_name(brush)
+		if brush == held_brush:
+			text += "（保持中）"
+		elif brush.visible:
+			text += "（配置中）"
+		button.text = text
 
 func _display_name(brush: Brush) -> String:
 	if brush.display_name != "":

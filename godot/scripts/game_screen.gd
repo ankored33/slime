@@ -25,19 +25,6 @@ const FAIL_FLASH_COLOR := Color(0.35, 0.02, 0.06)
 # Level-driven; refreshed in setup_species.
 var finish_threshold := GameRules.finish_threshold(1)
 
-# 右パネル上部のブラシ置き場。開始・リセット時にブラシをここへ戻す。
-const BRUSH_RACK_SLOTS := {
-	"finger": Vector2(1050, 150),
-	"tongue": Vector2(1195, 150),
-	"feather": Vector2(1050, 215),
-	"fude": Vector2(1195, 215),
-	"teeth": Vector2(1050, 280),
-	"toothbrush": Vector2(1195, 280),
-	"rotary": Vector2(1050, 345),
-	"tawashi": Vector2(1195, 345),
-	"candle": Vector2(1122, 375)
-}
-
 var _finish_fx_time_left := 0.0
 var _fail_fx_time_left := 0.0
 var _exhaust_time_left := 0.0
@@ -236,7 +223,7 @@ func reset_day() -> void:
 		"left": {"polish": 0.0, "pain": 0.0},
 		"right": {"polish": 0.0, "pain": 0.0}
 	}
-	_brushes.reset(BRUSH_RACK_SLOTS)
+	_brushes.reset()
 	for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
 		slime.reset_pressure()
 		slime.set_hearts_active(false)

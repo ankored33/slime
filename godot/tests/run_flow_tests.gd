@@ -109,9 +109,13 @@ func _run_tests() -> void:
 	var brush_finger: Node2D = main.get_node("GameScreen/Playfield/BrushFinger")
 	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/BrushFude")
 	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/BrushRotary")
-	_check(brush_finger.visible, "Lv1: finger brush available")
-	_check(brush_fude.visible, "Lv1: fude brush temporarily available")
-	_check(brush_rotary.visible, "Lv1: rotating brush temporarily available")
+	_check(not brush_finger.visible and not brush_rotary.visible,
+		"toolbox: brushes start stowed")
+	var finger_button: Button = game._brushes.get_tool_button("finger")
+	var rotary_button: Button = game._brushes.get_tool_button("rotary")
+	_check(finger_button != null and finger_button.visible, "Lv1: finger tool button available")
+	_check(rotary_button != null and rotary_button.visible,
+		"Lv1: rotating brush tool button temporarily available")
 	_check(bool(brush_rotary.is_rotating), "rotating brush: scene marks it as rotating")
 	var brush_name_label: Label = main.get_node("GameScreen/Hud/BrushNameLabel")
 	_check_eq(brush_name_label.text, "指", "brush HUD: finger is the default display")
@@ -127,21 +131,30 @@ func _run_tests() -> void:
 	_check(absf(brush_fude._sprite.scale.x - brush_fude.hit_radius * 2.0 / 128.0) < 0.001,
 		"brush: texture scaled to hit-circle diameter")
 
-	# 回転ブラシは棚へ戻すと停止し、棚の外へ置いた時だけ回転する。
-	game._brushes._set_held_brush(brush_rotary)
-	brush_rotary.position = Vector2(1050.0, 345.0)
-	game._brushes._set_held_brush(null)
-	_check(not brush_rotary.is_active, "rotating brush: stays stopped in rack")
-	game._brushes._set_held_brush(brush_rotary)
+	# ツールボックス: ボタンで出し入れし、押した道具は保持状態で出現する。
+	game._brushes.toggle_from_toolbox("rotary")
+	_check(brush_rotary.visible and game._brushes.held_brush == brush_rotary,
+		"toolbox: button summons the brush in held state")
+	_check(not brush_rotary.is_active, "rotating brush: stays stopped while held")
 	brush_rotary.position = Vector2(900.0, 400.0)
 	game._brushes._set_held_brush(null)
-	_check(brush_rotary.is_active, "rotating brush: starts outside rack")
+	_check(brush_rotary.is_active, "rotating brush: starts when placed on the field")
+	game._brushes.toggle_from_toolbox("rotary")
+	_check(game._brushes.held_brush == brush_rotary, "toolbox: button picks up a placed brush")
+	game._brushes.toggle_from_toolbox("rotary")
+	_check(not brush_rotary.visible and not brush_rotary.is_active,
+		"toolbox: pressing the button while held stows the brush")
+	game._brushes.toggle_from_toolbox("rotary")
+	brush_rotary.position = Vector2(1100.0, 300.0)
+	game._brushes._set_held_brush(null)
+	_check(not brush_rotary.visible, "toolbox: releasing over the box stows the brush")
 	game.reset_day()
 
 	# ろうそく固有アクション: 本体では磨けず、保持中の右クリックで滴を作る。
 	var brush_candle: Brush = main.get_node("GameScreen/Playfield/BrushCandle")
-	_check(brush_candle.visible, "candle: temporarily unlocked at Lv1")
-	game._brushes._set_held_brush(brush_candle)
+	game._brushes.toggle_from_toolbox("candle")
+	_check(brush_candle.visible and game._brushes.held_brush == brush_candle,
+		"candle: temporarily unlocked at Lv1 and summoned held")
 	var right_click := InputEventMouseButton.new()
 	right_click.button_index = MOUSE_BUTTON_RIGHT
 	right_click.pressed = true
@@ -160,7 +173,7 @@ func _run_tests() -> void:
 
 	# 歯の固有アクション: 接触中の右クリックだけが一回分の痛みを与える。
 	var brush_teeth: Brush = main.get_node("GameScreen/Playfield/BrushTeeth")
-	game._brushes._set_held_brush(brush_teeth)
+	game._brushes.toggle_from_toolbox("teeth")
 	var teeth_action: Dictionary = game._brushes.handle_input(right_click)
 	_check(teeth_action.has("bite_requested"), "teeth: right click requests a bite")
 	game._apply_teeth_bite()
