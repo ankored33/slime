@@ -13,14 +13,12 @@ const SCREEN_FADE_DURATION := 0.25
 var _selected_index := 0
 var _last_result: Dictionary = {}
 var _opening_page := 0
-var _pending_character_index := -1
 var _fade_tween: Tween
 
 @onready var _frame: Control = $CanvasLayer/Frame
 @onready var _screen_title: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenTitle
 @onready var _screen_subtitle: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenSubtitle
-@onready var _select_screen: Control = $CanvasLayer/SelectScreen
-@onready var _character_confirm_dialog: ConfirmationDialog = $CanvasLayer/SelectScreen/CharacterConfirmDialog
+@onready var _select_screen: SelectScreen = $CanvasLayer/SelectScreen
 @onready var _game_screen: Control = $GameScreen
 @onready var _result_screen: Control = $CanvasLayer/Frame/Margin/VBox/ResultScreen
 @onready var _result_body: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/ResultScreen/ResultPanel/Margin/ResultBody
@@ -63,23 +61,9 @@ func _ready() -> void:
 	# 画面のどこをクリックしてもページが進む（暗転ページはこれが唯一の進行手段）。
 	_opening_screen.gui_input.connect(_on_opening_gui_input)
 	_game_screen.day_finished.connect(_on_day_finished)
-	_character_confirm_dialog.confirmed.connect(_on_character_confirmed)
-	_character_confirm_dialog.canceled.connect(_on_character_selection_canceled)
-	_character_confirm_dialog.get_ok_button().text = "選択"
-	_character_confirm_dialog.get_cancel_button().text = "キャンセル"
-	var show_debug_tools := OS.is_debug_build()
-	for index in range(_characters.size()):
-		var card := _get_card(index)
-		var button: Button = card.get_node("InteractionLayer/CardButton")
-		button.pressed.connect(_on_character_card_pressed.bind(index))
-		var reset_button: Button = card.get_node("InteractionLayer/DebugResetButton")
-		reset_button.visible = show_debug_tools
-		reset_button.disabled = not show_debug_tools
-		if show_debug_tools:
-			reset_button.pressed.connect(_on_character_reset_pressed.bind(index))
-		var view_original_button: Button = card.get_node("InteractionLayer/ViewOriginalButton")
-		view_original_button.button_down.connect(_on_view_original_button_down.bind(index))
-		view_original_button.button_up.connect(_on_view_original_button_up.bind(index))
+	_select_screen.character_selected.connect(_on_character_selected)
+	_select_screen.progress_changed.connect(_save_progress)
+	_select_screen.setup(_characters)
 	_load_progress()
 	_show_title_screen()
 	# 起動時はタイトルへフェードインで入る。
@@ -90,70 +74,6 @@ func _ready() -> void:
 		_fade_tween = create_tween()
 		_fade_tween.tween_property(_fade_rect, "color:a", 0.0, SCREEN_FADE_DURATION * 2)
 		_fade_tween.tween_callback(_on_fade_finished)
-
-func _get_card(index: int) -> Control:
-	return _select_screen.get_node("Margin/VBox/Cards/Card%d" % index)
-
-func _refresh_character_cards() -> void:
-	for index in range(_characters.size()):
-		_refresh_character_card(index)
-
-## force_original: 「元の経歴を見る」ボタン押下中に名前・二つ名・立ち絵・プロフィール文を
-## すべて初回（オープニング未読時）のものへ一時的に戻す。
-func _refresh_character_card(index: int, force_original: bool = false) -> void:
-	var chara: Dictionary = _characters[index]
-	var card := _get_card(index)
-	var info: VBoxContainer = card.get_node("Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox")
-	var name_label: Label = info.get_node("NameLabel")
-	var epithet_label: Label = info.get_node("EpithetLabel")
-	var profile_body: RichTextLabel = info.get_node("ProfileBody")
-	var portrait: TextureRect = card.get_node("Margin/VBox/PortraitArea/Portrait")
-	var placeholder: Label = card.get_node("Margin/VBox/PortraitArea/PortraitPlaceholder")
-	var view_original_button: Button = card.get_node("InteractionLayer/ViewOriginalButton")
-	var opening_seen := bool(chara.get("opening_seen", false))
-	view_original_button.visible = opening_seen
-	var use_after_opening := opening_seen and not force_original
-	# 既読後は本名・二つ名を出さず、虜囚番号・虜囚区分の表記に置き換える
-	# （「元の経歴を見る」押下中は強制的に本名・二つ名を出す）。
-	name_label.text = str(chara.get("name", "")) if force_original else CharacterDefs.display_name(chara)
-	epithet_label.text = str(chara.get("epithet", "")) if force_original else CharacterDefs.display_epithet(chara)
-	var opening_state := "済" if opening_seen else "未（開始時に再生）"
-	# ポートレートと同様、オープニング済ならプロフィール文も差し替える（未設定なら通常文）。
-	var profile_text := str(chara.get("profile_after_opening", "")) if use_after_opening else ""
-	if profile_text == "":
-		profile_text = str(chara.get("profile", ""))
-	profile_body.text = (
-		"%s\n\n"
-		+ "レベル: [b]%d[/b] / %d\n"
-		+ "累計FINISH: %d\n"
-		+ "痛み失敗: %d\n"
-		+ "オープニング: %s"
-	) % [
-		profile_text,
-		int(chara["level"]),
-		GameRules.MAX_LEVEL,
-		int(chara["finish_total"]),
-		int(chara["pain_fail_total"]),
-		opening_state
-	]
-	var portrait_path := str(chara.get(
-		"portrait_after_opening" if use_after_opening else "portrait",
-		""
-	))
-	if portrait_path == "":
-		portrait_path = str(chara.get("portrait", ""))
-	var texture: Texture2D = null
-	if portrait_path != "" and ResourceLoader.exists(portrait_path):
-		texture = load(portrait_path)
-	portrait.texture = texture
-	placeholder.visible = texture == null
-	var info_overlay := info.get_parent().get_parent() as PanelContainer
-	call_deferred("_fit_profile_overlay", info_overlay)
-
-func _fit_profile_overlay(info_overlay: PanelContainer) -> void:
-	if not is_instance_valid(info_overlay):
-		return
-	info_overlay.offset_top = info_overlay.offset_bottom - info_overlay.get_combined_minimum_size().y
 
 ## 暗転フェードを挟んで画面を切り替える。switcher は _show_*_screen 系の Callable。
 ## ヘッドレス（テスト）実行時は即時切替。フェード中の再要求は無視する。
@@ -215,10 +135,7 @@ func _update_volume_value_label(category: String, volume: float) -> void:
 
 func _show_select_screen() -> void:
 	_hide_all_screens()
-	_pending_character_index = -1
-	_character_confirm_dialog.hide()
-	_select_screen.visible = true
-	_refresh_character_cards()
+	_select_screen.show_characters()
 	GameAudio.play_bgm("select")
 
 func _show_opening_screen() -> void:
@@ -247,46 +164,7 @@ func _on_title_start_pressed() -> void:
 	GameAudio.play_se("ui_click")
 	_transition(_show_select_screen)
 
-func _on_character_card_pressed(index: int) -> void:
-	if index < 0 or index >= _characters.size():
-		return
-	GameAudio.play_se("ui_click")
-	_pending_character_index = index
-	_character_confirm_dialog.popup_centered()
-
-func _on_character_confirmed() -> void:
-	if _pending_character_index < 0:
-		return
-	var index := _pending_character_index
-	_pending_character_index = -1
-	_on_character_start_pressed(index)
-
-func _on_character_selection_canceled() -> void:
-	_pending_character_index = -1
-
-func _on_character_reset_pressed(index: int) -> void:
-	if not OS.is_debug_build():
-		return
-	if index < 0 or index >= _characters.size():
-		return
-	GameAudio.play_se("ui_click")
-	var chara: Dictionary = _characters[index]
-	chara["level"] = 1
-	chara["finish_total"] = 0
-	chara["pain_fail_total"] = 0
-	chara["opening_seen"] = false
-	_characters[index] = chara
-	_save_progress()
-	_refresh_character_card(index)
-
-func _on_view_original_button_down(index: int) -> void:
-	_refresh_character_card(index, true)
-
-func _on_view_original_button_up(index: int) -> void:
-	_refresh_character_card(index, false)
-
-func _on_character_start_pressed(index: int) -> void:
-	GameAudio.play_se("ui_click")
+func _on_character_selected(index: int) -> void:
 	_selected_index = index
 	var chara: Dictionary = _characters[_selected_index]
 	if not bool(chara.get("opening_seen", false)):

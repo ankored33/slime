@@ -34,7 +34,7 @@ func _run_tests() -> void:
 	var title: Control = main.get_node("CanvasLayer/TitleScreen")
 	var opening: Control = main.get_node("CanvasLayer/OpeningScreen")
 	var frame: Control = main.get_node("CanvasLayer/Frame")
-	var select: Control = main.get_node("CanvasLayer/SelectScreen")
+	var select: SelectScreen = main.get_node("CanvasLayer/SelectScreen")
 	var result: Control = main.get_node("CanvasLayer/Frame/Margin/VBox/ResultScreen")
 	var game: Control = main.get_node("GameScreen")
 	var next_button: Button = main.get_node(
@@ -277,7 +277,7 @@ func _run_tests() -> void:
 	main._characters[1]["finish_total"] = 14
 	main._characters[1]["pain_fail_total"] = 3
 	main._characters[1]["opening_seen"] = true
-	main._refresh_character_card(1)
+	select.refresh_character_card(1)
 	var admiral_reset: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugResetButton")
 	# headless テストは常にデバッグビルドで走る。リリース時の非表示はここでは検証できない。
 	_check(admiral_reset.visible, "debug reset: visible in debug builds")
@@ -292,7 +292,7 @@ func _run_tests() -> void:
 	_check(String(card1_portrait.texture.resource_path).ends_with("/admiral/portrait.png"),
 		"debug reset: portrait returns to initial state")
 
-	main._on_character_start_pressed(0)
+	main._on_character_selected(0)
 	_check(game.visible and not opening.visible, "second start skips opening")
 
 	# Opening flag survives a reload through the save file.

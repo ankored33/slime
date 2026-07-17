@@ -1,8 +1,10 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=7 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/game_screen.tscn" id="2"]
 [ext_resource type="Script" path="res://scripts/game_audio.gd" id="3"]
+[ext_resource type="Script" path="res://scripts/select_screen.gd" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/character_card.tscn" id="5"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_select_info"]
 bg_color = Color(0.025, 0.03, 0.05, 0.9)
@@ -15,24 +17,6 @@ corner_radius_top_left = 10
 corner_radius_top_right = 10
 corner_radius_bottom_right = 10
 corner_radius_bottom_left = 10
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_hover"]
-bg_color = Color(1, 1, 1, 0.08)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.9, 0.72, 0.5)
-
-[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_card_pressed"]
-bg_color = Color(1, 1, 1, 0.13)
-border_width_left = 2
-border_width_top = 2
-border_width_right = 2
-border_width_bottom = 2
-border_color = Color(1, 0.9, 0.72, 0.75)
-
-[sub_resource type="StyleBoxEmpty" id="StyleBoxEmpty_card_normal"]
 
 [node name="Main" type="Control"]
 layout_mode = 3
@@ -311,6 +295,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+script = ExtResource("4")
 
 [node name="Bg" type="ColorRect" parent="CanvasLayer/SelectScreen"]
 layout_mode = 1
@@ -360,289 +345,11 @@ text = "キャラクターを選択してください。"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="Card0" type="PanelContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0"]
-layout_mode = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 8
-
-[node name="VBox" type="VBoxContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="PortraitArea" type="Control" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="PortraitBg" type="ColorRect" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.09, 0.09, 0.14, 1)
-
-[node name="Portrait" type="TextureRect" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-expand_mode = 1
-stretch_mode = 5
-
-[node name="PortraitPlaceholder" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-modulate = Color(0.55, 0.58, 0.68, 0.8)
-text = "立ち絵（未設定）"
-
-[node name="InfoOverlay" type="PanelContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 0.666667
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = -334.0
-offset_right = -14.0
-offset_bottom = -48.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_select_info")
-
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 14
-
-[node name="VBox" type="VBoxContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 5
-
-[node name="NameLabel" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "？？？"
-
-[node name="EpithetLabel" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-modulate = Color(0.8, 0.84, 0.9, 0.92)
-text = ""
-
-[node name="ProfileBody" type="RichTextLabel" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
-layout_mode = 2
-bbcode_enabled = true
-fit_content = true
-scroll_active = false
-
-[node name="InteractionLayer" type="Control" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0"]
+[node name="Card0" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards" instance=ExtResource("5")]
 layout_mode = 2
 
-[node name="CardButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_default_cursor_shape = 2
-focus_mode = 0
-theme_override_styles/normal = SubResource("StyleBoxEmpty_card_normal")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_card_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_card_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_card_pressed")
-
-[node name="DebugResetButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer"]
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 14.0
-offset_top = -52.0
-offset_right = 188.0
-offset_bottom = -14.0
-grow_vertical = 0
-mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 13
-text = "状態リセット（DEBUG）"
-
-[node name="ViewOriginalButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 0.666667
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = -42.0
-offset_right = -14.0
-offset_bottom = -14.0
-grow_horizontal = 0
-grow_vertical = 0
-mouse_default_cursor_shape = 2
-focus_mode = 0
-theme_override_font_sizes/font_size = 13
-text = "元の経歴を見る"
-
-[node name="Card1" type="PanelContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards"]
+[node name="Card1" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards" instance=ExtResource("5")]
 layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1"]
-layout_mode = 2
-theme_override_constants/margin_left = 8
-theme_override_constants/margin_top = 8
-theme_override_constants/margin_right = 8
-theme_override_constants/margin_bottom = 8
-
-[node name="VBox" type="VBoxContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="PortraitArea" type="Control" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="PortraitBg" type="ColorRect" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-color = Color(0.09, 0.09, 0.14, 1)
-
-[node name="Portrait" type="TextureRect" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-expand_mode = 1
-stretch_mode = 5
-
-[node name="PortraitPlaceholder" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-modulate = Color(0.55, 0.58, 0.68, 0.8)
-text = "立ち絵（未設定）"
-
-[node name="InfoOverlay" type="PanelContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 0.666667
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = -334.0
-offset_right = -14.0
-offset_bottom = -48.0
-grow_horizontal = 0
-grow_vertical = 0
-theme_override_styles/panel = SubResource("StyleBoxFlat_select_info")
-
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay"]
-layout_mode = 2
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 14
-
-[node name="VBox" type="VBoxContainer" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin"]
-layout_mode = 2
-theme_override_constants/separation = 5
-
-[node name="NameLabel" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "？？？"
-
-[node name="EpithetLabel" type="Label" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
-layout_mode = 2
-theme_override_font_sizes/font_size = 14
-modulate = Color(0.8, 0.84, 0.9, 0.92)
-text = ""
-
-[node name="ProfileBody" type="RichTextLabel" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox"]
-layout_mode = 2
-bbcode_enabled = true
-fit_content = true
-scroll_active = false
-
-[node name="InteractionLayer" type="Control" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1"]
-layout_mode = 2
-
-[node name="CardButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-mouse_default_cursor_shape = 2
-focus_mode = 0
-theme_override_styles/normal = SubResource("StyleBoxEmpty_card_normal")
-theme_override_styles/focus = SubResource("StyleBoxEmpty_card_normal")
-theme_override_styles/hover = SubResource("StyleBoxFlat_card_hover")
-theme_override_styles/pressed = SubResource("StyleBoxFlat_card_pressed")
-
-[node name="DebugResetButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer"]
-layout_mode = 1
-anchors_preset = 2
-anchor_top = 1.0
-anchor_bottom = 1.0
-offset_left = 14.0
-offset_top = -52.0
-offset_right = 188.0
-offset_bottom = -14.0
-grow_vertical = 0
-mouse_default_cursor_shape = 2
-theme_override_font_sizes/font_size = 13
-text = "状態リセット（DEBUG）"
-
-[node name="ViewOriginalButton" type="Button" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer"]
-layout_mode = 1
-anchors_preset = 3
-anchor_left = 0.666667
-anchor_top = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 0.0
-offset_top = -42.0
-offset_right = -14.0
-offset_bottom = -14.0
-grow_horizontal = 0
-grow_vertical = 0
-mouse_default_cursor_shape = 2
-focus_mode = 0
-theme_override_font_sizes/font_size = 13
-text = "元の経歴を見る"
 
 [node name="CharacterConfirmDialog" type="ConfirmationDialog" parent="CanvasLayer/SelectScreen"]
 title = "キャラクター選択"
