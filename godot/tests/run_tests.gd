@@ -49,16 +49,19 @@ func _test_level_for_finish_total() -> void:
 	_check_eq(GameRules.level_for_finish_total(4), 2, "level: 4 finish -> Lv2")
 	_check_eq(GameRules.level_for_finish_total(5), 3, "level: 5 finish -> Lv3")
 	_check_eq(GameRules.level_for_finish_total(20), 6, "level: 20 finish -> Lv6")
-	_check_eq(GameRules.level_for_finish_total(299), 6, "level: 299 finish -> Lv6")
-	_check_eq(GameRules.level_for_finish_total(300), 7, "level: 300 finish -> Lv7")
-	_check_eq(GameRules.level_for_finish_total(10000), 8, "level: 10000 finish -> Lv8")
-	_check_eq(GameRules.level_for_finish_total(300000), 9, "level: 300000 finish -> Lv9")
-	_check_eq(GameRules.level_for_finish_total(9999999), 9, "level: 9999999 finish -> Lv9")
-	_check_eq(GameRules.level_for_finish_total(10000000), 10, "level: 10000000 finish -> Lv10")
-	_check_eq(GameRules.level_for_finish_total(10000000000), GameRules.MAX_LEVEL, "level: capped at MAX_LEVEL")
+	for level: int in [7, 100, 500, 1000]:
+		var need := GameRules.required_finish_total(level)
+		_check_eq(GameRules.level_for_finish_total(need), level,
+			"level: required total reaches Lv%d" % level)
+		_check_eq(GameRules.level_for_finish_total(need - 1), level - 1,
+			"level: one short of Lv%d stays below" % level)
+	_check(GameRules.required_finish_total(GameRules.MAX_LEVEL) < 9007199254740992,
+		"level: Lv1000 total stays JSON-safe")
+	_check_eq(GameRules.level_for_finish_total(GameRules.required_finish_total(1000) * 10),
+		GameRules.MAX_LEVEL, "level: capped at MAX_LEVEL")
 	_check_eq(GameRules.level_for_finish_total(-5), 1, "level: negative finish clamps to Lv1")
 	_check_eq(GameRules.level_for_finish_total(0, 5), 5, "level: saved level wins when higher")
-	_check_eq(GameRules.level_for_finish_total(0, 99), GameRules.MAX_LEVEL, "level: saved level capped")
+	_check_eq(GameRules.level_for_finish_total(0, 99999), GameRules.MAX_LEVEL, "level: saved level capped")
 	_check_eq(GameRules.level_for_finish_total(0, -3), 1, "level: bad saved level clamps to Lv1")
 
 func _test_finish_threshold() -> void:
@@ -71,19 +74,26 @@ func _test_polish_bonus() -> void:
 	_check_near(GameRules.polish_bonus(1), 0.6, "polish_bonus: Lv1 is dull")
 	_check_near(GameRules.polish_bonus(5), 1.2, "polish_bonus: Lv5")
 	_check_near(GameRules.polish_bonus(10), 1.95, "polish_bonus: Lv10 roughly 2x")
+	_check_near(GameRules.polish_bonus(1000), 3.0, "polish_bonus: capped in the late game")
 	_check_near(GameRules.polish_bonus(0), 0.6, "polish_bonus: Lv0 clamps to baseline")
 
 func _test_pain_resist() -> void:
 	_check_near(GameRules.pain_resist(1), 1.0, "pain_resist: Lv1 baseline")
 	_check_near(GameRules.pain_resist(5), 0.8, "pain_resist: Lv5")
-	_check_near(GameRules.pain_resist(10), 0.0, "pain_resist: Lv10 is fully immune")
-	_check_near(GameRules.pain_resist(100), 0.0, "pain_resist: clamped to Lv10 value")
+	_check_near(GameRules.pain_resist(10), 0.55, "pain_resist: Lv10")
+	_check_near(GameRules.pain_resist(21), 0.0, "pain_resist: fully immune from Lv21")
+	_check_near(GameRules.pain_resist(1000), 0.0, "pain_resist: stays immune")
 
 func _test_retention_ratio() -> void:
 	_check_near(GameRules.retention_ratio(1), 0.0, "retention: Lv1 keeps nothing")
 	_check_near(GameRules.retention_ratio(4), 0.35, "retention: Lv4")
-	_check_near(GameRules.retention_ratio(10), 0.9999967, "retention: Lv10 chains at ~100k/sec")
-	_check_near(GameRules.retention_ratio(100), 0.9999967, "retention: clamped to Lv10 value")
+	_check_near(GameRules.retention_ratio(6), 0.784, "retention: Lv6 targets 1 finish/sec")
+	_check_near(GameRules.chain_rate_target(1000), GameRules.FINAL_CHAIN_RATE,
+		"retention: Lv1000 targets the final chain rate")
+	_check_near(GameRules.retention_ratio(1000),
+		1.0 - 600.0 / (900.0 * GameRules.FINAL_CHAIN_RATE),
+		"retention: Lv1000 derived from final rate")
+	_check(GameRules.retention_ratio(1000) < 1.0, "retention: never reaches 1")
 
 func _test_chain_finishes() -> void:
 	var below: Dictionary = GameRules.chain_finishes(500.0, 900.0, 0.63)
@@ -103,7 +113,7 @@ func _test_chain_finishes() -> void:
 	_check_near(float(multi["factor"]), pow(0.95, 3), "chain: factor is retention^count")
 
 	# 終盤想定: 1フレームの供給超過で千回超のFINISHが立つ。
-	var endgame_r := GameRules.retention_ratio(10)
+	var endgame_r := GameRules.retention_ratio(1000)
 	var endgame: Dictionary = GameRules.chain_finishes(906.5, 900.0, endgame_r)
 	var count := int(endgame["count"])
 	var remaining: float = 906.5 * float(endgame["factor"])

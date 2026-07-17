@@ -4,7 +4,7 @@ extends RefCounted
 ## Pure gameplay formulas shared by main.gd and game_screen.gd.
 ## Keep this file free of Node/scene dependencies so it stays unit-testable.
 
-const MAX_LEVEL := 10
+const MAX_LEVEL := 1000
 const FAIL_PENALTY_RATIO := 0.5
 
 ## 快感・痛みゲージの1本あたり満タン値。ゲージ系の数値はすべてこのスケールが基準。
@@ -40,16 +40,39 @@ static func rub_multiplier(speed: float) -> float:
 		return 0.0
 	return clampf(0.25 + speed * 0.0025, 0.0, RUB_MAX_MULTIPLIER)
 
-## Cumulative FINISH totals required to reach each level (index = level - 1).
-## Lv6 あたりから連鎖（複数FINISH/秒）が始まり1日の獲得数が爆発するため、
-## 後半のしきい値も指数的に伸ばして各レベル帯を数分ずつ観賞できるようにする。
-const LEVEL_THRESHOLDS: Array[int] = [0, 2, 5, 9, 14, 20, 300, 10000, 300000, 10000000]
+## 序盤（連鎖開始前）のレベル別テーブル。Lv6以降は式で連続的に伸びる。
+const EARLY_LEVEL_THRESHOLDS: Array[int] = [0, 2, 5, 9, 14, 20]
+const EARLY_RETENTION: Array[float] = [0.0, 0.1, 0.2, 0.35, 0.5]
+
+## 連鎖の最終目標ペース（理論値・回/秒）。フレーム離散化で2割強目減りするため、
+## 実効でおよそ10万回/秒に着地するよう大きめに取ってある。
+const FINAL_CHAIN_RATE := 130000.0
+
+## 連鎖期にレベル1つ上がるのに掛かる時間の目安（秒）。レベル閾値の間隔を決める。
+const SECONDS_PER_CHAIN_LEVEL := 30.0
+
+## 連鎖期の目標ペース（回/秒）。回転ブラシ放置の想定で、
+## Lv6=1回/秒 から Lv1000=FINAL_CHAIN_RATE まで対数線形に伸びる。
+static func chain_rate_target(level: int) -> float:
+	var progress := float(clampi(level, 6, MAX_LEVEL) - 6) / float(MAX_LEVEL - 6)
+	return pow(FINAL_CHAIN_RATE, progress)
+
+## このレベルに到達するのに必要な累計FINISH数。
+## 連鎖期は目標ペースと同じ指数で間隔を伸ばし、どのレベル帯でも
+## 1レベル ≈ SECONDS_PER_CHAIN_LEVEL 秒の連鎖で上がるように保つ。
+static func required_finish_total(level: int) -> int:
+	level = clampi(level, 1, MAX_LEVEL)
+	if level <= EARLY_LEVEL_THRESHOLDS.size():
+		return EARLY_LEVEL_THRESHOLDS[level - 1]
+	var gap_scale := SECONDS_PER_CHAIN_LEVEL / (log(FINAL_CHAIN_RATE) / float(MAX_LEVEL - 6))
+	return EARLY_LEVEL_THRESHOLDS[-1] + int(round(gap_scale * (chain_rate_target(level) - 1.0)))
 
 static func level_for_finish_total(finish_total: int, saved_level: int = 1) -> int:
 	var derived := 1
-	for index in range(LEVEL_THRESHOLDS.size()):
-		if finish_total >= LEVEL_THRESHOLDS[index]:
-			derived = index + 1
+	for level in range(2, MAX_LEVEL + 1):
+		if finish_total < required_finish_total(level):
+			break
+		derived = level
 	return mini(MAX_LEVEL, maxi(1, maxi(saved_level, derived)))
 
 ## Combined polish needed for a FINISH. Starts near the 2000-point ceiling
@@ -57,29 +80,24 @@ static func level_for_finish_total(finish_total: int, saved_level: int = 1) -> i
 static func finish_threshold(level: int) -> float:
 	return maxf(900.0, 1700.0 - float(maxi(0, level - 1)) * 90.0)
 
-## Sensitivity: polish gain multiplier. Dull at Lv1, roughly 2x by Lv10.
+## Sensitivity: polish gain multiplier. Dull at Lv1, capped early so the
+## late game grows through chaining (retention), not raw gauge speed.
 static func polish_bonus(level: int) -> float:
-	return 0.6 + float(maxi(0, level - 1)) * 0.15
+	return minf(3.0, 0.6 + float(maxi(0, level - 1)) * 0.15)
 
 ## 痛み倍率（低いほど耐久が高い）。レベルで身体の耐久が上がり、
-## Lv10 で完全耐性＝ブラシを置きっぱなしにしても失敗しなくなる。
-const PAIN_RESIST_BY_LEVEL: Array[float] = [
-	1.0, 0.95, 0.9, 0.85, 0.8, 0.72, 0.6, 0.42, 0.2, 0.0
-]
-
+## Lv21以降は完全耐性＝ブラシを置きっぱなしにしても失敗しなくなる。
 static func pain_resist(level: int) -> float:
-	return PAIN_RESIST_BY_LEVEL[clampi(level, 1, MAX_LEVEL) - 1]
+	return maxf(0.0, 1.0 - float(maxi(0, level - 1)) * 0.05)
 
-## FINISH後に残る快感の割合＝連鎖の燃費。終盤は1に肉薄させて連鎖を暴走させる。
-## 回転ブラシ（磨き200/秒）放置時の目安ペース:
-## Lv5 ~0.4回/秒, Lv6 ~1回/秒, Lv7 ~50回/秒, Lv8 ~500回/秒,
-## Lv9 ~5000回/秒, Lv10 ~10万回/秒（最終目標値）。
-const RETENTION_BY_LEVEL: Array[float] = [
-	0.0, 0.1, 0.2, 0.35, 0.5, 0.8, 0.995, 0.99938, 0.999927, 0.9999967
-]
-
+## FINISH後に残る快感の割合＝連鎖の燃費。回転ブラシ（磨き200/秒）を
+## 置きっぱなしにした時 chain_rate_target のペースに収束するよう逆算する。
 static func retention_ratio(level: int) -> float:
-	return RETENTION_BY_LEVEL[clampi(level, 1, MAX_LEVEL) - 1]
+	if level <= EARLY_RETENTION.size():
+		return EARLY_RETENTION[maxi(1, level) - 1]
+	var supply := 200.0 * polish_bonus(level)
+	var target := chain_rate_target(level)
+	return clampf(1.0 - supply / (finish_threshold(level) * target), 0.0, 0.9999999)
 
 ## 連鎖会計: 現在の合計快感がしきい値を超えている間に成立するFINISH回数と、
 ## 快感に掛ける保持係数（retention^count）を返す。終盤は1フレームで千回超に

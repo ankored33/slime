@@ -30,6 +30,8 @@ func _ready() -> void:
 	vbox.add_child(_row([
 		_button("Lv−", func() -> void: _screen.debug_set_level(_screen.debug_get_level() - 1)),
 		_button("Lv＋", func() -> void: _screen.debug_set_level(_screen.debug_get_level() + 1)),
+		_button("Lv−100", func() -> void: _screen.debug_set_level(_screen.debug_get_level() - 100)),
+		_button("Lv＋100", func() -> void: _screen.debug_set_level(_screen.debug_get_level() + 100)),
 		_button("倍速切替", _cycle_time_scale)
 	]))
 	vbox.add_child(_row([
