@@ -9,8 +9,8 @@ extends Area2D
 		hit_radius = max(value, 2.0)
 		_sync_visuals()
 
-@export var polish_gain_per_sec := 20.0
-@export var pain_gain_per_sec := 8.0
+@export var polish_gain_per_sec := 200.0
+@export var pain_gain_per_sec := 80.0
 ## 当てている間、毎秒この量だけ痛みを減らす（癒し系ブラシ用）。
 @export var pain_soothe_per_sec := 0.0
 ## 回転ブラシだけがON/OFFでき、静止中も回転によって効果を出す。

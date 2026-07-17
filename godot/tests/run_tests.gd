@@ -55,10 +55,10 @@ func _test_level_for_finish_total() -> void:
 	_check_eq(GameRules.level_for_finish_total(0, -3), 1, "level: bad saved level clamps to Lv1")
 
 func _test_finish_threshold() -> void:
-	_check_near(GameRules.finish_threshold(1), 170.0, "threshold: Lv1 is near the ceiling")
-	_check_near(GameRules.finish_threshold(5), 134.0, "threshold: Lv5")
-	_check_near(GameRules.finish_threshold(10), 90.0, "threshold: Lv10 floors at 90")
-	_check_near(GameRules.finish_threshold(100), 90.0, "threshold: floored at 90")
+	_check_near(GameRules.finish_threshold(1), 1700.0, "threshold: Lv1 is near the ceiling")
+	_check_near(GameRules.finish_threshold(5), 1340.0, "threshold: Lv5")
+	_check_near(GameRules.finish_threshold(10), 900.0, "threshold: Lv10 floors at 900")
+	_check_near(GameRules.finish_threshold(100), 900.0, "threshold: floored at 900")
 
 func _test_polish_bonus() -> void:
 	_check_near(GameRules.polish_bonus(1), 0.6, "polish_bonus: Lv1 is dull")

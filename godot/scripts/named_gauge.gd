@@ -19,7 +19,7 @@ func _ready() -> void:
 	show_percentage = false
 	_refresh_label()
 
-func set_gauge_value(current: float, maximum: float = 100.0) -> void:
+func set_gauge_value(current: float, maximum: float = GameRules.GAUGE_MAX) -> void:
 	max_value = max(1.0, maximum)
 	value = clamp(current, 0.0, max_value)
 	_refresh_label()

@@ -6,24 +6,29 @@ extends RefCounted
 
 const MAX_LEVEL := 10
 const FAIL_PENALTY_RATIO := 0.5
-const PAIN_LIMIT := 100.0
+
+## 快感・痛みゲージの1本あたり満タン値。ゲージ系の数値はすべてこのスケールが基準。
+## （内部は float だが、整数表示でも刻みが見えるよう 1000 スケールにしている）
+const GAUGE_MAX := 1000.0
+
+const PAIN_LIMIT := 1000.0
 ## 痛みゲージの表示・保持上限。PAIN_LIMIT より高く取ることで、ゲージ表示の
-## 丸め込み（99.5以上は「100」に見える）が失敗ラインと重ならないようにする。
-const PAIN_CAP := 110.0
+## 丸め込み（999.5以上は「1000」に見える）が失敗ラインと重ならないようにする。
+const PAIN_CAP := 1100.0
 
 ## アクティブなブラシが触れていない部位の痛み自然回復量（毎秒）。
-const PAIN_RECOVERY_PER_SEC := 2.0
+const PAIN_RECOVERY_PER_SEC := 20.0
 
 ## ろうそく固有アクション。右クリックで落としたろうが命中した時の一回分の刺激。
-const WAX_POLISH_IMPACT := 12.0
-const WAX_PAIN_IMPACT := 8.0
+const WAX_POLISH_IMPACT := 120.0
+const WAX_PAIN_IMPACT := 80.0
 const WAX_DROP_SPEED := 90.0
 const WAX_DROP_GRAVITY := 420.0
 const WAX_DROP_RADIUS := 10.0
 const WAX_DROP_LIFETIME := 3.0
 
 ## 歯を接触させて右クリックした時の一回分の痛みダメージ。
-const BITE_PAIN_IMPACT := 24.0
+const BITE_PAIN_IMPACT := 240.0
 
 ## こすり判定: ブラシ移動速度(px/秒)による効果倍率。
 ## 微小な揺れは無視し、実際に動かしたときだけ効果が出る。
@@ -47,10 +52,10 @@ static func level_for_finish_total(finish_total: int, saved_level: int = 1) -> i
 			derived = index + 1
 	return mini(MAX_LEVEL, maxi(1, maxi(saved_level, derived)))
 
-## Combined polish needed for a FINISH. Starts near the 200-point ceiling
+## Combined polish needed for a FINISH. Starts near the 2000-point ceiling
 ## (both targets almost maxed) and falls as sensitivity grows with level.
 static func finish_threshold(level: int) -> float:
-	return maxf(90.0, 170.0 - float(maxi(0, level - 1)) * 9.0)
+	return maxf(900.0, 1700.0 - float(maxi(0, level - 1)) * 90.0)
 
 ## Sensitivity: polish gain multiplier. Dull at Lv1, roughly 2x by Lv10.
 static func polish_bonus(level: int) -> float:

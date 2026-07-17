@@ -33,10 +33,10 @@ func _ready() -> void:
 		_button("倍速切替", _cycle_time_scale)
 	]))
 	vbox.add_child(_row([
-		_button("左快感+25", func() -> void: _screen.debug_add_gauge("left", "polish", 25.0)),
-		_button("左痛み+25", func() -> void: _screen.debug_add_gauge("left", "pain", 25.0)),
-		_button("右快感+25", func() -> void: _screen.debug_add_gauge("right", "polish", 25.0)),
-		_button("右痛み+25", func() -> void: _screen.debug_add_gauge("right", "pain", 25.0))
+		_button("左快感+250", func() -> void: _screen.debug_add_gauge("left", "polish", 250.0)),
+		_button("左痛み+250", func() -> void: _screen.debug_add_gauge("left", "pain", 250.0)),
+		_button("右快感+250", func() -> void: _screen.debug_add_gauge("right", "polish", 250.0)),
+		_button("右痛み+250", func() -> void: _screen.debug_add_gauge("right", "pain", 250.0))
 	]))
 	vbox.add_child(_row([
 		_button("ゲージ全リセット", func() -> void: _screen.debug_reset_gauges()),

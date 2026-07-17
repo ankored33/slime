@@ -106,7 +106,7 @@ func _apply_wax_impact(slime_state: Dictionary, side: String, level: int) -> voi
 	var state: Dictionary = slime_state[side]
 	state["polish"] = clampf(
 		float(state["polish"]) + GameRules.WAX_POLISH_IMPACT * GameRules.polish_bonus(level),
-		0.0, 100.0
+		0.0, GameRules.GAUGE_MAX
 	)
 	state["pain"] = clampf(
 		float(state["pain"]) + GameRules.WAX_PAIN_IMPACT * GameRules.pain_resist(level),

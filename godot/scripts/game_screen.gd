@@ -225,7 +225,7 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 			var pain_resist := GameRules.pain_resist(level)
 			# 通常ブラシはこすった速度、回転ブラシはON中の自動回転で効く。
 			var rub := brush.get_action_multiplier()
-			state["polish"] = clamp(float(state.get("polish", 0.0)) + brush.get_effective_polish_gain() * polish_bonus * rub * delta, 0.0, 100.0)
+			state["polish"] = clamp(float(state.get("polish", 0.0)) + brush.get_effective_polish_gain() * polish_bonus * rub * delta, 0.0, GameRules.GAUGE_MAX)
 			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * rub * delta * PAIN_GAIN_SCALE, 0.0, GameRules.PAIN_CAP)
 			state["pain"] = clamp(float(state["pain"]) - brush.get_effective_soothe_gain() * rub * delta, 0.0, GameRules.PAIN_CAP)
 			_slime_state[side] = state
@@ -332,10 +332,10 @@ func _update_gauges() -> void:
 	_finish_progress.value = _get_combined_polish()
 	_day_finish_label.text = "本日のFINISH: %d" % _day_finish_count
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
-	if peak_pain >= 80.0:
+	if peak_pain >= GameRules.GAUGE_MAX * 0.8:
 		_danger_label.text = "[b]状態[/b]\n痛み：限界寸前"
 		_danger_label.modulate = Color(1.0, 0.45, 0.45, 1.0)
-	elif peak_pain >= 55.0:
+	elif peak_pain >= GameRules.GAUGE_MAX * 0.55:
 		_danger_label.text = "[b]状態[/b]\n痛み：上昇中"
 		_danger_label.modulate = Color(1.0, 0.82, 0.45, 1.0)
 	else:
@@ -345,7 +345,7 @@ func _update_gauges() -> void:
 func _set_gauge(gauge_id: String, current: float) -> void:
 	var gauge: NamedGauge = _gauge_map.get(gauge_id)
 	if gauge != null:
-		gauge.set_gauge_value(current, 100.0)
+		gauge.set_gauge_value(current, GameRules.GAUGE_MAX)
 
 func _on_end_day_pressed() -> void:
 	GameAudio.play_se("ui_click")
@@ -391,7 +391,7 @@ func debug_set_level(level: int) -> void:
 
 func debug_add_gauge(side: String, key: String, amount: float) -> void:
 	var state: Dictionary = _slime_state[side]
-	var ceiling := GameRules.PAIN_CAP if key == "pain" else 100.0
+	var ceiling := GameRules.PAIN_CAP if key == "pain" else GameRules.GAUGE_MAX
 	state[key] = clampf(float(state[key]) + amount, 0.0, ceiling)
 	_slime_state[side] = state
 
@@ -406,7 +406,7 @@ func debug_trigger_finish() -> void:
 		return
 	for side in ["left", "right"]:
 		var state: Dictionary = _slime_state[side]
-		state["polish"] = minf(finish_threshold * 0.5, 100.0)
+		state["polish"] = minf(finish_threshold * 0.5, GameRules.GAUGE_MAX)
 		_slime_state[side] = state
 	_check_finish()
 
