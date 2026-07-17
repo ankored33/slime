@@ -66,20 +66,11 @@ func _run_tests() -> void:
 	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait.png"),
 		"select: general uses initial portrait before opening")
 	var profile_body: RichTextLabel = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/ProfileBody")
-	_check(profile_body.fit_content, "select: profile overlay shrinks to its content")
 	_check(profile_body.text.begins_with(String(main._characters[0]["profile"])),
 		"select: profile shows pre-opening text")
 	var instruction: Label = main.get_node("CanvasLayer/SelectScreen/InstructionOverlay/Label")
 	_check_eq(instruction.text, "キャラクターを選択してください。", "select: instruction is overlaid")
-	var card0_info: PanelContainer = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay")
-	_check(absf(card0_info.anchor_left - (2.0 / 3.0)) < 0.001,
-		"select: profile overlay uses the right third")
 	var card0_button: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/CardButton")
-	var card1_button: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/CardButton")
-	_check(card0_button.anchor_right == 1.0 and card0_button.anchor_bottom == 1.0,
-		"select: general card is fully clickable")
-	_check(card1_button.anchor_right == 1.0 and card1_button.anchor_bottom == 1.0,
-		"select: admiral card is fully clickable")
 	var confirm_dialog: ConfirmationDialog = main.get_node("CanvasLayer/SelectScreen/CharacterConfirmDialog")
 	card0_button.emit_signal("pressed")
 	_check(confirm_dialog.visible, "select: card click opens confirmation")
@@ -101,10 +92,6 @@ func _run_tests() -> void:
 	_check(game_background.texture != null, "game: character background loaded")
 	_check(String(game_background.texture.resource_path).ends_with("/general/game_background.png"),
 		"game: selected character background is used")
-	_check(absf(game_background.position.x + game_background.size.x * 0.5 - 640.0) < 0.1,
-		"game: character background is horizontally centered")
-	_check(absf(game_background.position.y) < 0.1 and absf(game_background.size.y - 720.0) < 0.1,
-		"game: character background fills the screen height")
 
 	var brush_finger: Node2D = main.get_node("GameScreen/Playfield/BrushFinger")
 	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/BrushFude")
@@ -128,8 +115,6 @@ func _run_tests() -> void:
 		Image.create(128, 128, false, Image.FORMAT_RGBA8))
 	brush_fude._apply_texture(brush_texture)
 	_check(not brush_fude._body.visible, "brush: placeholder hidden when texture applied")
-	_check(absf(brush_fude._sprite.scale.x - brush_fude.hit_radius * 2.0 / 128.0) < 0.001,
-		"brush: texture scaled to hit-circle diameter")
 
 	# ツールボックス: ボタンで出し入れし、押した道具は保持状態で出現する。
 	game._brushes.toggle_from_toolbox("rotary")

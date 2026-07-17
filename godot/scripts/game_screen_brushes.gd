@@ -31,27 +31,59 @@ func setup(root: Control, playfield: Control, brush_rack: Control, end_day_butto
 	_create_tool_buttons()
 	_configure_mouse_filters(root)
 
-## ツールボックス内に道具ごとのボタンを縦に並べる。押すと保持状態でブラシが出る。
+## ボタンの見た目で道具の状態を示す。保持中=アンバー枠、配置中=減光、収納中=通常。
+const TOOL_HELD_BORDER := Color(1.0, 0.85, 0.55)
+const TOOL_DEPLOYED_TINT := Color(0.55, 0.6, 0.65)
+
+var _held_stylebox: StyleBoxFlat
+
+## ツールボックス内に道具ごとのボタンを2列で並べる。押すと保持状態でブラシが出る。
 func _create_tool_buttons() -> void:
 	_tool_buttons.clear()
-	var list := VBoxContainer.new()
-	list.name = "ToolButtons"
-	list.set_anchors_preset(Control.PRESET_FULL_RECT)
-	list.offset_left = 12.0
-	list.offset_top = 34.0
-	list.offset_right = -12.0
-	list.offset_bottom = -12.0
-	list.add_theme_constant_override("separation", 8)
-	_brush_rack.add_child(list)
+	var grid := GridContainer.new()
+	grid.name = "ToolButtons"
+	grid.columns = 2
+	grid.set_anchors_preset(Control.PRESET_FULL_RECT)
+	grid.offset_left = 10.0
+	grid.offset_top = 34.0
+	grid.offset_right = -10.0
+	grid.offset_bottom = -10.0
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	_brush_rack.add_child(grid)
 	for brush_id in _display_ordered_ids():
+		var brush: Brush = brush_map[brush_id]
 		var button := Button.new()
-		button.text = _display_name(brush_map[brush_id])
+		button.text = _display_name(brush)
+		button.icon = _tool_icon(brush)
+		button.expand_icon = true
 		button.focus_mode = Control.FOCUS_NONE
+		button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		button.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		button.add_theme_font_size_override("font_size", 18)
+		button.add_theme_font_size_override("font_size", 13)
+		button.add_theme_constant_override("icon_max_width", 36)
 		button.pressed.connect(toggle_from_toolbox.bind(brush_id))
-		list.add_child(button)
+		grid.add_child(button)
 		_tool_buttons[brush_id] = button
+
+## ボタン用アイコン。画像素材があればそれを、無ければブラシ色の円を使う。
+func _tool_icon(brush: Brush) -> Texture2D:
+	var path := "%s/%s.png" % [Brush.TEXTURE_DIR, brush.brush_id]
+	if ResourceLoader.exists(path, "Texture2D"):
+		return load(path)
+	return _circle_icon(brush.fill_color, brush.hit_radius)
+
+func _circle_icon(color: Color, hit_radius: float) -> Texture2D:
+	var size := 48
+	# 当たり判定の大小がアイコンにも出るよう、円の半径を実サイズに比例させる。
+	var radius := clampf(hit_radius * 0.7, 8.0, size * 0.5 - 2.0)
+	var image := Image.create(size, size, false, Image.FORMAT_RGBA8)
+	var center := Vector2(size / 2.0, size / 2.0)
+	for y in size:
+		for x in size:
+			if Vector2(x + 0.5, y + 0.5).distance_to(center) <= radius:
+				image.set_pixel(x, y, color)
+	return ImageTexture.create_from_image(image)
 
 ## ツールボックスのボタン操作。収納中なら保持状態で出現させ、
 ## 配置中なら拾い上げ、保持中なら収納する。
@@ -236,7 +268,7 @@ func get_brush(brush_id: String) -> Brush:
 	return brush_map.get(brush_id)
 
 func update_controls(name_label: Label, spec_label: Label) -> void:
-	_update_tool_button_labels()
+	_update_tool_button_states()
 	var selected_brush := held_brush
 	if selected_brush == null:
 		for brush_id: String in _display_ordered_ids():
@@ -265,16 +297,27 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 		spec += " / 置くと自動回転"
 	spec_label.text = spec
 
-func _update_tool_button_labels() -> void:
+func _update_tool_button_states() -> void:
 	for brush_id: String in _tool_buttons:
 		var brush: Brush = brush_map[brush_id]
 		var button: Button = _tool_buttons[brush_id]
-		var text := _display_name(brush)
 		if brush == held_brush:
-			text += "（保持中）"
-		elif brush.visible:
-			text += "（配置中）"
-		button.text = text
+			button.modulate = Color.WHITE
+			for state in ["normal", "hover", "pressed"]:
+				button.add_theme_stylebox_override(state, _get_held_stylebox())
+		else:
+			button.modulate = TOOL_DEPLOYED_TINT if brush.visible else Color.WHITE
+			for state in ["normal", "hover", "pressed"]:
+				button.remove_theme_stylebox_override(state)
+
+func _get_held_stylebox() -> StyleBoxFlat:
+	if _held_stylebox == null:
+		_held_stylebox = StyleBoxFlat.new()
+		_held_stylebox.bg_color = Color(0.32, 0.25, 0.12, 0.9)
+		_held_stylebox.border_color = TOOL_HELD_BORDER
+		_held_stylebox.set_border_width_all(2)
+		_held_stylebox.set_corner_radius_all(4)
+	return _held_stylebox
 
 func _display_name(brush: Brush) -> String:
 	if brush.display_name != "":
