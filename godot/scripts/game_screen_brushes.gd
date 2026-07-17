@@ -222,15 +222,12 @@ func _set_held_brush(brush: Brush) -> void:
 		if _is_brush_in_rack(held_brush):
 			# ツールボックスの上で放した道具は収納する。
 			_stow(held_brush)
-		elif held_brush.is_rotating:
-			# 回転ブラシはプレイ領域に置いた時だけ自動回転を始める。
-			held_brush.is_active = true
 	held_brush = brush
 	if held_brush != null:
 		held_brush.is_held = true
-		# 持ち上げている間は回転を止める。
+		# 回転ブラシは保持中も回り続ける（収納時だけ止まる）。
 		if held_brush.is_rotating:
-			held_brush.is_active = false
+			held_brush.is_active = true
 
 func _is_brush_in_rack(brush: Brush) -> bool:
 	if _brush_rack == null:
@@ -294,7 +291,7 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 		spec += " / 癒し %d" % int(round(selected_brush.pain_soothe_per_sec))
 	spec += " / サイズ %d" % int(round(selected_brush.hit_radius))
 	if selected_brush.is_rotating:
-		spec += " / 置くと自動回転"
+		spec += " / 自動回転"
 	spec_label.text = spec
 
 func _update_tool_button_states() -> void:

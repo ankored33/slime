@@ -120,10 +120,10 @@ func _run_tests() -> void:
 	game._brushes.toggle_from_toolbox("rotary")
 	_check(brush_rotary.visible and game._brushes.held_brush == brush_rotary,
 		"toolbox: button summons the brush in held state")
-	_check(not brush_rotary.is_active, "rotating brush: stays stopped while held")
+	_check(brush_rotary.is_active, "rotating brush: keeps spinning while held")
 	brush_rotary.position = Vector2(900.0, 400.0)
 	game._brushes._set_held_brush(null)
-	_check(brush_rotary.is_active, "rotating brush: starts when placed on the field")
+	_check(brush_rotary.is_active, "rotating brush: keeps spinning when placed on the field")
 	game._brushes.toggle_from_toolbox("rotary")
 	_check(game._brushes.held_brush == brush_rotary, "toolbox: button picks up a placed brush")
 	game._brushes.toggle_from_toolbox("rotary")
