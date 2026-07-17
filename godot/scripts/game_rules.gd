@@ -11,6 +11,14 @@ const PAIN_LIMIT := 100.0
 ## アクティブなブラシが触れていない部位の痛み自然回復量（毎秒）。
 const PAIN_RECOVERY_PER_SEC := 2.0
 
+## ろうそく固有アクション。右クリックで落としたろうが命中した時の一回分の刺激。
+const WAX_POLISH_IMPACT := 12.0
+const WAX_PAIN_IMPACT := 8.0
+const WAX_DROP_SPEED := 90.0
+const WAX_DROP_GRAVITY := 420.0
+const WAX_DROP_RADIUS := 7.0
+const WAX_DROP_LIFETIME := 3.0
+
 ## こすり判定: ブラシ移動速度(px/秒)による効果倍率。
 ## 微小な揺れは無視し、実際に動かしたときだけ効果が出る。
 const RUB_START_SPEED := 20.0
@@ -52,14 +60,14 @@ static func retention_ratio(level: int) -> float:
 ## Character level required to use each brush. Unknown ids unlock at Lv1.
 const BRUSH_UNLOCK_LEVELS := {
 	"finger": 1,
-	"tongue": 2,
-	"feather": 3,
-	"fude": 4,
-	"teeth": 5,
-	"toothbrush": 6,
-	"rotary": 7,
-	"candle": 8,
-	"tawashi": 9
+	"tongue": 1,
+	"feather": 1,
+	"fude": 1,
+	"teeth": 1,
+	"toothbrush": 1,
+	"rotary": 1,
+	"candle": 1,
+	"tawashi": 1
 }
 
 static func brush_unlock_level(brush_id: String) -> int:

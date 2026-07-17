@@ -79,20 +79,13 @@ func _test_retention_ratio() -> void:
 	_check_near(GameRules.retention_ratio(100), 0.65, "retention: capped at 0.65")
 
 func _test_brush_unlocks() -> void:
-	_check(GameRules.is_brush_unlocked("finger", 1), "unlock: finger from Lv1")
-	_check(not GameRules.is_brush_unlocked("tongue", 1), "unlock: tongue locked at Lv1")
-	_check(GameRules.is_brush_unlocked("tongue", 2), "unlock: tongue at Lv2")
-	_check(not GameRules.is_brush_unlocked("feather", 2), "unlock: feather locked at Lv2")
-	_check(GameRules.is_brush_unlocked("feather", 3), "unlock: feather at Lv3")
-	_check(not GameRules.is_brush_unlocked("teeth", 4), "unlock: teeth locked at Lv4")
-	_check(GameRules.is_brush_unlocked("teeth", 5), "unlock: teeth at Lv5")
-	_check_eq(GameRules.brush_unlock_level("toothbrush"), 6, "unlock: toothbrush level lookup")
-	_check(not GameRules.is_brush_unlocked("rotary", 6), "unlock: rotary locked at Lv6")
-	_check(GameRules.is_brush_unlocked("rotary", 7), "unlock: rotary at Lv7")
-	_check(not GameRules.is_brush_unlocked("candle", 7), "unlock: candle locked at Lv7")
-	_check(GameRules.is_brush_unlocked("candle", 8), "unlock: candle at Lv8")
-	_check(not GameRules.is_brush_unlocked("tawashi", 8), "unlock: tawashi locked at Lv8")
-	_check(GameRules.is_brush_unlocked("tawashi", 9), "unlock: tawashi at Lv9")
+	for brush_id: String in GameRules.BRUSH_UNLOCK_LEVELS:
+		_check_eq(GameRules.brush_unlock_level(brush_id), 1,
+			"unlock: %s temporarily set to Lv1" % brush_id)
+		_check(GameRules.is_brush_unlocked(brush_id, 1),
+			"unlock: %s available at Lv1" % brush_id)
+	_check(not GameRules.is_brush_unlocked("candle", 0),
+		"unlock: level gate still rejects levels below requirement")
 	_check_eq(GameRules.brush_unlock_level("unknown"), 1, "unlock: unknown id defaults to Lv1")
 
 func _test_banked_finish() -> void:
@@ -184,4 +177,8 @@ func _test_brush_action() -> void:
 	_check_near(brush.get_action_multiplier(), 0.0, "brush: rotating brush off has no effect")
 	brush.is_active = true
 	_check_near(brush.get_action_multiplier(), 1.0, "brush: rotating brush on works while parked")
+	brush.is_rotating = false
+	brush.brush_id = "candle"
+	brush._rub_speed = 500.0
+	_check_near(brush.get_action_multiplier(), 0.0, "brush: candle has no rubbing effect")
 	brush.free()

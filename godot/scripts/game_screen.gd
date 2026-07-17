@@ -6,6 +6,7 @@ const ExpressionRules = preload("res://scripts/expression_rules.gd")
 const GameAudio = preload("res://scripts/game_audio.gd")
 const GameScreenBrushes = preload("res://scripts/game_screen_brushes.gd")
 const DebugPanelScript = preload("res://scripts/debug_panel.gd")
+const WaxDropScript = preload("res://scripts/wax_drop.gd")
 
 @export var follow_speed := 16.0
 @export var finish_fx_duration := 5.0
@@ -52,6 +53,7 @@ var _day_finish_count := 0
 var _is_running := false
 var _debug_panel: PanelContainer
 var _debug_expression_override := ""
+var _wax_drops: Array[WaxDrop] = []
 
 @onready var _playfield: Control = $Playfield
 @onready var _title_label: Label = $Hud/CharaNameLabel
@@ -90,7 +92,9 @@ func _input(event: InputEvent) -> void:
 		return
 	if not _is_running:
 		return
-	_brushes.handle_input(event)
+	var action := _brushes.handle_input(event)
+	if action.has("wax_origin"):
+		_spawn_wax_drop(action["wax_origin"])
 
 func _process(delta: float) -> void:
 	if not _is_running:
@@ -104,6 +108,7 @@ func _process(delta: float) -> void:
 		for brush in _brushes.brush_map.values():
 			if brush.is_effective():
 				_apply_brush_effects(brush, delta)
+		_update_wax_drops(delta)
 	if not _is_fail_fx_active():
 		_apply_pain_recovery(touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
@@ -142,6 +147,7 @@ func _is_finish_fx_active() -> bool:
 
 func _start_finish_fx() -> void:
 	_finish_fx_time_left = finish_fx_duration
+	_clear_wax_drops()
 	_finish_label.visible = true
 	_finish_label.pivot_offset = _finish_label.size / 2.0
 	_finish_label.scale = Vector2(0.4, 0.4)
@@ -195,6 +201,7 @@ func _is_fail_fx_active() -> bool:
 func _start_fail_fx() -> void:
 	# 痛み限界: 絶望表情を見せてから日終了へ移る。
 	_fail_fx_time_left = fail_fx_duration
+	_clear_wax_drops()
 	_brushes.deactivate_all()
 	GameAudio.play_se("despair")
 
@@ -221,6 +228,7 @@ func reset_day() -> void:
 	_finish_label.visible = false
 	_finish_label.scale = Vector2.ONE
 	_clear_fx_overlay()
+	_clear_wax_drops()
 	_slime_state = {
 		"left": {"polish": 0.0, "pain": 0.0},
 		"right": {"polish": 0.0, "pain": 0.0}
@@ -268,6 +276,55 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * rub * delta * PAIN_GAIN_SCALE, 0.0, 100.0)
 			state["pain"] = clamp(float(state["pain"]) - brush.get_effective_soothe_gain() * rub * delta, 0.0, 100.0)
 			_slime_state[side] = state
+
+func _spawn_wax_drop(origin: Vector2) -> void:
+	if _is_finish_fx_active() or _is_fail_fx_active():
+		return
+	var drop: WaxDrop = WaxDropScript.new()
+	drop.position = origin
+	_playfield.add_child(drop)
+	_wax_drops.append(drop)
+
+func _update_wax_drops(delta: float) -> void:
+	for index in range(_wax_drops.size() - 1, -1, -1):
+		var drop := _wax_drops[index]
+		var previous := drop.advance(delta)
+		var hit := false
+		for slime: SlimeTarget in get_tree().get_nodes_in_group("slime_targets"):
+			if _segment_distance_to_point(previous, drop.position, slime.position) \
+					<= drop.radius + slime.get_hit_radius():
+				_apply_wax_impact(String(slime.side))
+				hit = true
+				break
+		if hit or drop.is_expired(_playfield.size.y):
+			_wax_drops.remove_at(index)
+			drop.queue_free()
+
+func _apply_wax_impact(side: String) -> void:
+	var state: Dictionary = _slime_state[side]
+	var level := int(_species.get("level", 1))
+	state["polish"] = clampf(
+		float(state["polish"]) + GameRules.WAX_POLISH_IMPACT * GameRules.polish_bonus(level),
+		0.0, 100.0
+	)
+	state["pain"] = clampf(
+		float(state["pain"]) + GameRules.WAX_PAIN_IMPACT * GameRules.pain_resist(level),
+		0.0, 100.0
+	)
+	_slime_state[side] = state
+
+func _segment_distance_to_point(start: Vector2, end: Vector2, point: Vector2) -> float:
+	var segment := end - start
+	if segment.length_squared() <= 0.0001:
+		return point.distance_to(start)
+	var t := clampf((point - start).dot(segment) / segment.length_squared(), 0.0, 1.0)
+	return point.distance_to(start + segment * t)
+
+func _clear_wax_drops() -> void:
+	for drop in _wax_drops:
+		if is_instance_valid(drop):
+			drop.queue_free()
+	_wax_drops.clear()
 
 ## アクティブなブラシが触れていない部位は痛みが自然回復する。
 func _apply_pain_recovery(touched_sides: Dictionary, delta: float) -> void:
@@ -474,6 +531,7 @@ func _finish_day(failed_by_pain: bool) -> void:
 	if not _is_running:
 		return
 	_is_running = false
+	_clear_wax_drops()
 	# デバッグの倍速を磨き画面の外へ持ち出さない。
 	Engine.time_scale = 1.0
 	GameAudio.update_loop("brush", "")

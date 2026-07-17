@@ -81,6 +81,9 @@ func get_rub_speed() -> float:
 	return _rub_speed
 
 func get_action_multiplier() -> float:
+	# ろうそく本体には磨き効果がない。効果は右クリックで落とすろうだけ。
+	if brush_id == "candle":
+		return 0.0
 	if is_rotating:
 		return 1.0 if is_active else 0.0
 	return GameRules.rub_multiplier(_rub_speed)

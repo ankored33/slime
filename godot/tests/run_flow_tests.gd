@@ -110,8 +110,8 @@ func _run_tests() -> void:
 	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/BrushFude")
 	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/BrushRotary")
 	_check(brush_finger.visible, "Lv1: finger brush available")
-	_check(not brush_fude.visible, "Lv1: fude brush locked")
-	_check(not brush_rotary.visible, "Lv1: rotating brush locked")
+	_check(brush_fude.visible, "Lv1: fude brush temporarily available")
+	_check(brush_rotary.visible, "Lv1: rotating brush temporarily available")
 	_check(bool(brush_rotary.is_rotating), "rotating brush: scene marks it as rotating")
 
 	# ブラシ画像フック: 素材の有無とプレースホルダ表示が対応していること。
@@ -124,6 +124,26 @@ func _run_tests() -> void:
 	_check(not brush_fude._body.visible, "brush: placeholder hidden when texture applied")
 	_check(absf(brush_fude._sprite.scale.x - brush_fude.hit_radius * 2.0 / 128.0) < 0.001,
 		"brush: texture scaled to hit-circle diameter")
+
+	# ろうそく固有アクション: 本体では磨けず、保持中の右クリックで滴を作る。
+	var brush_candle: Brush = main.get_node("GameScreen/Playfield/BrushCandle")
+	_check(brush_candle.visible, "candle: temporarily unlocked at Lv1")
+	game._brushes._set_held_brush(brush_candle)
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = Vector2(640.0, 360.0)
+	var candle_action: Dictionary = game._brushes.handle_input(right_click)
+	_check(candle_action.has("wax_origin"), "candle: right click requests a wax drop")
+	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/LeftSlime")
+	game._spawn_wax_drop(left_slime.position - Vector2(0.0, left_slime.get_hit_radius()))
+	game._update_wax_drops(0.05)
+	_check(float(game._slime_state["left"]["polish"]) > 0.0,
+		"candle: wax impact adds polish stimulus")
+	_check(float(game._slime_state["left"]["pain"]) > 0.0,
+		"candle: wax impact adds pain stimulus")
+	_check_eq(game._wax_drops.size(), 0, "candle: wax drop is consumed on impact")
+	game.reset_day()
 
 	main._on_day_finished({
 		"species_id": "general",

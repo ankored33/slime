@@ -59,14 +59,19 @@ func _find_control_descendants(root: Node) -> Array[Control]:
 		out.append_array(_find_control_descendants(child))
 	return out
 
-func handle_input(event: InputEvent) -> void:
+## 通常の持ち替えを処理する。ろうそくの固有アクション時は滴の生成位置を返す。
+func handle_input(event: InputEvent) -> Dictionary:
 	if not (event is InputEventMouseButton and event.pressed):
-		return
-	if event.button_index != MOUSE_BUTTON_LEFT:
-		return
+		return {}
 	if _is_over_interactive_ui(event.position):
-		return
-	_toggle_held_brush(_pick_brush(event.position))
+		return {}
+	if event.button_index == MOUSE_BUTTON_RIGHT:
+		if held_brush != null and held_brush.brush_id == "candle":
+			return {"wax_origin": held_brush.position + Vector2(0.0, held_brush.hit_radius * 0.7)}
+		return {}
+	if event.button_index == MOUSE_BUTTON_LEFT:
+		_toggle_held_brush(_pick_brush(event.position))
+	return {}
 
 func _is_over_interactive_ui(global_pos: Vector2) -> bool:
 	for node in _interactive_controls():
@@ -163,6 +168,9 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 	name_label.text = _display_name(selected_brush)
 	if selected_brush == held_brush:
 		name_label.text += " [保持中]"
+	if selected_brush.brush_id == "candle":
+		spec_label.text = "磨き効果なし / 保持して右クリック：ろうを落とす"
+		return
 	var spec := "快感 %d / 痛み %d" % [
 		int(round(selected_brush.polish_gain_per_sec)),
 		int(round(selected_brush.pain_gain_per_sec))

@@ -189,7 +189,8 @@ brush_id = "candle"
 display_name = "ろうそく"
 hit_radius = 18.0
 polish_gain_per_sec = 26.0
-pain_gain_per_sec = 12.0
+polish_gain_per_sec = 0.0
+pain_gain_per_sec = 0.0
 fill_color = Color(1, 0.68, 0.3, 0.95)
 
 [node name="FlashRect" type="ColorRect" parent="."]
