@@ -53,7 +53,7 @@ func apply_teeth_bite(slime_state: Dictionary, level: int, blocked: bool = false
 	for slime in _slimes:
 		# 衝突補正後は円同士がちょうど接するため、丸め誤差ぶんだけ許容する。
 		if teeth.position.distance_to(slime.position) \
-				> teeth.hit_radius + slime.get_hit_radius() + 1.0:
+				> teeth.get_contact_radius() + slime.get_hit_radius() + 1.0:
 			continue
 		var side := String(slime.side)
 		var state: Dictionary = slime_state[side]
@@ -72,14 +72,17 @@ func start_pinch(blocked: bool = false) -> void:
 		return
 	for slime in _slimes:
 		if finger.position.distance_to(slime.position) \
-				> finger.hit_radius + slime.get_hit_radius() + 1.0:
+				> finger.get_contact_radius() + slime.get_hit_radius() + 1.0:
 			continue
 		pinch_brush = finger
 		pinch_slime = slime
 		_pinch_grab_offset = slime.position - finger.position
+		finger.set_pinching(true)
 		return
 
 func end_pinch() -> void:
+	if pinch_brush != null:
+		pinch_brush.set_pinching(false)
 	pinch_brush = null
 	pinch_slime = null
 

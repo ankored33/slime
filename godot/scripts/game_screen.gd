@@ -124,6 +124,7 @@ func _process(delta: float) -> void:
 		_apply_pain_recovery(touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
 	_brushes.resolve_collisions(_slimes, _tool_actions.pinch_brush)
+	_update_brush_facing(delta)
 	if not _fx.finish_active and not _fx.fail_active:
 		_check_finish()
 		_check_failure()
@@ -240,23 +241,41 @@ func _update_slime_squish(delta: float) -> void:
 	for slime in _slimes:
 		var deepest := 0.0
 		var push := Vector2.ZERO
+		var tremble_dir := Vector2.ZERO
 		var touched_by_active := false
 		for brush: Brush in _brushes.brush_map.values():
 			if not brush.visible:
 				continue
-			var overlap: float = brush.hit_radius + slime.radius - brush.global_position.distance_to(slime.global_position)
+			var overlap: float = brush.get_contact_radius() + slime.radius - brush.global_position.distance_to(slime.global_position)
 			deepest = maxf(deepest, overlap)
 			if overlap > 0.0:
 				var away := slime.global_position - brush.global_position
 				if away.length() <= 0.0001:
 					away = Vector2.DOWN
 				push += away.normalized() * overlap
+				# ON中の回転ブラシに触れられている間は反発方向へ微振動する。
+				if brush.is_rotating and brush.is_effective():
+					tremble_dir = away.normalized()
 			if brush.is_effective() and overlap > 0.0:
 				touched_by_active = true
-		slime.apply_pressure(deepest, delta, push)
+		slime.apply_pressure(deepest, delta, push, tremble_dir)
 		var state: Dictionary = _slime_state.get(String(slime.side), {})
 		var polish_winning: bool = float(state.get("polish", 0.0)) > float(state.get("pain", 0.0))
 		slime.set_hearts_active(touched_by_active and polish_winning)
+
+## こすり系ブラシは接触中、最寄りの本体中心へ画像の上を向ける（衝突補正後の位置で判定）。
+func _update_brush_facing(delta: float) -> void:
+	for brush: Brush in _brushes.brush_map.values():
+		if not brush.visible or not brush.uses_rub():
+			continue
+		var nearest_pos: Variant = null
+		var nearest_dist := INF
+		for slime in _slimes:
+			var dist := brush.global_position.distance_to(slime.global_position)
+			if dist <= brush.get_contact_radius() + slime.get_hit_radius() and dist < nearest_dist:
+				nearest_dist = dist
+				nearest_pos = slime.global_position
+		brush.update_contact_facing(nearest_pos, delta)
 
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
 	for slime in _slimes:
@@ -296,7 +315,7 @@ func _compute_touch_info() -> Dictionary:
 		if not brush.visible or not brush.is_effective():
 			continue
 		for slime in _slimes:
-			if brush.global_position.distance_to(slime.global_position) <= brush.hit_radius + slime.get_hit_radius():
+			if brush.global_position.distance_to(slime.global_position) <= brush.get_contact_radius() + slime.get_hit_radius():
 				touching = true
 				touched_sides[String(slime.side)] = true
 				# _apply_brush_effects と同じ係数で「ゲージが実際に動く速さ」を比較する。

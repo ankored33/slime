@@ -370,7 +370,7 @@ func _apply_slime_push_out(slimes: Array[SlimeTarget], pinch_brush: Brush = null
 			# 挟んで固定中の指は本体に食い込んだままでよい。
 			continue
 		for slime: SlimeTarget in slimes:
-			var min_dist: float = brush.hit_radius + slime.get_hit_radius()
+			var min_dist: float = brush.get_contact_radius() + slime.get_hit_radius()
 			var delta_vec: Vector2 = brush.position - slime.position
 			var dist := delta_vec.length()
 			if dist >= min_dist:

@@ -175,7 +175,7 @@ func _run_tests() -> void:
 	_check_eq(float(game._slime_state["left"]["pain"]), 0.0,
 		"teeth: bite does no damage away from a target")
 	brush_teeth.position = left_slime.position + Vector2(
-		left_slime.get_hit_radius() + brush_teeth.hit_radius, 0.0)
+		left_slime.get_hit_radius() + brush_teeth.get_contact_radius(), 0.0)
 	game._tool_actions.apply_teeth_bite(game._slime_state, game._current_level())
 	_check(float(game._slime_state["left"]["pain"]) > 0.0,
 		"teeth: bite damages a target while touching")
@@ -199,13 +199,15 @@ func _run_tests() -> void:
 	_check(left_slime.position.distance_to(slime_home) < 1.0,
 		"push: slime springs back home after release")
 	game.reset_day()
-	_check_eq(left_slime.position, slime_home, "push: reset restores the home position")
+	# 差分加算の丸め誤差ぶんだけ許容する（見た目に影響しないサブピクセル）。
+	_check(left_slime.position.distance_to(slime_home) < 0.01,
+		"push: reset restores the home position")
 
 	# 指の固有アクション: 接触中に右クリックで挟んで固定し、可動範囲まで引っ張れる。
 	var playfield: Control = main.get_node("GameScreen/Playfield")
 	game._brushes.toggle_from_toolbox("finger")
 	brush_finger.position = left_slime.position \
-		- Vector2(left_slime.get_hit_radius() + brush_finger.hit_radius, 0.0)
+		- Vector2(left_slime.get_hit_radius() + brush_finger.get_contact_radius(), 0.0)
 	var pinch_action: Dictionary = game._brushes.handle_input(right_click)
 	_check(pinch_action.has("pinch_requested"), "finger: right click requests a pinch")
 	game._tool_actions.start_pinch()

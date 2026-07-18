@@ -109,21 +109,30 @@ const MAX_PUSH_DISTANCE := 16.0
 ## 挟んで引っ張られたときの最大変位。押されたときより大きく動く。
 const MAX_PULL_DISTANCE := 48.0
 
+## 回転ブラシ接触中の微振動。反発方向へ超微量はじかれて戻る動きを繰り返す。
+const TREMBLE_AMPLITUDE := 5.0
+const TREMBLE_FREQUENCY := 16.0
+const TREMBLE_RESPONSE := 12.0
+
 var _squish := 0.0
 var _squish_velocity := 0.0
 var _push_offset := Vector2.ZERO
 var _push_velocity := Vector2.ZERO
 var _pull_active := false
+var _tremble_dir := Vector2.ZERO
+var _tremble_phase := 0.0
+var _tremble_strength := 0.0
+var _tremble_offset := Vector2.ZERO
 
-## 押し込み・挟み引っ張りによる現在の変位（胸レイヤーの追従元）。
+## 押し込み・挟み引っ張り・微振動による現在の変位（胸レイヤーの追従元）。
 func get_push_offset() -> Vector2:
-	return _push_offset
+	return _push_offset + _tremble_offset
 
 func get_hit_radius() -> float:
 	# Squishy hitbox: compressed while pressed, briefly overshoots on release.
 	return clampf(radius - _squish, radius * (1.0 - MAX_SQUISH_RATIO), radius * (1.0 + MAX_SQUISH_RATIO * 0.5))
 
-func apply_pressure(depth: float, delta: float, push := Vector2.ZERO) -> void:
+func apply_pressure(depth: float, delta: float, push := Vector2.ZERO, tremble_dir := Vector2.ZERO) -> void:
 	if depth > 0.0:
 		var target := minf(depth * 0.6, radius * MAX_SQUISH_RATIO)
 		_squish = lerpf(_squish, target, minf(1.0, PRESS_RESPONSE * delta))
@@ -133,6 +142,7 @@ func apply_pressure(depth: float, delta: float, push := Vector2.ZERO) -> void:
 		_squish_velocity += accel * delta
 		_squish += _squish_velocity * delta
 	_update_push(push, delta)
+	_update_tremble(tremble_dir, delta)
 
 ## 挟まれて引っ張られている間の位置更新。望みの位置へ寄せるが、
 ## 可動範囲（MAX_PULL_DISTANCE）を超える分は届かず、引っ張り抵抗になる。
@@ -164,6 +174,23 @@ func _update_push(push: Vector2, delta: float) -> void:
 	position += next - _push_offset
 	_push_offset = next
 
+## 回転ブラシに触れられている間の微振動。abs(sin) で「はじかれて戻る」片側だけの
+## 揺れにし、接触が切れたら強さをなだらかにゼロへ戻す。
+## 当たり判定（position）には影響させず、見た目の子ノードだけをずらす。
+func _update_tremble(dir: Vector2, delta: float) -> void:
+	if dir != Vector2.ZERO:
+		_tremble_dir = dir
+	var target_strength := 1.0 if dir != Vector2.ZERO else 0.0
+	_tremble_strength = lerpf(_tremble_strength, target_strength, minf(1.0, TREMBLE_RESPONSE * delta))
+	_tremble_phase = fmod(_tremble_phase + TREMBLE_FREQUENCY * delta, 1.0)
+	_tremble_offset = _tremble_dir * (TREMBLE_AMPLITUDE * _tremble_strength * absf(sin(_tremble_phase * TAU)))
+	_apply_tremble_visual()
+
+func _apply_tremble_visual() -> void:
+	_sprite.position = _tremble_offset
+	_body.position = _tremble_offset
+	_outline.position = _tremble_offset
+
 func reset_pressure() -> void:
 	_squish = 0.0
 	_squish_velocity = 0.0
@@ -171,6 +198,11 @@ func reset_pressure() -> void:
 	_push_offset = Vector2.ZERO
 	_push_velocity = Vector2.ZERO
 	_pull_active = false
+	_tremble_dir = Vector2.ZERO
+	_tremble_phase = 0.0
+	_tremble_strength = 0.0
+	_tremble_offset = Vector2.ZERO
+	_apply_tremble_visual()
 
 func apply_species(species: Dictionary, side_label: String, side_config: Dictionary = {}) -> void:
 	slime_id = str(species.get("id", ""))

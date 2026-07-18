@@ -9,6 +9,10 @@ extends Area2D
 		hit_radius = max(value, 2.0)
 		_sync_visuals()
 
+## 本体への接触判定は見た目（hit_radius）より内側に縮める。
+## 絵が少し重なってから効き始めるほうが「触れている感」が出るため。
+const CONTACT_RATIO := 0.8
+
 @export var polish_gain_per_sec := 200.0
 @export var pain_gain_per_sec := 80.0
 ## 当てている間、毎秒この量だけ痛みを減らす（癒し系ブラシ用）。
@@ -36,9 +40,12 @@ var _prev_position := Vector2.INF
 var _rub_speed := 0.0
 
 # 画像素材のドロップイン先。<brush_id>.png を置くだけでプレースホルダ多角形と差し替わる。
+# <brush_id>_pinch.png も置くと、つまみアクション中だけその画像に切り替わる。
 const TEXTURE_DIR := "res://assets/brushes"
 
 var _sprite: Sprite2D
+var _base_texture: Texture2D
+var _pinch_texture: Texture2D
 
 @onready var _collision: CollisionShape2D = $CollisionShape2D
 @onready var _body: Polygon2D = $Body
@@ -53,7 +60,17 @@ func _load_texture() -> void:
 		return
 	var path := "%s/%s.png" % [TEXTURE_DIR, brush_id]
 	if ResourceLoader.exists(path, "Texture2D"):
-		_apply_texture(load(path))
+		_base_texture = load(path)
+		_apply_texture(_base_texture)
+	var pinch_path := "%s/%s_pinch.png" % [TEXTURE_DIR, brush_id]
+	if ResourceLoader.exists(pinch_path, "Texture2D"):
+		_pinch_texture = load(pinch_path)
+
+## つまみアクション中の見た目切り替え。専用画像が無いブラシでは何もしない。
+func set_pinching(on: bool) -> void:
+	if _base_texture == null or _pinch_texture == null:
+		return
+	_apply_texture(_pinch_texture if on else _base_texture)
 
 func _apply_texture(texture: Texture2D) -> void:
 	if _sprite == null:
@@ -79,6 +96,28 @@ func _track_rub_speed(delta: float) -> void:
 
 func get_rub_speed() -> float:
 	return _rub_speed
+
+## 本体（スライムターゲット）との接触に使う半径。見た目・壁・ラック判定は hit_radius のまま。
+func get_contact_radius() -> float:
+	return hit_radius * CONTACT_RATIO
+
+## こすり判定で効果を出すブラシかどうか（回転ブラシ・固有アクション型を除く）。
+func uses_rub() -> bool:
+	return not is_rotating and brush_id not in ["candle", "teeth"]
+
+## こすり系ブラシは接触中、画像の上端を本体の中心へ向ける。離れたら直立に戻る。
+const FACING_TURN_SPEED := 12.0
+
+func update_contact_facing(target_global: Variant, delta: float) -> void:
+	if not uses_rub():
+		return
+	var desired := 0.0
+	if target_global != null:
+		var to_target := (target_global as Vector2) - global_position
+		if to_target.length() > 0.001:
+			# 画像のローカル -Y（上）が to_target の向きになる回転角。
+			desired = to_target.angle() + PI / 2.0
+	rotation = lerp_angle(rotation, desired, minf(1.0, FACING_TURN_SPEED * delta))
 
 func get_action_multiplier() -> float:
 	# 固有アクション型の道具は本体をこすっても磨き効果が出ない。
