@@ -74,37 +74,36 @@ static func level_for_finish_total(finish_total: int, saved_level: int = 1) -> i
 		derived = level
 	return mini(MAX_LEVEL, maxi(1, maxi(saved_level, derived)))
 
-## Combined polish needed for a FINISH. Starts near the 2000-point ceiling
-## (both targets almost maxed) and falls as sensitivity grows with level.
-static func finish_threshold(level: int) -> float:
-	return maxf(900.0, 1700.0 - float(maxi(0, level - 1)) * 90.0)
+## Combined polish needed for a FINISH. レベルによる軽減はしない（常にLv1と同じ
+## 近い満タン基準）。レベルの伸びは polish_bonus（感度）だけが担う。
+static func finish_threshold(_level: int) -> float:
+	return 1700.0
 
-## Sensitivity: polish gain multiplier. Dull at Lv1, capped early so the
-## late game grows through chaining (retention), not raw gauge speed.
+## 序盤（Lv17まで）は感度が直線的に鈍く伸びる。Lv17で3.0に達した時点から先は
+## chain_rate_target と同じ指数カーブへ接続し、上限なく伸ばし続ける
+## （かつて保持率＝連鎖が担っていた終盤の加速を、ここでの感度上昇に置き換えた）。
+const SENSITIVITY_RAMP_CAP_LEVEL := 17
+const SENSITIVITY_RAMP_CAP_VALUE := 3.0
+
 static func polish_bonus(level: int) -> float:
-	return minf(3.0, 0.6 + float(maxi(0, level - 1)) * 0.15)
+	var linear := 0.6 + float(maxi(0, level - 1)) * 0.15
+	if level <= SENSITIVITY_RAMP_CAP_LEVEL:
+		return linear
+	var anchor := SENSITIVITY_RAMP_CAP_VALUE / chain_rate_target(SENSITIVITY_RAMP_CAP_LEVEL)
+	return chain_rate_target(level) * anchor
 
 ## 痛み倍率（低いほど耐久が高い）。レベルで身体の耐久が上がり、
 ## Lv21以降は完全耐性＝ブラシを置きっぱなしにしても失敗しなくなる。
 static func pain_resist(level: int) -> float:
 	return maxf(0.0, 1.0 - float(maxi(0, level - 1)) * 0.05)
 
-## FINISH後に残る快感の割合。常に0＝連鎖なし、FINISHのたびに快感は必ずゼロへ戻る。
-static func retention_ratio(_level: int) -> float:
-	return 0.0
-
-## 連鎖会計: 現在の合計快感がしきい値を超えている間に成立するFINISH回数と、
-## 快感に掛ける保持係数（retention^count）を返す。終盤は1フレームで千回超に
-## なるためループで数えず閉形式で求める（コストは回数によらず一定）。
-static func chain_finishes(combined: float, threshold: float, retention: float) -> Dictionary:
+## 快感がしきい値の何回分溜まっているかを商で数える（保持なし・端数は必ず捨てる）。
+## 感度が非常に高い高レベル帯では、1フレームの供給だけでしきい値の何千倍にも
+## なり得るため、ループではなく単純な除算で一括計上する（コストは値によらず一定）。
+static func finish_count(combined: float, threshold: float) -> int:
 	if threshold <= 0.0 or combined < threshold:
-		return {"count": 0, "factor": 1.0}
-	var ratio := clampf(retention, 0.0, 0.9999999)
-	if ratio <= 0.0:
-		return {"count": 1, "factor": 0.0}
-	# combined * ratio^count < threshold を満たす最小の count。
-	var count := int(floor(log(combined / threshold) / log(1.0 / ratio))) + 1
-	return {"count": count, "factor": pow(ratio, count)}
+		return 0
+	return int(floor(combined / threshold))
 
 ## Character level required to use each brush. Unknown ids unlock at Lv1.
 const BRUSH_UNLOCK_LEVELS := {

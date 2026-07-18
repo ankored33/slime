@@ -24,6 +24,11 @@ const FULL_FINISH_FX_MIN_INTERVAL := 3.0
 # FINISHレート表示の集計間隔（この秒数ごとに回数を平均してレート更新）。
 const RATE_SAMPLE_WINDOW := 0.5
 
+# この毎秒レートを超えたら、正確な数字を追うのをやめて点滅する専用表示に切り替える
+# （高感度帯は表示が実態に追いつかないほど加速するため）。
+const FINISH_RATE_DISPLAY_CAP := 1000.0
+const FINISH_BLINK_HZ := 4.0
+
 # こすり系ブラシは、接触してからではなく当たり判定付近に入った時点で先端を向ける。
 const BRUSH_FACING_RANGE_MARGIN := 48.0
 
@@ -358,7 +363,10 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 		if brush.position.distance_to(slime.position) <= brush.get_contact_radius() + slime.get_hit_radius():
 			var side := String(slime.side)
 			var state: Dictionary = _slime_state.get(side, {})
-			state["polish"] = clamp(float(state.get("polish", 0.0)) + float(rates["polish"]) * delta, 0.0, GameRules.GAUGE_MAX)
+			# 快感には上限を設けない（高感度帯は1フレームでしきい値の何倍にも達する）。
+			# ゲージ表示側（named_gauge.gd）が GAUGE_MAX でクランプして見せるので、
+			# 表示が壊れることはない。
+			state["polish"] = maxf(0.0, float(state.get("polish", 0.0)) + float(rates["polish"]) * delta)
 			state["pain"] = clamp(float(state.get("pain", 0.0)) + float(rates["pain"]) * delta, 0.0, GameRules.PAIN_CAP)
 			state["pain"] = clamp(float(state["pain"]) - float(rates["soothe"]) * delta, 0.0, GameRules.PAIN_CAP)
 			_slime_state[side] = state
@@ -469,10 +477,16 @@ func _update_gauges() -> void:
 	_set_gauge("pain-R", _slime_state["right"]["pain"])
 	_finish_progress.max_value = finish_threshold
 	_finish_progress.value = _get_combined_polish()
-	var day_text := "本日のFINISH: %s" % NumberFormat.group(_day_finish_count)
-	if _finish_rate >= 0.5:
-		day_text += "（毎秒 %s）" % NumberFormat.ja_unit(_finish_rate)
-	_day_finish_label.text = day_text
+	if _finish_rate >= FINISH_RATE_DISPLAY_CAP:
+		_day_finish_label.text = "本日のFINISH: %s（∞ 大量発生中）" % NumberFormat.group(_day_finish_count)
+		var blink := 0.4 + 0.6 * absf(sin(_day_time * FINISH_BLINK_HZ * TAU))
+		_day_finish_label.modulate = Color(1.0, 1.0, 1.0, blink)
+	else:
+		var day_text := "本日のFINISH: %s" % NumberFormat.group(_day_finish_count)
+		if _finish_rate >= 0.5:
+			day_text += "（毎秒 %s）" % NumberFormat.ja_unit(_finish_rate)
+		_day_finish_label.text = day_text
+		_day_finish_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
 	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
 	if peak_pain >= GameRules.GAUGE_MAX * 0.8:
 		_danger_label.text = "[b]状態[/b]\n痛み：限界寸前"
@@ -503,17 +517,14 @@ func _current_level() -> int:
 	return int(_species.get("level", 1))
 
 func _check_finish() -> void:
-	var level := int(_species.get("level", 1))
-	var chain := GameRules.chain_finishes(
-		_get_combined_polish(), finish_threshold, GameRules.retention_ratio(level))
-	var count := int(chain["count"])
+	var count := GameRules.finish_count(_get_combined_polish(), finish_threshold)
 	if count <= 0:
 		return
 	_day_finish_count += count
 	_rate_accum += count
 	for side in ["left", "right"]:
 		var state: Dictionary = _slime_state[side]
-		state["polish"] = float(state["polish"]) * float(chain["factor"])
+		state["polish"] = 0.0
 		_slime_state[side] = state
 	if count == 1 and _day_time - _last_finish_at >= FULL_FINISH_FX_MIN_INTERVAL:
 		_start_finish_fx()

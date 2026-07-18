@@ -13,11 +13,11 @@ var _passes := 0
 
 func _init() -> void:
 	_test_level_for_finish_total()
+	_test_chain_rate_target()
 	_test_finish_threshold()
 	_test_polish_bonus()
 	_test_pain_resist()
-	_test_retention_ratio()
-	_test_chain_finishes()
+	_test_finish_count()
 	_test_number_format()
 	_test_brush_unlocks()
 	_test_banked_finish()
@@ -64,18 +64,28 @@ func _test_level_for_finish_total() -> void:
 	_check_eq(GameRules.level_for_finish_total(0, 99999), GameRules.MAX_LEVEL, "level: saved level capped")
 	_check_eq(GameRules.level_for_finish_total(0, -3), 1, "level: bad saved level clamps to Lv1")
 
+func _test_chain_rate_target() -> void:
+	_check_near(GameRules.chain_rate_target(1000), GameRules.FINAL_CHAIN_RATE,
+		"chain_rate_target: Lv1000 targets the final chain rate")
+	_check(GameRules.chain_rate_target(500) < GameRules.chain_rate_target(1000),
+		"chain_rate_target: keeps growing toward Lv1000")
+
 func _test_finish_threshold() -> void:
-	_check_near(GameRules.finish_threshold(1), 1700.0, "threshold: Lv1 is near the ceiling")
-	_check_near(GameRules.finish_threshold(5), 1340.0, "threshold: Lv5")
-	_check_near(GameRules.finish_threshold(10), 900.0, "threshold: Lv10 floors at 900")
-	_check_near(GameRules.finish_threshold(100), 900.0, "threshold: floored at 900")
+	_check_near(GameRules.finish_threshold(1), 1700.0, "threshold: Lv1 baseline")
+	_check_near(GameRules.finish_threshold(500), 1700.0, "threshold: no longer eased by level")
+	_check_near(GameRules.finish_threshold(1000), 1700.0, "threshold: stays at the Lv1 baseline")
 
 func _test_polish_bonus() -> void:
 	_check_near(GameRules.polish_bonus(1), 0.6, "polish_bonus: Lv1 is dull")
 	_check_near(GameRules.polish_bonus(5), 1.2, "polish_bonus: Lv5")
 	_check_near(GameRules.polish_bonus(10), 1.95, "polish_bonus: Lv10 roughly 2x")
-	_check_near(GameRules.polish_bonus(1000), 3.0, "polish_bonus: capped in the late game")
 	_check_near(GameRules.polish_bonus(0), 0.6, "polish_bonus: Lv0 clamps to baseline")
+	_check_near(GameRules.polish_bonus(GameRules.SENSITIVITY_RAMP_CAP_LEVEL),
+		GameRules.SENSITIVITY_RAMP_CAP_VALUE, "polish_bonus: matches the ramp's value right at the handoff level")
+	_check(GameRules.polish_bonus(GameRules.SENSITIVITY_RAMP_CAP_LEVEL + 1) > GameRules.SENSITIVITY_RAMP_CAP_VALUE,
+		"polish_bonus: keeps rising past the old Lv17 cap")
+	_check(GameRules.polish_bonus(1000) > GameRules.polish_bonus(100),
+		"polish_bonus: still accelerating deep into the late game")
 
 func _test_pain_resist() -> void:
 	_check_near(GameRules.pain_resist(1), 1.0, "pain_resist: Lv1 baseline")
@@ -84,36 +94,14 @@ func _test_pain_resist() -> void:
 	_check_near(GameRules.pain_resist(21), 0.0, "pain_resist: fully immune from Lv21")
 	_check_near(GameRules.pain_resist(1000), 0.0, "pain_resist: stays immune")
 
-func _test_retention_ratio() -> void:
-	_check_near(GameRules.retention_ratio(1), 0.0, "retention: Lv1 keeps nothing")
-	_check_near(GameRules.retention_ratio(4), 0.0, "retention: Lv4 keeps nothing")
-	_check_near(GameRules.retention_ratio(6), 0.0, "retention: Lv6 keeps nothing")
-	_check_near(GameRules.retention_ratio(1000), 0.0, "retention: Lv1000 keeps nothing")
-	_check_near(GameRules.chain_rate_target(1000), GameRules.FINAL_CHAIN_RATE,
-		"chain_rate_target: Lv1000 targets the final chain rate")
-
-func _test_chain_finishes() -> void:
-	var below: Dictionary = GameRules.chain_finishes(500.0, 900.0, 0.63)
-	_check_eq(int(below["count"]), 0, "chain: below threshold yields nothing")
-	_check_near(float(below["factor"]), 1.0, "chain: below threshold keeps polish")
-
-	var no_retention: Dictionary = GameRules.chain_finishes(1700.0, 1700.0, 0.0)
-	_check_eq(int(no_retention["count"]), 1, "chain: zero retention is a single finish")
-	_check_near(float(no_retention["factor"]), 0.0, "chain: zero retention drains polish")
-
-	var single: Dictionary = GameRules.chain_finishes(1000.0, 900.0, 0.63)
-	_check_eq(int(single["count"]), 1, "chain: one crossing is one finish")
-	_check_near(float(single["factor"]), 0.63, "chain: single finish keeps retention ratio")
-
-	var multi: Dictionary = GameRules.chain_finishes(1000.0, 900.0, 0.95)
-	_check_eq(int(multi["count"]), 3, "chain: high retention chains within one frame")
-	_check_near(float(multi["factor"]), pow(0.95, 3), "chain: factor is retention^count")
-
-	# 実際のゲームは常に retention_ratio()==0 を渡すので、しきい値を大きく超えても
-	# 1回のFINISHで快感が完全にゼロへ落ちる（連鎖しない）。
-	var actual: Dictionary = GameRules.chain_finishes(5000.0, 900.0, GameRules.retention_ratio(1000))
-	_check_eq(int(actual["count"]), 1, "chain: actual game never chains beyond one finish")
-	_check_near(float(actual["factor"]), 0.0, "chain: actual game always drains polish to zero")
+func _test_finish_count() -> void:
+	_check_eq(GameRules.finish_count(500.0, 900.0), 0, "finish_count: below threshold yields nothing")
+	_check_eq(GameRules.finish_count(900.0, 900.0), 1, "finish_count: exact threshold is one finish")
+	_check_eq(GameRules.finish_count(1799.9, 900.0), 1, "finish_count: not quite two")
+	_check_eq(GameRules.finish_count(1800.0, 900.0), 2, "finish_count: two full thresholds at once")
+	_check_eq(GameRules.finish_count(45000.0, 900.0), 50,
+		"finish_count: a high-sensitivity frame counts many finishes at once, no loop needed")
+	_check_eq(GameRules.finish_count(500.0, 0.0), 0, "finish_count: zero threshold never finishes")
 
 func _test_number_format() -> void:
 	_check_eq(NumberFormat.group(0), "0", "format: zero")

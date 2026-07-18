@@ -11,24 +11,25 @@ extends SceneTree
 const GameRules = preload("res://scripts/game_rules.gd")
 
 func _init() -> void:
-	print("Lv | しきい値 | 保持率     | 実測レート/秒 | 1FINISHあたり")
-	for level: int in [1, 2, 3, 4, 5, 6, 8, 10, 21, 50, 100, 300, 500, 1000]:
+	print("Lv | しきい値 |    感度 | 実測レート/秒 | 1FINISHあたり")
+	for level: int in [1, 2, 3, 4, 5, 6, 8, 10, 17, 18, 21, 50, 100, 300, 500, 1000]:
 		var bonus := GameRules.polish_bonus(level)
 		var threshold := GameRules.finish_threshold(level)
-		var retention := GameRules.retention_ratio(level)
 		var left := 0.0
 		var right := 0.0
 		var total := 0
 		var dt := 1.0 / 60.0
 		var seconds := 60.0
 		for i in range(int(seconds / dt)):
-			left = minf(left + 200.0 * bonus * dt, GameRules.GAUGE_MAX)
-			right = minf(right + 160.0 * bonus * dt, GameRules.GAUGE_MAX)
-			var chain: Dictionary = GameRules.chain_finishes(left + right, threshold, retention)
-			total += int(chain["count"])
-			left *= float(chain["factor"])
-			right *= float(chain["factor"])
+			# 快感には上限がない（game_screen.gd の _apply_brush_effects と同じ想定）。
+			left += 200.0 * bonus * dt
+			right += 160.0 * bonus * dt
+			var count := GameRules.finish_count(left + right, threshold)
+			total += count
+			if count > 0:
+				left = 0.0
+				right = 0.0
 		var rate := float(total) / seconds
 		var per_finish := "%.1f秒" % (1.0 / rate) if rate > 0.0 and rate < 2.0 else "-"
-		print("%4d | %6.0f | %.7f | %12.1f | %s" % [level, threshold, retention, rate, per_finish])
+		print("%4d | %6.0f | %8.1f | %12.1f | %s" % [level, threshold, bonus, rate, per_finish])
 	quit(0)
