@@ -37,8 +37,14 @@ var nipple_shrink := 1.0:
 @onready var _outline: Line2D = $Outline
 @onready var _sprite: Sprite2D = $Sprite2D
 
-var _hearts: CPUParticles2D
-var _heart_burst: CPUParticles2D
+## 1回の噴出・バーストで同時に混ぜるハート種類数（CPUParticles2Dは1ノード1テクスチャ
+## までしか持てないため、種類の数だけ子ノードを分けて重ねて出す）。
+const HEART_VARIETY := 6
+const AMBIENT_TOTAL_AMOUNT := 24
+const BURST_TOTAL_AMOUNT := 36
+
+var _hearts: Array[CPUParticles2D] = []
+var _heart_burst: Array[CPUParticles2D] = []
 
 func _ready() -> void:
 	add_to_group("slime_targets")
@@ -47,62 +53,70 @@ func _ready() -> void:
 	_sync_visuals()
 
 func _setup_heart_particles() -> void:
-	_hearts = CPUParticles2D.new()
-	_hearts.name = "HeartParticles"
-	_hearts.emitting = false
-	_hearts.amount = 24
-	_hearts.lifetime = 1.2
-	_hearts.local_coords = false
-	_hearts.texture = FxTextures.random_heart()
-	_hearts.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
-	_hearts.direction = Vector2.UP
-	_hearts.spread = 25.0
-	_hearts.initial_velocity_min = 60.0
-	_hearts.initial_velocity_max = 120.0
-	_hearts.gravity = Vector2(0.0, -40.0)
-	_hearts.scale_amount_min = 0.6
-	_hearts.scale_amount_max = 1.2
-	_hearts.angular_velocity_min = -90.0
-	_hearts.angular_velocity_max = 90.0
 	var fade := Gradient.new()
 	fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
 	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
-	_hearts.color_ramp = fade
-	add_child(_hearts)
+	var per_emitter_amount := maxi(1, AMBIENT_TOTAL_AMOUNT / HEART_VARIETY)
+	var ambient_textures := FxTextures.random_hearts(HEART_VARIETY)
+	for i in range(ambient_textures.size()):
+		var p := CPUParticles2D.new()
+		p.name = "HeartParticles%d" % i
+		p.emitting = false
+		p.amount = per_emitter_amount
+		p.lifetime = 1.2
+		p.local_coords = false
+		p.texture = ambient_textures[i]
+		p.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+		p.direction = Vector2.UP
+		p.spread = 25.0
+		p.initial_velocity_min = 60.0
+		p.initial_velocity_max = 120.0
+		p.gravity = Vector2(0.0, -40.0)
+		p.scale_amount_min = 0.6
+		p.scale_amount_max = 1.2
+		p.angular_velocity_min = -90.0
+		p.angular_velocity_max = 90.0
+		p.color_ramp = fade
+		add_child(p)
+		_hearts.append(p)
 
 	# FINISH瞬間の一斉バースト用。通常のハートより強く弾ける。
-	_heart_burst = CPUParticles2D.new()
-	_heart_burst.name = "HeartBurst"
-	_heart_burst.emitting = false
-	_heart_burst.one_shot = true
-	_heart_burst.explosiveness = 1.0
-	_heart_burst.amount = 36
-	_heart_burst.lifetime = 1.5
-	_heart_burst.local_coords = false
-	_heart_burst.texture = FxTextures.random_heart()
-	_heart_burst.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
-	_heart_burst.direction = Vector2.UP
-	_heart_burst.spread = 180.0
-	_heart_burst.initial_velocity_min = 160.0
-	_heart_burst.initial_velocity_max = 320.0
-	_heart_burst.gravity = Vector2(0.0, 140.0)
-	_heart_burst.scale_amount_min = 0.8
-	_heart_burst.scale_amount_max = 1.7
-	_heart_burst.angular_velocity_min = -180.0
-	_heart_burst.angular_velocity_max = 180.0
 	var burst_fade := Gradient.new()
 	burst_fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
 	burst_fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
-	_heart_burst.color_ramp = burst_fade
-	add_child(_heart_burst)
+	var per_burst_amount := maxi(1, BURST_TOTAL_AMOUNT / HEART_VARIETY)
+	var burst_textures := FxTextures.random_hearts(HEART_VARIETY)
+	for i in range(burst_textures.size()):
+		var b := CPUParticles2D.new()
+		b.name = "HeartBurst%d" % i
+		b.emitting = false
+		b.one_shot = true
+		b.explosiveness = 1.0
+		b.amount = per_burst_amount
+		b.lifetime = 1.5
+		b.local_coords = false
+		b.texture = burst_textures[i]
+		b.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
+		b.direction = Vector2.UP
+		b.spread = 180.0
+		b.initial_velocity_min = 160.0
+		b.initial_velocity_max = 320.0
+		b.gravity = Vector2(0.0, 140.0)
+		b.scale_amount_min = 0.8
+		b.scale_amount_max = 1.7
+		b.angular_velocity_min = -180.0
+		b.angular_velocity_max = 180.0
+		b.color_ramp = burst_fade
+		add_child(b)
+		_heart_burst.append(b)
 
 func set_hearts_active(on: bool) -> void:
-	if _hearts != null:
-		_hearts.emitting = on
+	for p in _hearts:
+		p.emitting = on
 
 func burst_hearts() -> void:
-	if _heart_burst != null:
-		_heart_burst.restart()
+	for b in _heart_burst:
+		b.restart()
 
 const SQUISH_STIFFNESS := 70.0
 const SQUISH_DAMPING := 5.0
@@ -269,8 +283,8 @@ func _sync_visuals() -> void:
 		_sprite.visible = false
 		_body.visible = true
 		_outline.visible = true
-	if _hearts != null:
-		_hearts.emission_sphere_radius = radius * 0.6
-		_hearts.position = Vector2(0.0, -radius * 0.3)
-	if _heart_burst != null:
-		_heart_burst.emission_sphere_radius = radius * 0.5
+	for p in _hearts:
+		p.emission_sphere_radius = radius * 0.6
+		p.position = Vector2(0.0, -radius * 0.3)
+	for b in _heart_burst:
+		b.emission_sphere_radius = radius * 0.5

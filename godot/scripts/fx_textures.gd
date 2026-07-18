@@ -1,7 +1,7 @@
 class_name FxTextures
 extends RefCounted
 
-## FXで使う小物画像。ハートは実素材（assets/fx/hearts/）から毎回ランダムに1枚選ぶ。
+## FXで使う小物画像。ハートは実素材（assets/fx/hearts/）から毎回ランダムに選ぶ。
 
 const HEART_DIR := "res://assets/fx/hearts"
 const HEART_FILES := [
@@ -10,5 +10,14 @@ const HEART_FILES := [
 ]
 
 static func random_heart() -> Texture2D:
-	var path := "%s/%s" % [HEART_DIR, HEART_FILES.pick_random()]
-	return load(path)
+	return load("%s/%s" % [HEART_DIR, HEART_FILES.pick_random()])
+
+## count 種類のハートを重複無しで選ぶ（1回のパーティクル群に混ぜて出すため）。
+## count が素材数を超える場合は素材数まで。
+static func random_hearts(count: int) -> Array[Texture2D]:
+	var files := HEART_FILES.duplicate()
+	files.shuffle()
+	var out: Array[Texture2D] = []
+	for i in range(mini(count, files.size())):
+		out.append(load("%s/%s" % [HEART_DIR, files[i]]))
+	return out
