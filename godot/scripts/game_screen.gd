@@ -278,18 +278,14 @@ func _update_brush_facing(delta: float) -> void:
 		brush.update_contact_facing(nearest_pos, delta)
 
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
+	var rates := _brush_effect_rates(brush, _current_level())
 	for slime in _slimes:
 		if brush.global_position.distance_to(slime.global_position) <= brush.hit_radius + slime.get_hit_radius():
 			var side := String(slime.side)
 			var state: Dictionary = _slime_state.get(side, {})
-			var level := int(_species.get("level", 1))
-			var polish_bonus := GameRules.polish_bonus(level)
-			var pain_resist := GameRules.pain_resist(level)
-			# 通常ブラシはこすった速度、回転ブラシはON中の自動回転で効く。
-			var rub := brush.get_action_multiplier()
-			state["polish"] = clamp(float(state.get("polish", 0.0)) + brush.get_effective_polish_gain() * polish_bonus * rub * delta, 0.0, GameRules.GAUGE_MAX)
-			state["pain"] = clamp(float(state.get("pain", 0.0)) + brush.get_effective_pain_gain() * pain_resist * rub * delta * PAIN_GAIN_SCALE, 0.0, GameRules.PAIN_CAP)
-			state["pain"] = clamp(float(state["pain"]) - brush.get_effective_soothe_gain() * rub * delta, 0.0, GameRules.PAIN_CAP)
+			state["polish"] = clamp(float(state.get("polish", 0.0)) + float(rates["polish"]) * delta, 0.0, GameRules.GAUGE_MAX)
+			state["pain"] = clamp(float(state.get("pain", 0.0)) + float(rates["pain"]) * delta, 0.0, GameRules.PAIN_CAP)
+			state["pain"] = clamp(float(state["pain"]) - float(rates["soothe"]) * delta, 0.0, GameRules.PAIN_CAP)
 			_slime_state[side] = state
 
 ## アクティブなブラシが触れていない部位は痛みが自然回復する。
@@ -301,6 +297,15 @@ func _apply_pain_recovery(touched_sides: Dictionary, delta: float) -> void:
 		state["pain"] = maxf(0.0, float(state["pain"]) - GameRules.PAIN_RECOVERY_PER_SEC * delta)
 		_slime_state[side] = state
 
+func _brush_effect_rates(brush: Brush, level: int) -> Dictionary:
+	# 通常ブラシはこすった速度、回転ブラシはON中の自動回転で効く。
+	var rub := brush.get_action_multiplier()
+	return {
+		"polish": brush.get_effective_polish_gain() * GameRules.polish_bonus(level) * rub,
+		"pain": brush.get_effective_pain_gain() * GameRules.pain_resist(level) * rub * PAIN_GAIN_SCALE,
+		"soothe": brush.get_effective_soothe_gain() * rub
+	}
+
 ## アクティブなブラシの接触状態と、いま掛かっている上昇量/秒（補正込み）。
 ## touched_sides は side名 → 接触中フラグ（痛み自然回復の判定に使う）。
 func _compute_touch_info() -> Dictionary:
@@ -309,20 +314,17 @@ func _compute_touch_info() -> Dictionary:
 	var polish_rate := 0.0
 	var pain_rate := 0.0
 	var level := int(_species.get("level", 1))
-	var polish_bonus := GameRules.polish_bonus(level)
-	var pain_resist := GameRules.pain_resist(level)
 	for brush: Brush in _brushes.brush_map.values():
 		if not brush.visible or not brush.is_effective():
 			continue
+		var rates := _brush_effect_rates(brush, level)
 		for slime in _slimes:
 			if brush.global_position.distance_to(slime.global_position) <= brush.get_contact_radius() + slime.get_hit_radius():
 				touching = true
 				touched_sides[String(slime.side)] = true
 				# _apply_brush_effects と同じ係数で「ゲージが実際に動く速さ」を比較する。
-				var rub := brush.get_action_multiplier()
-				polish_rate += brush.get_effective_polish_gain() * polish_bonus * rub
-				pain_rate += brush.get_effective_pain_gain() * pain_resist * rub * PAIN_GAIN_SCALE
-				pain_rate -= brush.get_effective_soothe_gain() * rub
+				polish_rate += float(rates["polish"])
+				pain_rate += float(rates["pain"]) - float(rates["soothe"])
 	return {
 		"touching": touching,
 		"touched_sides": touched_sides,
