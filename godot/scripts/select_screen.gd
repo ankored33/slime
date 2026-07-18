@@ -7,19 +7,13 @@ signal character_selected(index: int)
 signal progress_changed
 
 var _characters: Array[Dictionary] = []
-var _pending_character_index := -1
 var _pending_level_index := -1
 
 @onready var _cards: HBoxContainer = $Margin/VBox/Cards
-@onready var _character_confirm_dialog: ConfirmationDialog = $CharacterConfirmDialog
 @onready var _level_edit_dialog: ConfirmationDialog = $LevelEditDialog
 @onready var _level_spin_box: SpinBox = $LevelEditDialog/LevelSpinBox
 
 func _ready() -> void:
-	_character_confirm_dialog.confirmed.connect(_on_character_confirmed)
-	_character_confirm_dialog.canceled.connect(_on_character_selection_canceled)
-	_character_confirm_dialog.get_ok_button().text = "選択"
-	_character_confirm_dialog.get_cancel_button().text = "キャンセル"
 	_level_edit_dialog.confirmed.connect(_on_level_edit_confirmed)
 	_level_edit_dialog.canceled.connect(_on_level_edit_canceled)
 	_level_edit_dialog.get_ok_button().text = "設定"
@@ -47,9 +41,7 @@ func setup(characters: Array[Dictionary]) -> void:
 		view_original_button.button_up.connect(refresh_character_card.bind(index, false))
 
 func show_characters() -> void:
-	_pending_character_index = -1
 	_pending_level_index = -1
-	_character_confirm_dialog.hide()
 	_level_edit_dialog.hide()
 	visible = true
 	refresh_character_cards()
@@ -118,19 +110,7 @@ func _on_character_card_pressed(index: int) -> void:
 	if index < 0 or index >= _characters.size():
 		return
 	GameAudio.play_se("ui_click")
-	_pending_character_index = index
-	_character_confirm_dialog.popup_centered()
-
-func _on_character_confirmed() -> void:
-	if _pending_character_index < 0:
-		return
-	var index := _pending_character_index
-	_pending_character_index = -1
-	GameAudio.play_se("ui_click")
 	character_selected.emit(index)
-
-func _on_character_selection_canceled() -> void:
-	_pending_character_index = -1
 
 func _on_level_edit_pressed(index: int) -> void:
 	if not OS.is_debug_build() or index < 0 or index >= _characters.size():

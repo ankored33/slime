@@ -188,8 +188,8 @@ func _begin_day() -> void:
 	_transition(_show_game_screen)
 
 ## 磨き画面に入る直前、毎回（初回の自己紹介オープニングの直後も含む）挟む
-## 短い導入演出。宣告のあと、黒い幕が中央から左右へ開いて
-## リザルト用のキャラ画像を見せる。
+## 短い導入演出。黒い幕が中央から左右へ開いてリザルト用のキャラ画像を見せ、
+## クリック待ちのあと矯導確認ダイアログを挟んで、宣告してから磨き画面へ進む。
 func _show_day_intro() -> void:
 	_hide_all_screens()
 	_showing_day_intro = true
@@ -197,14 +197,15 @@ func _show_day_intro() -> void:
 	var prisoner_number := str(chara.get("name_after_opening", ""))
 	_opening_screen.start_with_pages(chara, [
 		{
+			"style": "curtain",
+			"portrait": "result",
+			"text": "",
+			"confirm_text": "%sを矯導しますか？" % prisoner_number
+		},
+		{
 			"style": "blackout",
 			"text": "%s。\nこれより貴様の矯導を開始する。" % prisoner_number,
 			"auto_advance_delays": [1.0, 2.0]
-		},
-		{
-			"style": "curtain",
-			"portrait": "result",
-			"text": ""
 		}
 	])
 

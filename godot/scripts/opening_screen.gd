@@ -23,6 +23,8 @@ var _curtain_tween: Tween
 var _auto_advance_delay := 0.0
 var _auto_advance_delays: Array = []
 var _auto_advance_tween: Tween
+## curtain ページで「元の経歴を見る」を離したとき戻す先（そのページの本来の portrait キー）。
+var _curtain_portrait_key := "result"
 
 @onready var _split: Control = $SplitView
 @onready var _portrait: TextureRect = $SplitView/PortraitRect
@@ -43,14 +45,19 @@ var _auto_advance_tween: Tween
 @onready var _view_original_button: Button = $CurtainReveal/ViewOriginalButton
 @onready var _blackout: Control = $BlackoutView
 @onready var _blackout_sentence_list: VBoxContainer = $BlackoutView/BlackoutCenter/SentenceList
+@onready var _reform_confirm_dialog: ConfirmationDialog = $ReformConfirmDialog
 
 func _ready() -> void:
 	_next_button.pressed.connect(advance)
 	_selection_button.pressed.connect(_on_selection_pressed)
 	# 「元の経歴を見る」: 選択画面のカードと同じく、押している間だけ本来の名前・
-	# 二つ名・プロフィール文に戻す。
+	# 二つ名・プロフィール文・立ち絵に戻す。
 	_view_original_button.button_down.connect(_render_profile_card.bind(true))
 	_view_original_button.button_up.connect(_render_profile_card.bind(false))
+	_reform_confirm_dialog.confirmed.connect(_on_reform_confirmed)
+	_reform_confirm_dialog.canceled.connect(_on_reform_canceled)
+	_reform_confirm_dialog.get_ok_button().text = "開始"
+	_reform_confirm_dialog.get_cancel_button().text = "キャンセル"
 	# 暗転ページを含め、画面のどこをクリックしても進める。
 	gui_input.connect(_on_gui_input)
 
@@ -85,26 +92,70 @@ func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 		GameAudio.play_bgm("opening_%s" % str(_character.get("id", "")))
 
 ## 未表示の文が残っていればそれを1つフェードインさせる。出し切っていれば次のページへ、
-## 最終ページなら演出を終える。
+## 最終ページなら演出を終える。curtain ページで confirm_text が指定されていれば、
+## 出し切った後の最初のクリックは次へ進めず確認ダイアログを挟む。
 func advance(automatic: bool = false) -> void:
 	if _page_transitioning:
 		return
 	if _current_auto_advance_delay() > 0.0 and not automatic and DisplayServer.get_name() != "headless":
 		return
-	GameAudio.play_se("ui_click")
 	if _revealed_count < _sentences.size():
+		GameAudio.play_se("ui_click")
 		_reveal_next_sentence()
 		return
+	var confirm_text := _current_confirm_text()
+	if confirm_text != "" and DisplayServer.get_name() != "headless":
+		GameAudio.play_se("ui_click")
+		_reform_confirm_dialog.dialog_text = confirm_text
+		_reform_confirm_dialog.popup_centered()
+		return
+	GameAudio.play_se("ui_click")
+	_advance_to_next_page_or_finish()
+
+func _advance_to_next_page_or_finish() -> void:
 	if page_index + 1 < _pages.size():
 		page_index += 1
 		_render_page()
 		return
 	finished.emit()
 
+func _current_confirm_text() -> String:
+	if _pages.is_empty():
+		return ""
+	return str(_pages[page_index].get("confirm_text", ""))
+
+func _on_reform_confirmed() -> void:
+	GameAudio.play_se("ui_click")
+	_advance_to_next_page_or_finish()
+
+func _on_reform_canceled() -> void:
+	pass
+
 func _on_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton \
 			and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		if _curtain.visible and not _curtain_image_contains(event.position):
+			return
 		advance()
+
+func _get_cursor_shape(position: Vector2) -> Control.CursorShape:
+	if _curtain.visible and _curtain_image_contains(position):
+		return Control.CURSOR_POINTING_HAND
+	return Control.CURSOR_ARROW
+
+## curtain ページはアスペクト比維持で表示するため、キャラ画像の左右に余白ができる。
+## その余白（左右パネル）をクリックしても反応しないよう、実際に描画されている
+## 画像範囲だけを判定する。
+func _curtain_image_contains(pos: Vector2) -> bool:
+	var texture := _curtain_image.texture
+	if texture == null:
+		return false
+	var control_size := _curtain_image.size
+	var tex_size := texture.get_size()
+	var scale := minf(control_size.x / tex_size.x, control_size.y / tex_size.y)
+	var drawn_size := tex_size * scale
+	var origin := (control_size - drawn_size) * 0.5
+	return Rect2(origin, drawn_size).has_point(pos)
 
 func _render_page() -> void:
 	if _pages.is_empty():
@@ -145,9 +196,7 @@ func _render_page() -> void:
 ## 全画面のキャラ画を覆う左右の黒幕を、中央の継ぎ目から外側へ開く。
 ## 開き切ったら入力待ちにし、次のクリックで通常の暗転遷移へつなぐ。
 func _render_curtain(page: Dictionary) -> void:
-	var portrait_key := str(page.get("portrait", "result"))
-	var image_path := str(_character.get(portrait_key, ""))
-	_curtain_image.texture = load(image_path) if image_path != "" and ResourceLoader.exists(image_path) else null
+	_curtain_portrait_key = str(page.get("portrait", "result"))
 	var half_width := size.x * 0.5
 	_curtain_left.position.x = 0.0
 	_curtain_right.position.x = half_width
@@ -187,13 +236,14 @@ func _on_selection_pressed() -> void:
 	GameAudio.play_se("ui_click")
 	selection_requested.emit()
 
-## force_original: 「元の経歴を見る」ボタン押下中、名前・二つ名・プロフィール文を
+## force_original: 「元の経歴を見る」ボタン押下中、名前・二つ名・プロフィール文・立ち絵を
 ## すべて初回（オープニング未読時）のものへ一時的に戻す（select_screen.gd と同じ挙動）。
 func _render_profile_card(force_original: bool = false) -> void:
 	_profile_epithet.text = str(_character.get("epithet", "")) if force_original \
 		else CharacterDefs.display_epithet(_character)
 	_profile_name.text = str(_character.get("name", "")) if force_original \
 		else CharacterDefs.display_name(_character)
+	_update_curtain_image(force_original)
 	var opening_seen := bool(_character.get("opening_seen", false))
 	var use_after_opening := opening_seen and not force_original
 	var profile_text := str(_character.get("profile_after_opening", "")) if use_after_opening else ""
@@ -213,6 +263,13 @@ func _render_profile_card(force_original: bool = false) -> void:
 		int(_character.get("finish_total", 0)),
 		int(_character.get("pain_fail_total", 0))
 	]
+
+## force_original: 立ち絵を "portrait"（オープニング前の元絵）に戻す。離せば curtain
+## ページ本来の portrait キー（通常 "result"）に戻す。
+func _update_curtain_image(force_original: bool) -> void:
+	var portrait_key := "portrait" if force_original else _curtain_portrait_key
+	var image_path := str(_character.get(portrait_key, ""))
+	_curtain_image.texture = load(image_path) if image_path != "" and ResourceLoader.exists(image_path) else null
 
 func _current_sentence_list() -> VBoxContainer:
 	return _blackout_sentence_list if _blackout.visible else _sentence_list

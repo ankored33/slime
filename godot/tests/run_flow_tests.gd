@@ -103,12 +103,8 @@ func _test_boot_select_opening_to_game() -> void:
 
 	var card0_button: Button = main.get_node(
 		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/CardButton")
-	var confirm_dialog: ConfirmationDialog = main.get_node(
-		"CanvasLayer/SelectScreen/CharacterConfirmDialog")
 	card0_button.emit_signal("pressed")
-	confirm_dialog.emit_signal("confirmed")
-	confirm_dialog.hide()
-	_check(opening.visible and not select.visible, "first start -> opening screen")
+	_check(opening.visible and not select.visible, "first start -> opening screen (no confirm dialog)")
 
 	# 初回オープニング -> 一言演出(day-intro) -> 磨き画面、まで送る。
 	_drain_opening_pages()

@@ -231,10 +231,6 @@ layout_mode = 2
 [node name="Card1" parent="CanvasLayer/SelectScreen/Margin/VBox/Cards" instance=ExtResource("5")]
 layout_mode = 2
 
-[node name="CharacterConfirmDialog" type="ConfirmationDialog" parent="CanvasLayer/SelectScreen"]
-title = "キャラクター選択"
-dialog_text = "このキャラクターを選択しますか？"
-
 [node name="LevelEditDialog" type="ConfirmationDialog" parent="CanvasLayer/SelectScreen"]
 title = "レベル変更（DEBUG）"
 dialog_text = "設定するレベルを入力してください。"

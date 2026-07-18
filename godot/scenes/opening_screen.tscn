@@ -279,3 +279,6 @@ layout_mode = 2
 theme_override_constants/separation = 10
 alignment = 1
 mouse_filter = 2
+
+[node name="ReformConfirmDialog" type="ConfirmationDialog" parent="."]
+title = "矯導確認"
