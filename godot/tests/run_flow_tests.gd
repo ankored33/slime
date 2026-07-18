@@ -492,7 +492,12 @@ func _test_selection_and_debug_tools() -> void:
 		"debug reset: portrait returns to initial state")
 
 	main._on_character_selected(0)
-	_check(game.visible and not opening.visible, "second start skips opening")
+	# 2回目以降の選択では、磨き画面の前に一言だけ暗転演出を挟む（main.gd 参照）。
+	_check(opening.visible and not game.visible, "second start shows the day-intro beat, not the full opening")
+	while opening._revealed_count < opening._sentences.size():
+		opening.advance()
+	opening.advance()
+	_check(game.visible and not opening.visible, "second start skips the full opening")
 
 func _test_pause_persistence_and_layers() -> void:
 	# ESCメニュー: タイトルでは出さず、ゲーム中はオーバーレイでゲージ進行を止める。
@@ -539,6 +544,9 @@ func _test_pause_persistence_and_layers() -> void:
 	pause_menu_probe.queue_free()
 
 	main._on_character_selected(0)
+	while opening._revealed_count < opening._sentences.size():
+		opening.advance()
+	opening.advance()
 	_check(game.visible and bool(game._is_running) and not bool(game._menu_paused),
 		"select after title return: a fresh day starts cleanly")
 

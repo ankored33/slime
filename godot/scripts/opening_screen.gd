@@ -13,6 +13,7 @@ const BLACKOUT_FONT_SIZE := 44
 
 var page_index := 0
 var _character: Dictionary = {}
+var _pages: Array = []
 var _sentences: Array[String] = []
 var _revealed_count := 0
 
@@ -30,12 +31,24 @@ func _ready() -> void:
 	# 暗転ページを含め、画面のどこをクリックしても進める。
 	gui_input.connect(_on_gui_input)
 
+## character.opening_pages を表示する、初回の自己紹介オープニング用の入口。
 func start(character: Dictionary) -> void:
+	_play(character, character.get("opening_pages", []), true)
+
+## 任意のページ列を挟み込みたいとき用の入口（例: 毎回の磨き画面前の一言）。
+## opening_pages とは無関係なので、既読フラグ等には触れない。呼び出し側が
+## finished シグナルを見て次の画面に進める。
+func start_with_pages(character: Dictionary, pages: Array, play_music: bool = false) -> void:
+	_play(character, pages, play_music)
+
+func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 	_character = character
+	_pages = pages
 	page_index = 0
 	visible = true
 	_render_page()
-	GameAudio.play_bgm("opening_%s" % str(_character.get("id", "")))
+	if play_music:
+		GameAudio.play_bgm("opening_%s" % str(_character.get("id", "")))
 
 ## 未表示の文が残っていればそれを1つフェードインさせる。出し切っていれば次のページへ、
 ## 最終ページなら演出を終える。
@@ -44,8 +57,7 @@ func advance() -> void:
 	if _revealed_count < _sentences.size():
 		_reveal_next_sentence()
 		return
-	var pages: Array = _character.get("opening_pages", [])
-	if page_index + 1 < pages.size():
+	if page_index + 1 < _pages.size():
 		page_index += 1
 		_render_page()
 		return
@@ -57,12 +69,11 @@ func _on_gui_input(event: InputEvent) -> void:
 		advance()
 
 func _render_page() -> void:
-	var pages: Array = _character.get("opening_pages", [])
-	if pages.is_empty():
+	if _pages.is_empty():
 		_split.visible = false
 		_blackout.visible = false
 		return
-	var page: Dictionary = pages[page_index]
+	var page: Dictionary = _pages[page_index]
 	var is_blackout := str(page.get("style", "split")) == "blackout"
 	_split.visible = not is_blackout
 	_blackout.visible = is_blackout
@@ -72,7 +83,7 @@ func _render_page() -> void:
 	if is_blackout:
 		_reveal_next_sentence()
 		return
-	_page_label.text = "%d / %d" % [page_index + 1, pages.size()]
+	_page_label.text = "%d / %d" % [page_index + 1, _pages.size()]
 	var portrait_key := str(page.get("portrait", "portrait"))
 	var image_path := str(_character.get(portrait_key, ""))
 	var texture: Texture2D = null
@@ -80,7 +91,7 @@ func _render_page() -> void:
 		texture = load(image_path)
 	_portrait.texture = texture
 	_portrait_placeholder.visible = texture == null
-	_next_button.text = "はじめる ▶" if page_index + 1 >= pages.size() else "次へ ▼"
+	_next_button.text = "はじめる ▶" if page_index + 1 >= _pages.size() else "次へ ▼"
 	_reveal_next_sentence()
 
 func _current_sentence_list() -> VBoxContainer:

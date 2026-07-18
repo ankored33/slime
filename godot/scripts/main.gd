@@ -13,6 +13,9 @@ const SCREEN_FADE_DURATION := 0.25
 var _selected_index := 0
 var _last_result: Dictionary = {}
 var _fade_tween: Tween
+## _show_day_intro() 中かどうか。同じ OpeningScreen.finished を、初回オープニング
+## 終了時（_on_opening_finished 本来の処理）と区別するためのフラグ。
+var _showing_day_intro := false
 
 @onready var _frame: Control = $CanvasLayer/Frame
 @onready var _screen_title: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenTitle
@@ -174,16 +177,33 @@ func _on_character_selected(index: int) -> void:
 	_selected_index = index
 	var chara: Dictionary = _characters[_selected_index]
 	if not bool(chara.get("opening_seen", false)):
+		# 初回は自己紹介オープニングのみ。この一言演出は挟まない。
 		_transition(_show_opening_screen)
 	else:
-		_begin_day()
+		_transition(_show_day_intro)
 
 func _begin_day() -> void:
 	var chara: Dictionary = _characters[_selected_index]
 	_game_screen.setup_species(chara)
 	_transition(_show_game_screen)
 
+## 磨き画面に入る直前、2回目以降の選択時だけ挟む短い暗転演出。
+## OpeningScreen（キャラOPと同じ見た目）を1ページだけ流用する。
+func _show_day_intro() -> void:
+	_hide_all_screens()
+	_showing_day_intro = true
+	var chara: Dictionary = _characters[_selected_index]
+	var prisoner_number := str(chara.get("name_after_opening", ""))
+	_opening_screen.start_with_pages(chara, [{
+		"style": "blackout",
+		"text": "%s。\nこれより貴様の矯導を開始する" % prisoner_number
+	}])
+
 func _on_opening_finished() -> void:
+	if _showing_day_intro:
+		_showing_day_intro = false
+		_begin_day()
+		return
 	var chara: Dictionary = _characters[_selected_index]
 	chara["opening_seen"] = true
 	_characters[_selected_index] = chara
