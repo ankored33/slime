@@ -31,6 +31,9 @@ const BRUSH_FACING_RANGE_MARGIN := 48.0
 # 下回転で等倍へ戻る。ツールボックスとHUDはズーム対象外。
 const CHARA_ZOOM := 2.0
 
+# ズーム中、WASDで画像をずらす速度（画面px/秒）。等倍時は無効。
+const ZOOM_PAN_SPEED := 480.0
+
 # Level-driven; refreshed in setup_species.
 var finish_threshold := GameRules.finish_threshold(1)
 
@@ -130,12 +133,43 @@ func _handle_zoom_wheel(zoom_in: bool, screen_pos: Vector2) -> void:
 		_zoom_root.scale = Vector2.ONE * CHARA_ZOOM
 	else:
 		_zoom_root.scale = Vector2.ONE
+		_zoom_root.position = Vector2.ZERO
+
+## ズーム中のWASD操作。画像（ZoomRoot）をずらし、キャラ画像（CharaImage）が
+## 画面から切れて背後の空白（Arenaの余白）が見えないよう端でクランプする。
+## （キャラだけでなくブラシ類も一緒にずれる。ラックとHUDは対象外）
+func _update_zoom_pan(delta: float) -> void:
+	if _zoom_root.scale.x <= 1.0:
+		return
+	var dir := Vector2.ZERO
+	if Input.is_key_pressed(KEY_A):
+		dir.x -= 1.0
+	if Input.is_key_pressed(KEY_D):
+		dir.x += 1.0
+	if Input.is_key_pressed(KEY_W):
+		dir.y -= 1.0
+	if Input.is_key_pressed(KEY_S):
+		dir.y += 1.0
+	if dir != Vector2.ZERO:
+		_zoom_root.position += dir.normalized() * ZOOM_PAN_SPEED * delta
+	_clamp_zoom_pan()
+
+func _clamp_zoom_pan() -> void:
+	var scale := _zoom_root.scale.x
+	var piv := _zoom_root.pivot_offset
+	var viewport := _zoom_root.size
+	var chara_pos := _chara_image.position
+	var chara_size := _chara_image.size
+	var pos_min := viewport - scale * (chara_pos + chara_size) + piv * (scale - 1.0)
+	var pos_max := -scale * chara_pos + piv * (scale - 1.0)
+	_zoom_root.position = _zoom_root.position.clamp(pos_min, pos_max)
 
 func _process(delta: float) -> void:
 	if not _is_running or _menu_paused:
 		return
 	_day_time += delta
 	_update_finish_rate(delta)
+	_update_zoom_pan(delta)
 	_brushes.update_drag(get_global_mouse_position(), follow_speed, delta)
 	_tool_actions.update_pinch(
 		get_global_mouse_position(), delta, _fx.finish_active or _fx.fail_active)
@@ -255,6 +289,7 @@ func reset_day() -> void:
 	}
 	_brushes.reset()
 	_zoom_root.scale = Vector2.ONE
+	_zoom_root.position = Vector2.ZERO
 	for slime in _slimes:
 		slime.reset_pressure()
 		slime.set_hearts_active(false)
