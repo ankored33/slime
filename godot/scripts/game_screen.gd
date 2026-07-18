@@ -24,6 +24,9 @@ const FULL_FINISH_FX_MIN_INTERVAL := 3.0
 # FINISHレート表示の集計間隔（この秒数ごとに回数を平均してレート更新）。
 const RATE_SAMPLE_WINDOW := 0.5
 
+# こすり系ブラシは、接触してからではなく当たり判定付近に入った時点で先端を向ける。
+const BRUSH_FACING_RANGE_MARGIN := 48.0
+
 # Level-driven; refreshed in setup_species.
 var finish_threshold := GameRules.finish_threshold(1)
 
@@ -263,7 +266,7 @@ func _update_slime_squish(delta: float) -> void:
 		var polish_winning: bool = float(state.get("polish", 0.0)) > float(state.get("pain", 0.0))
 		slime.set_hearts_active(touched_by_active and polish_winning)
 
-## こすり系ブラシは接触中、最寄りの本体中心へ画像の上を向ける（衝突補正後の位置で判定）。
+## こすり系ブラシは当たり判定付近で、最寄りの本体中心へ画像の上を向ける。
 func _update_brush_facing(delta: float) -> void:
 	for brush: Brush in _brushes.brush_map.values():
 		if not brush.visible or not brush.uses_rub():
@@ -272,7 +275,9 @@ func _update_brush_facing(delta: float) -> void:
 		var nearest_dist := INF
 		for slime in _slimes:
 			var dist := brush.global_position.distance_to(slime.global_position)
-			if dist <= brush.get_contact_radius() + slime.get_hit_radius() and dist < nearest_dist:
+			var facing_range := brush.get_contact_radius() + slime.get_hit_radius() \
+				+ BRUSH_FACING_RANGE_MARGIN
+			if dist <= facing_range and dist < nearest_dist:
 				nearest_dist = dist
 				nearest_pos = slime.global_position
 		brush.update_contact_facing(nearest_pos, delta)

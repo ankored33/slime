@@ -102,7 +102,7 @@ func _run_tests() -> void:
 	_check(String(game_background.texture.resource_path).ends_with("/general/game_background.png"),
 		"game: selected character background is used")
 
-	var brush_finger: Node2D = main.get_node("GameScreen/Playfield/BrushFinger")
+	var brush_finger: Brush = main.get_node("GameScreen/Playfield/BrushFinger")
 	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/BrushFude")
 	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/BrushRotary")
 	_check(not brush_finger.visible and not brush_rotary.visible,
@@ -164,6 +164,27 @@ func _run_tests() -> void:
 	_check(float(game._slime_state["left"]["pain"]) > 0.0,
 		"candle: wax impact adds pain stimulus")
 	_check_eq(game._tool_actions.wax_drop_count, 0, "candle: wax drop is consumed on impact")
+	game.reset_day()
+
+	# こすり系ブラシの向き: 接触前でも当たり判定付近なら先端側が中心を向く。
+	game._brushes.toggle_from_toolbox("finger")
+	brush_finger.rotation = 0.0
+	brush_finger.position = left_slime.position - Vector2(
+		left_slime.get_hit_radius() + brush_finger.get_contact_radius()
+			+ game.BRUSH_FACING_RANGE_MARGIN * 0.5,
+		0.0
+	)
+	game._update_brush_facing(1.0)
+	_check_near(brush_finger.rotation, PI / 2.0,
+		"brush facing: near target rotates local top toward target center")
+	brush_finger.position = left_slime.position - Vector2(
+		left_slime.get_hit_radius() + brush_finger.get_contact_radius()
+			+ game.BRUSH_FACING_RANGE_MARGIN + 20.0,
+		0.0
+	)
+	game._update_brush_facing(1.0)
+	_check_near(brush_finger.rotation, 0.0,
+		"brush facing: away from target returns upright")
 	game.reset_day()
 
 	# 歯の固有アクション: 接触中の右クリックだけが一回分の痛みを与える。
@@ -409,3 +430,6 @@ func _check(condition: bool, label: String) -> void:
 
 func _check_eq(actual: Variant, expected: Variant, label: String) -> void:
 	_check(actual == expected, "%s (expected %s, got %s)" % [label, expected, actual])
+
+func _check_near(actual: float, expected: float, label: String) -> void:
+	_check(absf(actual - expected) < 0.0001, "%s (expected %f, got %f)" % [label, expected, actual])
