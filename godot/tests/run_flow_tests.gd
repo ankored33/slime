@@ -97,14 +97,14 @@ func _run_tests() -> void:
 	opening.advance()
 	_check(game.visible and not opening.visible, "opening end -> game screen")
 	_check(bool(main._characters[0]["opening_seen"]), "opening marked as seen")
-	var game_background: TextureRect = main.get_node("GameScreen/Playfield/CharaImage")
+	var game_background: TextureRect = main.get_node("GameScreen/Playfield/ZoomRoot/CharaImage")
 	_check(game_background.texture != null, "game: character background loaded")
 	_check(String(game_background.texture.resource_path).ends_with("/general/game_background.png"),
 		"game: selected character background is used")
 
-	var brush_finger: Brush = main.get_node("GameScreen/Playfield/BrushFinger")
-	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/BrushFude")
-	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/BrushRotary")
+	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
+	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFude")
+	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushRotary")
 	_check(not brush_finger.visible and not brush_rotary.visible,
 		"toolbox: brushes start stowed")
 	var finger_button: Button = game._brushes.get_tool_button("finger")
@@ -115,6 +115,28 @@ func _run_tests() -> void:
 	_check(bool(brush_rotary.is_rotating), "rotating brush: scene marks it as rotating")
 	var brush_name_label: Label = main.get_node("GameScreen/Hud/BrushNameLabel")
 	_check_eq(brush_name_label.text, "指", "brush HUD: finger is the default display")
+
+	# ホイールズーム: キャラ画像の上だけで効き、上回転で1段階2倍、下回転で等倍へ戻る。
+	var zoom_root: Control = main.get_node("GameScreen/Playfield/ZoomRoot")
+	var wheel_up := InputEventMouseButton.new()
+	wheel_up.button_index = MOUSE_BUTTON_WHEEL_UP
+	wheel_up.pressed = true
+	wheel_up.position = Vector2(160.0, 360.0)
+	game._input(wheel_up)
+	_check_eq(zoom_root.scale, Vector2.ONE, "zoom: wheel over the side panel does nothing")
+	wheel_up.position = Vector2(500.0, 300.0)
+	game._input(wheel_up)
+	_check_eq(zoom_root.scale, Vector2.ONE * game.CHARA_ZOOM,
+		"zoom: wheel up over the image zooms in")
+	game._input(wheel_up)
+	_check_eq(zoom_root.scale, Vector2.ONE * game.CHARA_ZOOM, "zoom: single step only")
+	var wheel_down := InputEventMouseButton.new()
+	wheel_down.button_index = MOUSE_BUTTON_WHEEL_DOWN
+	wheel_down.pressed = true
+	wheel_down.position = Vector2(500.0, 300.0)
+	game._input(wheel_down)
+	_check_eq(zoom_root.scale, Vector2.ONE, "zoom: wheel down returns to normal")
+	game.reset_day()
 
 	# ブラシ画像フック: 素材の有無とプレースホルダ表示が対応していること。
 	var finger_has_texture := ResourceLoader.exists("res://assets/brushes/finger.png", "Texture2D")
@@ -145,7 +167,7 @@ func _run_tests() -> void:
 	game.reset_day()
 
 	# ろうそく固有アクション: 本体では磨けず、保持中の右クリックで滴を作る。
-	var brush_candle: Brush = main.get_node("GameScreen/Playfield/BrushCandle")
+	var brush_candle: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushCandle")
 	game._brushes.toggle_from_toolbox("candle")
 	_check(brush_candle.visible and game._brushes.held_brush == brush_candle,
 		"candle: temporarily unlocked at Lv1 and summoned held")
@@ -155,7 +177,7 @@ func _run_tests() -> void:
 	right_click.position = Vector2(640.0, 360.0)
 	var candle_action: Dictionary = game._brushes.handle_input(right_click)
 	_check(candle_action.has("wax_origin"), "candle: right click requests a wax drop")
-	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/LeftSlime")
+	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
 	game._tool_actions.spawn_wax_drop(
 		left_slime.position - Vector2(0.0, left_slime.get_hit_radius()))
 	game._tool_actions.update_wax_drops(0.05, game._slime_state, game._current_level())
@@ -188,7 +210,7 @@ func _run_tests() -> void:
 	game.reset_day()
 
 	# 歯の固有アクション: 接触中の右クリックだけが一回分の痛みを与える。
-	var brush_teeth: Brush = main.get_node("GameScreen/Playfield/BrushTeeth")
+	var brush_teeth: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTeeth")
 	game._brushes.toggle_from_toolbox("teeth")
 	var teeth_action: Dictionary = game._brushes.handle_input(right_click)
 	_check(teeth_action.has("bite_requested"), "teeth: right click requests a bite")
@@ -225,7 +247,7 @@ func _run_tests() -> void:
 		"push: reset restores the home position")
 
 	# 指の固有アクション: 接触中に右クリックで挟んで固定し、可動範囲まで引っ張れる。
-	var playfield: Control = main.get_node("GameScreen/Playfield")
+	var playfield: Control = main.get_node("GameScreen/Playfield/ZoomRoot")
 	game._brushes.toggle_from_toolbox("finger")
 	brush_finger.position = left_slime.position \
 		- Vector2(left_slime.get_hit_radius() + brush_finger.get_contact_radius(), 0.0)
@@ -394,8 +416,8 @@ func _run_tests() -> void:
 
 	# 胸レイヤー: breast 指定のあるキャラは立ち絵の上に胸スプライトが載り、
 	# 乳首画像は等倍表示＋画像サイズ由来の当たり判定になる。無いキャラは載らない。
-	var chara_image: Control = game.get_node("Playfield/CharaImage")
-	var left_target: SlimeTarget = game.get_node("Playfield/LeftSlime")
+	var chara_image: Control = game.get_node("Playfield/ZoomRoot/CharaImage")
+	var left_target: SlimeTarget = game.get_node("Playfield/ZoomRoot/LeftSlime")
 	var live_breast_layers := func() -> Array:
 		return chara_image.get_children().filter(
 			func(c: Node) -> bool: return c is BreastLayer and not c.is_queued_for_deletion())

@@ -45,7 +45,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Arena" type="Panel" parent="Playfield" unique_id=666241528]
+[node name="ZoomRoot" type="Control" parent="Playfield"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -53,7 +53,15 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="CharaImage" type="TextureRect" parent="Playfield"]
+[node name="Arena" type="Panel" parent="Playfield/ZoomRoot" unique_id=666241528]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CharaImage" type="TextureRect" parent="Playfield/ZoomRoot"]
 clip_contents = true
 layout_mode = 0
 offset_left = 320.0
@@ -63,7 +71,7 @@ offset_bottom = 720.0
 expand_mode = 1
 stretch_mode = 6
 
-[node name="ExpressionLabel" type="Label" parent="Playfield/CharaImage"]
+[node name="ExpressionLabel" type="Label" parent="Playfield/ZoomRoot/CharaImage"]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -97,18 +105,18 @@ theme_override_font_sizes/font_size = 15
 modulate = Color(0.78, 0.82, 0.9, 0.9)
 text = "ツールボックス"
 
-[node name="LeftSlime" parent="Playfield" unique_id=687335192 instance=ExtResource("3")]
+[node name="LeftSlime" parent="Playfield/ZoomRoot" unique_id=687335192 instance=ExtResource("3")]
 position = Vector2(504, 481)
 display_name = "左スライム"
 radius = 20.0
 
-[node name="RightSlime" parent="Playfield" unique_id=1098827226 instance=ExtResource("3")]
+[node name="RightSlime" parent="Playfield/ZoomRoot" unique_id=1098827226 instance=ExtResource("3")]
 position = Vector2(794, 481)
 side = "right"
 display_name = "右スライム"
 radius = 20.0
 
-[node name="BrushFinger" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushFinger" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1050, 150)
 brush_id = "finger"
 display_name = "指"
@@ -117,7 +125,7 @@ polish_gain_per_sec = 160.0
 pain_gain_per_sec = 50.0
 fill_color = Color(1, 0.8, 0.65, 0.95)
 
-[node name="BrushTongue" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushTongue" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1195, 150)
 brush_id = "tongue"
 display_name = "舌"
@@ -127,7 +135,7 @@ pain_gain_per_sec = 0.0
 pain_soothe_per_sec = 30.0
 fill_color = Color(1, 0.45, 0.5, 0.95)
 
-[node name="BrushFeather" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushFeather" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1050, 215)
 brush_id = "feather"
 display_name = "羽"
@@ -137,7 +145,7 @@ pain_gain_per_sec = 0.0
 pain_soothe_per_sec = 60.0
 fill_color = Color(0.6, 0.85, 1, 0.95)
 
-[node name="BrushFude" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushFude" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1195, 215)
 brush_id = "fude"
 display_name = "筆"
@@ -146,7 +154,7 @@ polish_gain_per_sec = 220.0
 pain_gain_per_sec = 70.0
 fill_color = Color(0.75, 0.55, 0.35, 0.95)
 
-[node name="BrushTeeth" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushTeeth" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1050, 280)
 brush_id = "teeth"
 display_name = "歯"
@@ -155,7 +163,7 @@ polish_gain_per_sec = 0.0
 pain_gain_per_sec = 0.0
 fill_color = Color(0.95, 0.95, 0.88, 0.95)
 
-[node name="BrushToothbrush" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushToothbrush" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1195, 280)
 brush_id = "toothbrush"
 display_name = "歯ブラシ"
@@ -164,7 +172,7 @@ polish_gain_per_sec = 340.0
 pain_gain_per_sec = 180.0
 fill_color = Color(0.55, 0.75, 1, 0.95)
 
-[node name="BrushRotary" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushRotary" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1050, 345)
 brush_id = "rotary"
 display_name = "回転ブラシ"
@@ -174,7 +182,7 @@ pain_gain_per_sec = 80.0
 is_rotating = true
 fill_color = Color(0.35, 0.9, 0.65, 0.95)
 
-[node name="BrushTawashi" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushTawashi" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1195, 345)
 brush_id = "tawashi"
 display_name = "たわし"
@@ -183,7 +191,7 @@ polish_gain_per_sec = 440.0
 pain_gain_per_sec = 260.0
 fill_color = Color(0.62, 0.42, 0.22, 0.95)
 
-[node name="BrushCandle" parent="Playfield" instance=ExtResource("5")]
+[node name="BrushCandle" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
 position = Vector2(1122, 375)
 brush_id = "candle"
 display_name = "ろうそく"

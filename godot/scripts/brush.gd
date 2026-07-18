@@ -108,12 +108,13 @@ func uses_rub() -> bool:
 ## こすり系ブラシは接触中、画像の上端を本体の中心へ向ける。離れたら直立に戻る。
 const FACING_TURN_SPEED := 12.0
 
-func update_contact_facing(target_global: Variant, delta: float) -> void:
+func update_contact_facing(target_local: Variant, delta: float) -> void:
 	if not uses_rub():
 		return
 	var desired := 0.0
-	if target_global != null:
-		var to_target := (target_global as Vector2) - global_position
+	if target_local != null:
+		# 本体と同じ親（ズーム空間）のローカル座標で受け取る。
+		var to_target := (target_local as Vector2) - position
 		if to_target.length() > 0.001:
 			# 画像のローカル -Y（上）が to_target の向きになる回転角。
 			desired = to_target.angle() + PI / 2.0

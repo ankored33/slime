@@ -27,6 +27,10 @@ const RATE_SAMPLE_WINDOW := 0.5
 # こすり系ブラシは、接触してからではなく当たり判定付近に入った時点で先端を向ける。
 const BRUSH_FACING_RANGE_MARGIN := 48.0
 
+# キャラ画像の上でのホイールズーム倍率。上回転でマウス位置を中心に1段階ズームし、
+# 下回転で等倍へ戻る。ツールボックスとHUDはズーム対象外。
+const CHARA_ZOOM := 2.0
+
 # Level-driven; refreshed in setup_species.
 var finish_threshold := GameRules.finish_threshold(1)
 
@@ -54,6 +58,7 @@ var _debug_panel: PanelContainer
 var _debug_expression_override := ""
 
 @onready var _playfield: Control = $Playfield
+@onready var _zoom_root: Control = $Playfield/ZoomRoot
 @onready var _brush_rack: Control = $Playfield/BrushRack
 @onready var _title_label: Label = $Hud/CharaNameLabel
 @onready var _meta_label: Label = $Hud/LevelLabel
@@ -65,18 +70,19 @@ var _debug_expression_override := ""
 @onready var _finish_label: Label = $Hud/FinishLabel
 @onready var _day_finish_label: Label = $Hud/DayStats/Margin/FinishCount
 @onready var _end_day_button: Button = $Hud/Controls/EndDayButton
-@onready var _left_slime: SlimeTarget = $Playfield/LeftSlime
-@onready var _right_slime: SlimeTarget = $Playfield/RightSlime
-@onready var _chara_image: TextureRect = $Playfield/CharaImage
-@onready var _expression_label: Label = $Playfield/CharaImage/ExpressionLabel
+@onready var _left_slime: SlimeTarget = $Playfield/ZoomRoot/LeftSlime
+@onready var _right_slime: SlimeTarget = $Playfield/ZoomRoot/RightSlime
+@onready var _chara_image: TextureRect = $Playfield/ZoomRoot/CharaImage
+@onready var _expression_label: Label = $Playfield/ZoomRoot/CharaImage/ExpressionLabel
 @onready var _flash_rect: ColorRect = $FlashRect
 
 func _ready() -> void:
 	_slimes.assign([_left_slime, _right_slime])
 	_collect_gauges()
 	_end_day_button.pressed.connect(_on_end_day_pressed)
-	_brushes.setup(self, _playfield, _brush_rack, _end_day_button)
-	_tool_actions.setup(_playfield, _brushes, _slimes)
+	# ブラシ・道具はズーム空間（ZoomRoot ローカル）を作業座標系にする。
+	_brushes.setup(self, _zoom_root, _brush_rack, _end_day_button)
+	_tool_actions.setup(_zoom_root, _brushes, _slimes)
 	_fx.setup(
 		self, _playfield, _flash_rect, _finish_label, _slimes,
 		finish_fx_duration, fail_fx_duration)
@@ -97,6 +103,10 @@ func _input(event: InputEvent) -> void:
 		return
 	if not _is_running or _menu_paused:
 		return
+	if event is InputEventMouseButton and event.pressed \
+			and event.button_index in [MOUSE_BUTTON_WHEEL_UP, MOUSE_BUTTON_WHEEL_DOWN]:
+		_handle_zoom_wheel(event.button_index == MOUSE_BUTTON_WHEEL_UP, event.position)
+		return
 	var action := _brushes.handle_input(event)
 	var blocked := _fx.finish_active or _fx.fail_active
 	if action.has("wax_origin"):
@@ -107,6 +117,19 @@ func _input(event: InputEvent) -> void:
 		_tool_actions.start_pinch(blocked)
 	elif action.has("pinch_released"):
 		_tool_actions.end_pinch()
+
+## キャラ画像の上（左右パネルを除く中央部）でのみ反応するホイールズーム。
+## 上回転: マウス位置を中心に CHARA_ZOOM 倍（1段階のみ）。下回転: 等倍へ戻す。
+func _handle_zoom_wheel(zoom_in: bool, screen_pos: Vector2) -> void:
+	if not _chara_image.get_global_rect().has_point(screen_pos):
+		return
+	if zoom_in == (_zoom_root.scale.x > 1.0):
+		return
+	if zoom_in:
+		_zoom_root.pivot_offset = _zoom_root.get_global_transform().affine_inverse() * screen_pos
+		_zoom_root.scale = Vector2.ONE * CHARA_ZOOM
+	else:
+		_zoom_root.scale = Vector2.ONE
 
 func _process(delta: float) -> void:
 	if not _is_running or _menu_paused:
@@ -228,6 +251,7 @@ func reset_day() -> void:
 		"right": {"polish": 0.0, "pain": 0.0}
 	}
 	_brushes.reset()
+	_zoom_root.scale = Vector2.ONE
 	for slime in _slimes:
 		slime.reset_pressure()
 		slime.set_hearts_active(false)
@@ -241,6 +265,7 @@ func _collect_gauges() -> void:
 
 func _update_slime_squish(delta: float) -> void:
 	# Pressure depth uses the base radius so the spring has a stable input.
+	# 距離はズームの影響を受けない ZoomRoot ローカル座標で測る（半径もローカル値のため）。
 	for slime in _slimes:
 		var deepest := 0.0
 		var push := Vector2.ZERO
@@ -249,10 +274,10 @@ func _update_slime_squish(delta: float) -> void:
 		for brush: Brush in _brushes.brush_map.values():
 			if not brush.visible:
 				continue
-			var overlap: float = brush.get_contact_radius() + slime.radius - brush.global_position.distance_to(slime.global_position)
+			var overlap: float = brush.get_contact_radius() + slime.radius - brush.position.distance_to(slime.position)
 			deepest = maxf(deepest, overlap)
 			if overlap > 0.0:
-				var away := slime.global_position - brush.global_position
+				var away := slime.position - brush.position
 				if away.length() <= 0.0001:
 					away = Vector2.DOWN
 				push += away.normalized() * overlap
@@ -274,18 +299,18 @@ func _update_brush_facing(delta: float) -> void:
 		var nearest_pos: Variant = null
 		var nearest_dist := INF
 		for slime in _slimes:
-			var dist := brush.global_position.distance_to(slime.global_position)
+			var dist := brush.position.distance_to(slime.position)
 			var facing_range := brush.get_contact_radius() + slime.get_hit_radius() \
 				+ BRUSH_FACING_RANGE_MARGIN
 			if dist <= facing_range and dist < nearest_dist:
 				nearest_dist = dist
-				nearest_pos = slime.global_position
+				nearest_pos = slime.position
 		brush.update_contact_facing(nearest_pos, delta)
 
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
 	var rates := _brush_effect_rates(brush, _current_level())
 	for slime in _slimes:
-		if brush.global_position.distance_to(slime.global_position) <= brush.hit_radius + slime.get_hit_radius():
+		if brush.position.distance_to(slime.position) <= brush.hit_radius + slime.get_hit_radius():
 			var side := String(slime.side)
 			var state: Dictionary = _slime_state.get(side, {})
 			state["polish"] = clamp(float(state.get("polish", 0.0)) + float(rates["polish"]) * delta, 0.0, GameRules.GAUGE_MAX)
@@ -324,7 +349,7 @@ func _compute_touch_info() -> Dictionary:
 			continue
 		var rates := _brush_effect_rates(brush, level)
 		for slime in _slimes:
-			if brush.global_position.distance_to(slime.global_position) <= brush.get_contact_radius() + slime.get_hit_radius():
+			if brush.position.distance_to(slime.position) <= brush.get_contact_radius() + slime.get_hit_radius():
 				touching = true
 				touched_sides[String(slime.side)] = true
 				# _apply_brush_effects と同じ係数で「ゲージが実際に動く速さ」を比較する。

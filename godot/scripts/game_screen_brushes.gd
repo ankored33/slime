@@ -23,6 +23,7 @@ var _extra_interactive: Array[Control] = []
 var _tool_buttons: Dictionary = {}
 var _unlocked: Dictionary = {}
 
+## playfield にはブラシ・本体が属する座標空間のルート（ズーム対象の ZoomRoot）を渡す。
 func setup(root: Control, playfield: Control, brush_rack: Control, end_day_button: Button) -> void:
 	_playfield = playfield
 	_brush_rack = brush_rack
@@ -239,8 +240,14 @@ func _set_held_brush(brush: Brush) -> void:
 func _is_brush_in_rack(brush: Brush) -> bool:
 	if _brush_rack == null:
 		return false
-	# 円全体がツールボックスの内側に収まっている場合だけ収納扱いにする。
-	return _brush_rack.get_rect().grow(-brush.hit_radius).has_point(brush.position)
+	# ラックはズーム対象外なので、その矩形をブラシ側（ズーム空間）のローカル座標へ
+	# 変換してから、円全体が内側に収まっている場合だけ収納扱いにする。
+	var inv := _playfield.get_global_transform().affine_inverse()
+	var rack_rect := _brush_rack.get_global_rect()
+	var top_left: Vector2 = inv * rack_rect.position
+	var bottom_right: Vector2 = inv * rack_rect.end
+	return Rect2(top_left, bottom_right - top_left) \
+		.grow(-brush.hit_radius).has_point(brush.position)
 
 func _to_playfield_local(global_position: Vector2) -> Vector2:
 	return _playfield.get_global_transform().affine_inverse() * global_position
