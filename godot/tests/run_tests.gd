@@ -25,6 +25,7 @@ func _init() -> void:
 	_test_expression_pick()
 	_test_rub_multiplier()
 	_test_brush_action()
+	_test_dialogue_loader()
 	print("---")
 	print("Passed: %d, Failed: %d" % [_passes, _failures])
 	quit(1 if _failures > 0 else 0)
@@ -223,3 +224,17 @@ func _test_brush_action() -> void:
 	brush.brush_id = "teeth"
 	_check_near(brush.get_action_multiplier(), 0.0, "brush: teeth have no rubbing effect")
 	brush.free()
+
+func _test_dialogue_loader() -> void:
+	var missing := DialogueLoader.load_dialogue("no_such_character")
+	_check(missing.is_empty(), "dialogue: unknown character id yields an empty dict")
+
+	for character_id in ["general", "admiral"]:
+		var lines := DialogueLoader.load_dialogue(character_id)
+		for expression_id in ExpressionRules.ALL_IDS:
+			var candidates: Array = lines.get(expression_id, [])
+			_check(not candidates.is_empty(),
+				"dialogue: %s has at least one line for %s" % [character_id, expression_id])
+			for line in candidates:
+				_check(str(line).strip_edges() != "",
+					"dialogue: %s/%s has no blank lines" % [character_id, expression_id])
