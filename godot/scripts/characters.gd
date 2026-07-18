@@ -61,12 +61,12 @@ static func create() -> Array[Dictionary]:
 			"profile_after_opening": "種族：人間\n性別：女\n年齢：21\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(1.0, 0.71, 0.78, 0.92),
 			"left": {
-				"position": Vector2(377.0, 592.0),
+				"position": Vector2(413.2, 503.1),
 				"radius": 40.0,
 				"image": ""
 			},
 			"right": {
-				"position": Vector2(748.0, 416.0),
+				"position": Vector2(679.6, 350.1),
 				"radius": 40.0,
 				"image": ""
 			},
