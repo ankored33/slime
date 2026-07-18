@@ -8,6 +8,20 @@ var _passes := 0
 var _done := false
 var _completed := false
 
+# 画面遷移をまたいで共有するテストフィクスチャ。
+var save_path := "user://slime_save_v2.json"
+var had_save := false
+var save_backup := ""
+var main_scene: PackedScene
+var main: Control
+var title: Control
+var opening: OpeningScreen
+var options: OptionsScreen
+var frame: Control
+var select: SelectScreen
+var result: Control
+var game: Control
+
 func _process(_delta: float) -> bool:
 	if _done:
 		return true
@@ -21,23 +35,37 @@ func _process(_delta: float) -> bool:
 	return true
 
 func _run_tests() -> void:
-	var save_path: String = "user://slime_save_v2.json"
-	var had_save := FileAccess.file_exists(save_path)
-	var save_backup := ""
+	_setup_and_test_opening()
+	_test_game_controls_and_zoom()
+	_test_brush_assets_and_toolbox()
+	_test_candle()
+	_test_brush_contact_actions()
+	_test_slime_motion_and_finish()
+	_test_selection_and_debug_tools()
+	_test_pause_persistence_and_layers()
+	_restore_save()
+
+	_completed = true
+	print("---")
+	print("Passed: %d, Failed: %d" % [_passes, _failures])
+	quit(1 if _failures > 0 else 0)
+
+func _setup_and_test_opening() -> void:
+	had_save = FileAccess.file_exists(save_path)
 	if had_save:
 		save_backup = FileAccess.get_file_as_string(save_path)
 
-	var main_scene: PackedScene = load("res://scenes/main.tscn")
-	var main: Control = main_scene.instantiate()
+	main_scene = load("res://scenes/main.tscn")
+	main = main_scene.instantiate()
 	root.add_child(main)
 
-	var title: Control = main.get_node("CanvasLayer/TitleScreen")
-	var opening: OpeningScreen = main.get_node("CanvasLayer/OpeningScreen")
-	var options: OptionsScreen = main.get_node("CanvasLayer/OptionsScreen")
-	var frame: Control = main.get_node("CanvasLayer/Frame")
-	var select: SelectScreen = main.get_node("CanvasLayer/SelectScreen")
-	var result: Control = main.get_node("CanvasLayer/Frame/Margin/VBox/ResultScreen")
-	var game: Control = main.get_node("GameScreen")
+	title = main.get_node("CanvasLayer/TitleScreen")
+	opening = main.get_node("CanvasLayer/OpeningScreen")
+	options = main.get_node("CanvasLayer/OptionsScreen")
+	frame = main.get_node("CanvasLayer/Frame")
+	select = main.get_node("CanvasLayer/SelectScreen")
+	result = main.get_node("CanvasLayer/Frame/Margin/VBox/ResultScreen")
+	game = main.get_node("GameScreen")
 	var next_button: Button = main.get_node(
 		"CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions/OpeningNextButton"
 	)
@@ -103,6 +131,7 @@ func _run_tests() -> void:
 	_check(String(game_background.texture.resource_path).ends_with("/general/game_background.png"),
 		"game: selected character background is used")
 
+func _test_game_controls_and_zoom() -> void:
 	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
 	var brush_tongue: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTongue")
 	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFude")
@@ -151,6 +180,12 @@ func _run_tests() -> void:
 	_check_eq(zoom_root.scale, Vector2.ONE, "zoom: wheel down returns to normal")
 	game.reset_day()
 
+func _test_brush_assets_and_toolbox() -> void:
+	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
+	var brush_tongue: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTongue")
+	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFude")
+	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushRotary")
+
 	# ブラシ画像フック: 素材の有無とプレースホルダ表示が対応していること。
 	var finger_has_texture := ResourceLoader.exists("res://assets/brushes/finger.png", "Texture2D")
 	_check(brush_finger._body.visible == not finger_has_texture,
@@ -183,18 +218,20 @@ func _run_tests() -> void:
 	_check(not brush_rotary.visible, "toolbox: releasing over the box stows the brush")
 	game.reset_day()
 
+func _test_candle() -> void:
+	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = Vector2(640.0, 360.0)
+
 	# ろうそく固有アクション: 本体では磨けず、保持中の右クリックで滴を作る。
 	var brush_candle: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushCandle")
 	game._brushes.toggle_from_toolbox("candle")
 	_check(brush_candle.visible and game._brushes.held_brush == brush_candle,
 		"candle: temporarily unlocked at Lv1 and summoned held")
-	var right_click := InputEventMouseButton.new()
-	right_click.button_index = MOUSE_BUTTON_RIGHT
-	right_click.pressed = true
-	right_click.position = Vector2(640.0, 360.0)
 	var candle_action: Dictionary = game._brushes.handle_input(right_click)
 	_check(candle_action.has("wax_origin"), "candle: right click requests a wax drop")
-	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
 	game._tool_actions.spawn_wax_drop(
 		left_slime.position - Vector2(0.0, left_slime.get_hit_radius()))
 	game._tool_actions.update_wax_drops(0.05, game._slime_state, game._current_level())
@@ -219,6 +256,14 @@ func _run_tests() -> void:
 	_check(not game._fx.finish_active,
 		"candle: a high-level multi-finish uses the non-blocking chain effect")
 	game.reset_day()
+
+func _test_brush_contact_actions() -> void:
+	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
+	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = Vector2(640.0, 360.0)
 
 	# こすり系ブラシの向き: 接触前でも当たり判定付近なら先端側が中心を向く。
 	game._brushes.toggle_from_toolbox("finger")
@@ -272,6 +317,16 @@ func _run_tests() -> void:
 	_check_eq(float(game._slime_state["left"]["polish"]), 0.0,
 		"teeth: bite has no polish effect")
 	game.reset_day()
+
+func _test_slime_motion_and_finish() -> void:
+	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
+	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
+	var end_day_button: Button = main.get_node("GameScreen/Hud/EndDayButton")
+	var end_day_dialog: ConfirmationDialog = main.get_node("GameScreen/EndDayConfirmDialog")
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = Vector2(640.0, 360.0)
 
 	# 押し込み変位: 接触中は押された方向へ少し動き、離すとバネで元の位置へ戻る。
 	var slime_home: Vector2 = left_slime.position
@@ -350,6 +405,20 @@ func _run_tests() -> void:
 	end_day_dialog.emit_signal("confirmed")
 	_check(result.visible and frame.visible and not game.visible, "day end -> result screen")
 
+func _test_selection_and_debug_tools() -> void:
+	var card0_name: Label = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
+	var card1_name: Label = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
+	var card0_epithet: Label = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/EpithetLabel")
+	var card0_portrait: TextureRect = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/Portrait")
+	var card1_portrait: TextureRect = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/Portrait")
+	var profile_body: RichTextLabel = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/ProfileBody")
+
 	main._on_return_pressed()
 	_check(select.visible and not result.visible, "result return -> select screen")
 	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait_after_opening.png"),
@@ -419,6 +488,7 @@ func _run_tests() -> void:
 	main._on_character_selected(0)
 	_check(game.visible and not opening.visible, "second start skips opening")
 
+func _test_pause_persistence_and_layers() -> void:
 	# ESCメニュー: タイトルでは出さず、ゲーム中はオーバーレイでゲージ進行を止める。
 	var pause_menu: PauseMenu = main.get_node("CanvasLayer/PauseMenu")
 	var esc_event := InputEventKey.new()
@@ -488,17 +558,13 @@ func _run_tests() -> void:
 	_check(general_layers.is_empty(), "breast layer: absent for characters without breast assets")
 	_check(not left_target.image_native_size, "breast layer: general target back to circle sizing")
 
+func _restore_save() -> void:
 	if had_save:
 		var file := FileAccess.open(save_path, FileAccess.WRITE)
 		file.store_string(save_backup)
 		file.close()
 	else:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(save_path))
-
-	_completed = true
-	print("---")
-	print("Passed: %d, Failed: %d" % [_passes, _failures])
-	quit(1 if _failures > 0 else 0)
 
 func _check(condition: bool, label: String) -> void:
 	if condition:
