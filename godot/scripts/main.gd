@@ -187,16 +187,23 @@ func _begin_day() -> void:
 	_transition(_show_game_screen)
 
 ## 磨き画面に入る直前、毎回（初回の自己紹介オープニングの直後も含む）挟む
-## 短い暗転演出。OpeningScreen（キャラOPと同じ見た目）を1ページだけ流用する。
+## 短い導入演出。宣告のあと、左右分割画面にリザルト用のキャラ画像を出す。
 func _show_day_intro() -> void:
 	_hide_all_screens()
 	_showing_day_intro = true
 	var chara: Dictionary = _characters[_selected_index]
 	var prisoner_number := str(chara.get("name_after_opening", ""))
-	_opening_screen.start_with_pages(chara, [{
-		"style": "blackout",
-		"text": "%s。\nこれより貴様の矯導を開始する" % prisoner_number
-	}])
+	_opening_screen.start_with_pages(chara, [
+		{
+			"style": "blackout",
+			"text": "%s。\nこれより貴様の矯導を開始する" % prisoner_number
+		},
+		{
+			"style": "split",
+			"portrait": "result",
+			"text": ""
+		}
+	])
 
 func _on_opening_finished() -> void:
 	if _showing_day_intro:
@@ -229,7 +236,7 @@ func _on_day_finished(result: Dictionary) -> void:
 
 func _render_result() -> void:
 	var chara: Dictionary = _characters[_selected_index]
-	_update_result_chara_image(str(chara.get("id", "")))
+	_update_result_chara_image(str(chara.get("result", "")))
 	var level_after := int(chara["level"])
 	var level_before := int(_last_result.get("level_before", level_after))
 	var level_line := "レベル: %d / %d" % [level_after, GameRules.MAX_LEVEL]
@@ -260,9 +267,8 @@ func _render_result() -> void:
 		int(chara["pain_fail_total"])
 	]
 
-## res://assets/chara/<id>/result.png があればリザルト画面右に表示する。無ければ隠す。
-func _update_result_chara_image(character_id: String) -> void:
-	var path := "res://assets/chara/%s/result.png" % character_id
+## キャラ定義の result 画像があればリザルト画面右に表示する。無ければ隠す。
+func _update_result_chara_image(path: String) -> void:
 	if ResourceLoader.exists(path):
 		var texture := load(path)
 		if texture is Texture2D:

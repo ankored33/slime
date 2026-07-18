@@ -32,6 +32,7 @@ class_name CharacterDefs
 ##   （after 側が空文字なら profile を使い回す）。
 ## - name_after_opening / epithet_after_opening: オープニング既読後の表示名と肩書き
 ##   （虜囚番号・虜囚区分）。既読後は全画面で本名・二つ名の代わりにこれが出る。
+## - result: リザルト画面と、磨き開始前の左右分割演出で共用するキャラ画像。
 ## - level / finish_total / pain_fail_total / opening_seen は初期値。実際の値はセーブが上書きする。
 
 ## 表示名の解決だけここに置く（どの画面も同じ規則で名前を出すため）。
@@ -58,6 +59,7 @@ static func create() -> Array[Dictionary]:
 			"epithet_after_opening": "帝国の一般虜囚",
 			"portrait": "res://assets/chara/general/portrait.png",
 			"portrait_after_opening": "res://assets/chara/general/portrait_after_opening.png",
+			"result": "res://assets/chara/general/result.png",
 			"game_background": "res://assets/chara/general/game_background.png",
 			"expressions": {},
 			"dialogue": DialogueLoader.load_dialogue("general"),
@@ -88,6 +90,7 @@ static func create() -> Array[Dictionary]:
 			"epithet_after_opening": "帝国の一般虜囚",
 			"portrait": "res://assets/chara/admiral/portrait.png",
 			"portrait_after_opening": "res://assets/chara/admiral/portrait_after_opening.png",
+			"result": "res://assets/chara/admiral/result.png",
 			"game_background": "res://assets/chara/admiral/game_background.png",
 			"expressions": {},
 			"dialogue": DialogueLoader.load_dialogue("admiral"),
