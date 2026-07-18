@@ -103,6 +103,7 @@ func _run_tests() -> void:
 		"game: selected character background is used")
 
 	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
+	var brush_tongue: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTongue")
 	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFude")
 	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushRotary")
 	_check(not brush_finger.visible and not brush_rotary.visible,
@@ -142,6 +143,10 @@ func _run_tests() -> void:
 	var finger_has_texture := ResourceLoader.exists("res://assets/brushes/finger.png", "Texture2D")
 	_check(brush_finger._body.visible == not finger_has_texture,
 		"brush: placeholder shown exactly when no texture asset exists")
+	_check(ResourceLoader.exists("res://assets/brushes/tongue.png", "Texture2D"),
+		"brush: tongue texture asset is imported")
+	_check(brush_tongue._base_texture != null and not brush_tongue._body.visible,
+		"brush: tongue texture replaces its placeholder")
 	var brush_texture := ImageTexture.create_from_image(
 		Image.create(128, 128, false, Image.FORMAT_RGBA8))
 	brush_fude._apply_texture(brush_texture)
@@ -207,6 +212,21 @@ func _run_tests() -> void:
 	game._update_brush_facing(1.0)
 	_check_near(brush_finger.rotation, 0.0,
 		"brush facing: away from target returns upright")
+	game.reset_day()
+
+	# 接触判定: 見た目の半径内でも縮小した接触半径の外なら効果は発生しない。
+	game._brushes.toggle_from_toolbox("finger")
+	brush_finger._rub_speed = 600.0
+	brush_finger.position = left_slime.position + Vector2(
+		left_slime.get_hit_radius() + brush_finger.get_contact_radius() + 1.0, 0.0)
+	game._apply_brush_effects(brush_finger, 1.0)
+	_check_eq(float(game._slime_state["left"]["polish"]), 0.0,
+		"brush contact: visual overlap outside contact radius has no effect")
+	brush_finger.position = left_slime.position + Vector2(
+		left_slime.get_hit_radius() + brush_finger.get_contact_radius() - 1.0, 0.0)
+	game._apply_brush_effects(brush_finger, 1.0)
+	_check(float(game._slime_state["left"]["polish"]) > 0.0,
+		"brush contact: inside contact radius applies effect")
 	game.reset_day()
 
 	# 歯の固有アクション: 接触中の右クリックだけが一回分の痛みを与える。

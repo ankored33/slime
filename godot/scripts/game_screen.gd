@@ -355,7 +355,7 @@ func _update_brush_facing(delta: float) -> void:
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
 	var rates := _brush_effect_rates(brush, _current_level())
 	for slime in _slimes:
-		if brush.position.distance_to(slime.position) <= brush.hit_radius + slime.get_hit_radius():
+		if brush.position.distance_to(slime.position) <= brush.get_contact_radius() + slime.get_hit_radius():
 			var side := String(slime.side)
 			var state: Dictionary = _slime_state.get(side, {})
 			state["polish"] = clamp(float(state.get("polish", 0.0)) + float(rates["polish"]) * delta, 0.0, GameRules.GAUGE_MAX)
