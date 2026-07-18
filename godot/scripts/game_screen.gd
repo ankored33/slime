@@ -70,7 +70,7 @@ var _debug_expression_override := ""
 @onready var _brush_rack: Control = $Playfield/BrushRack
 @onready var _title_label: Label = $Hud/CharaNameLabel
 @onready var _meta_label: Label = $Hud/LevelLabel
-@onready var _danger_label: RichTextLabel = $Hud/ConditionLabel
+@onready var _dialogue_label: RichTextLabel = $Hud/DialogueLabel
 @onready var _day_label: Label = $Hud/DayLabel
 @onready var _brush_name_label: Label = $Hud/BrushNameLabel
 @onready var _brush_spec_label: Label = $Hud/BrushSpecLabel
@@ -78,6 +78,7 @@ var _debug_expression_override := ""
 @onready var _finish_label: Label = $Hud/FinishLabel
 @onready var _day_finish_label: Label = $Hud/DayStats/Margin/FinishCount
 @onready var _end_day_button: Button = $Hud/EndDayButton
+@onready var _end_day_confirm_dialog: ConfirmationDialog = $EndDayConfirmDialog
 @onready var _left_slime: SlimeTarget = $Playfield/ZoomRoot/LeftSlime
 @onready var _right_slime: SlimeTarget = $Playfield/ZoomRoot/RightSlime
 @onready var _chara_image: TextureRect = $Playfield/ZoomRoot/CharaImage
@@ -88,6 +89,10 @@ func _ready() -> void:
 	_slimes.assign([_left_slime, _right_slime])
 	_collect_gauges()
 	_end_day_button.pressed.connect(_on_end_day_pressed)
+	_end_day_confirm_dialog.confirmed.connect(_on_end_day_confirmed)
+	_end_day_confirm_dialog.canceled.connect(_on_end_day_canceled)
+	_end_day_confirm_dialog.get_ok_button().text = "終える"
+	_end_day_confirm_dialog.get_cancel_button().text = "キャンセル"
 	# ブラシ・道具はズーム空間（ZoomRoot ローカル）を作業座標系にする。
 	_brushes.setup(self, _zoom_root, _brush_rack, _end_day_button)
 	_tool_actions.setup(_zoom_root, _brushes, _slimes)
@@ -292,6 +297,7 @@ func reset_day() -> void:
 	_finish_rate = 0.0
 	_is_running = true
 	_menu_paused = false
+	_end_day_confirm_dialog.hide()
 	_current_expression = ""
 	_fx.reset()
 	_tool_actions.clear()
@@ -449,8 +455,15 @@ func _apply_expression(expression_id: String) -> void:
 	_chara_image.texture = texture
 	_expression_label.visible = texture == null
 	_expression_label.text = "立ち絵：%s" % ExpressionRules.display_name(expression_id)
+	_update_dialogue(expression_id)
 	# 表情が変わった瞬間だけボイス再生を試みる（素材が無ければ無音、連射は抑制済み）。
 	GameAudio.play_voice(str(_species.get("id", "")), expression_id)
+
+## 表情idに対応するセリフを表示する。characters.gd の dialogue に未設定なら空欄のまま。
+func _update_dialogue(expression_id: String) -> void:
+	var dialogue: Dictionary = _species.get("dialogue", {})
+	var line := str(dialogue.get(expression_id, ""))
+	_dialogue_label.text = "「%s」" % line if line != "" else ""
 
 ## キャラ定義の expressions 辞書を優先し、次に既定の表情パスを探す。
 ## 表情素材が無い場合は、磨き画面用の固定背景 game_background を使う。
@@ -487,16 +500,6 @@ func _update_gauges() -> void:
 			day_text += "（毎秒 %s）" % NumberFormat.ja_unit(_finish_rate)
 		_day_finish_label.text = day_text
 		_day_finish_label.modulate = Color(1.0, 1.0, 1.0, 1.0)
-	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
-	if peak_pain >= GameRules.GAUGE_MAX * 0.8:
-		_danger_label.text = "[b]状態[/b]\n痛み：限界寸前"
-		_danger_label.modulate = Color(1.0, 0.45, 0.45, 1.0)
-	elif peak_pain >= GameRules.GAUGE_MAX * 0.55:
-		_danger_label.text = "[b]状態[/b]\n痛み：上昇中"
-		_danger_label.modulate = Color(1.0, 0.82, 0.45, 1.0)
-	else:
-		_danger_label.text = "[b]状態[/b]\n痛み：安定"
-		_danger_label.modulate = Color(0.75, 0.92, 0.85, 1.0)
 
 func _set_gauge(gauge_id: String, current: float) -> void:
 	var gauge: NamedGauge = _gauge_map.get(gauge_id)
@@ -505,7 +508,17 @@ func _set_gauge(gauge_id: String, current: float) -> void:
 
 func _on_end_day_pressed() -> void:
 	GameAudio.play_se("ui_click")
+	pause_for_menu()
+	_end_day_confirm_dialog.popup_centered()
+
+func _on_end_day_confirmed() -> void:
+	GameAudio.play_se("ui_click")
+	resume_from_menu()
 	_finish_day(false)
+
+func _on_end_day_canceled() -> void:
+	_end_day_confirm_dialog.hide()
+	resume_from_menu()
 
 func _update_brush_controls() -> void:
 	_brushes.update_controls(_brush_name_label, _brush_spec_label)

@@ -16,6 +16,8 @@ class_name CharacterDefs
 ##   res://assets/chara/<id>/<表情id>.png を探す（無ければ表情名ラベルで代替表示）。
 ##   表情id一覧: idle_a〜idle_d（ブラシ無し）, touch_a〜touch_d（ブラシ当て）,
 ##   climax（絶頂）, despair（絶望）, exhausted（憔悴）。詳細は expression_rules.gd。
+## - dialogue は表情id → セリフ文字列（画面下部のセリフパネルに「」付きで表示）。
+##   expressions と同じ表情idキーを使う。未設定・空文字の表情ではパネルを空欄にする。
 ## - opening_pages: style = "split"（左に立ち絵・右にテキスト）| "blackout"（暗転＋中央テキスト）。
 ##   split の portrait にはキャラ定義のキー名（portrait / portrait_after_opening）を書く。
 ## - profile はオープニング未読時、profile_after_opening は既読時に選択画面へ出る
@@ -50,6 +52,7 @@ static func create() -> Array[Dictionary]:
 			"portrait_after_opening": "res://assets/chara/general/portrait_after_opening.png",
 			"game_background": "res://assets/chara/general/game_background.png",
 			"expressions": {},
+			"dialogue": {},
 			"profile": "ネブラレア王国将軍／同国軍総司令官\n\n能力評価：\n膂力　S\n技巧　SS\n魔力　S\n策略　B\n戦略　A",
 			"profile_after_opening": "種族：人間\n性別：女\n年齢：21\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(1.0, 0.71, 0.78, 0.92),
@@ -94,6 +97,7 @@ static func create() -> Array[Dictionary]:
 			"portrait_after_opening": "res://assets/chara/admiral/portrait_after_opening.png",
 			"game_background": "res://assets/chara/admiral/game_background.png",
 			"expressions": {},
+			"dialogue": {},
 			"profile": "ザコチック条約機構 軍事委員会議長\n\n能力評価：\n膂力　C\n技巧　C\n魔力　B\n策略　S\n戦略　SSS",
 			"profile_after_opening": "種族：ハイエルフ\n性別：女\n年齢：455\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(0.47, 0.9, 0.78, 0.92),

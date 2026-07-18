@@ -304,6 +304,10 @@ offset_right = 1270.0
 offset_bottom = 690.0
 text = "1日を終える"
 
+[node name="EndDayConfirmDialog" type="ConfirmationDialog" parent="."]
+title = "確認"
+dialog_text = "1日を終えますか？\n（本日のFINISHを確定します）"
+
 [node name="CharaNameLabel" type="Label" parent="Hud" unique_id=1875689029]
 layout_mode = 0
 offset_left = 20.0
@@ -331,7 +335,7 @@ offset_bottom = 181.0
 theme_override_font_sizes/font_size = 29
 text = "LV 1"
 
-[node name="ConditionLabel" type="RichTextLabel" parent="Hud" unique_id=1310823897]
+[node name="DialogueLabel" type="RichTextLabel" parent="Hud" unique_id=1310823897]
 layout_mode = 0
 offset_left = 26.0
 offset_top = 197.0
