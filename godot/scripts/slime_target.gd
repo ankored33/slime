@@ -40,8 +40,10 @@ var nipple_shrink := 1.0:
 ## 1回の噴出・バーストで同時に混ぜるハート種類数（CPUParticles2Dは1ノード1テクスチャ
 ## までしか持てないため、種類の数だけ子ノードを分けて重ねて出す）。
 const HEART_VARIETY := 6
-const AMBIENT_TOTAL_AMOUNT := 24
-const BURST_TOTAL_AMOUNT := 36
+const AMBIENT_TOTAL_AMOUNT := 6
+const BURST_TOTAL_AMOUNT := 12
+## ハートの大きさ倍率（元のスケール値に掛ける）。
+const HEART_SIZE_SCALE := 0.6
 
 var _hearts: Array[CPUParticles2D] = []
 var _heart_burst: Array[CPUParticles2D] = []
@@ -72,8 +74,8 @@ func _setup_heart_particles() -> void:
 		p.initial_velocity_min = 60.0
 		p.initial_velocity_max = 120.0
 		p.gravity = Vector2(0.0, -40.0)
-		p.scale_amount_min = 0.6
-		p.scale_amount_max = 1.2
+		p.scale_amount_min = 0.6 * HEART_SIZE_SCALE
+		p.scale_amount_max = 1.2 * HEART_SIZE_SCALE
 		p.angular_velocity_min = -90.0
 		p.angular_velocity_max = 90.0
 		p.color_ramp = fade
@@ -102,8 +104,8 @@ func _setup_heart_particles() -> void:
 		b.initial_velocity_min = 160.0
 		b.initial_velocity_max = 320.0
 		b.gravity = Vector2(0.0, 140.0)
-		b.scale_amount_min = 0.8
-		b.scale_amount_max = 1.7
+		b.scale_amount_min = 0.8 * HEART_SIZE_SCALE
+		b.scale_amount_max = 1.7 * HEART_SIZE_SCALE
 		b.angular_velocity_min = -180.0
 		b.angular_velocity_max = 180.0
 		b.color_ramp = burst_fade
