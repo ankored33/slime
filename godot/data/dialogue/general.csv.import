@@ -1,19 +1,7 @@
 [remap]
 
-importer="csv_translation"
-type="Translation"
-uid="uid://cybtae3kiiq7f"
+importer="keep"
 
 [deps]
 
-files=["res://data/dialogue/general.line.translation"]
-
 source_file="res://data/dialogue/general.csv"
-dest_files=["res://data/dialogue/general.line.translation"]
-
-[params]
-
-compress=1
-delimiter=0
-unescape_keys=false
-unescape_translations=true
