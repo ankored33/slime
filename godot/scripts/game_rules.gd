@@ -106,16 +106,19 @@ static func finish_count(combined: float, threshold: float) -> int:
 	return int(floor(combined / threshold))
 
 ## Character level required to use each brush. Unknown ids unlock at Lv1.
+## candle と teeth は brush.gd でも右クリックの特殊アクション（ろう滴/噛みつき）
+## 専用と特別扱いされている最高痛み枠なので、pain_resist が完全耐性に届く
+## Lv21（と、その手前の感度上限 Lv17）に寄せて最後に解禁する。
 const BRUSH_UNLOCK_LEVELS := {
 	"finger": 1,
 	"tongue": 1,
 	"feather": 1,
-	"fude": 1,
-	"teeth": 1,
-	"toothbrush": 1,
-	"rotary": 1,
-	"candle": 1,
-	"tawashi": 1
+	"fude": 3,
+	"toothbrush": 6,
+	"rotary": 10,
+	"tawashi": 14,
+	"candle": 17,
+	"teeth": 21
 }
 
 static func brush_unlock_level(brush_id: String) -> int:

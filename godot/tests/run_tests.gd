@@ -122,10 +122,13 @@ func _test_number_format() -> void:
 
 func _test_brush_unlocks() -> void:
 	for brush_id: String in GameRules.BRUSH_UNLOCK_LEVELS:
-		_check_eq(GameRules.brush_unlock_level(brush_id), 1,
-			"unlock: %s temporarily set to Lv1" % brush_id)
-		_check(GameRules.is_brush_unlocked(brush_id, 1),
-			"unlock: %s available at Lv1" % brush_id)
+		var required: int = GameRules.BRUSH_UNLOCK_LEVELS[brush_id]
+		_check_eq(GameRules.brush_unlock_level(brush_id), required,
+			"unlock: %s requires its configured level" % brush_id)
+		_check(GameRules.is_brush_unlocked(brush_id, required),
+			"unlock: %s available at its required level" % brush_id)
+		_check(not GameRules.is_brush_unlocked(brush_id, required - 1) or required <= 1,
+			"unlock: %s still locked one level below requirement" % brush_id)
 	_check(not GameRules.is_brush_unlocked("candle", 0),
 		"unlock: level gate still rejects levels below requirement")
 	_check_eq(GameRules.brush_unlock_level("unknown"), 1, "unlock: unknown id defaults to Lv1")

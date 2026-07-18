@@ -148,6 +148,12 @@ func _test_zoom_and_end_day_dialog() -> void:
 	game.reset_day()
 
 func _test_toolbox_and_brush_contact() -> void:
+	# rotary/teeth/candle はレベル解禁制になったため、ここと candle テストで使う分だけ
+	# 先に全ブラシ解禁しておく（UIの解禁ロジック自体は _test_result_to_select_and_debug_level
+	# などとは別に、GameRules 側で単体テスト済み）。
+	var max_unlock_level: int = int(GameRules.BRUSH_UNLOCK_LEVELS.values().max())
+	game._brushes.apply_unlocks(max_unlock_level)
+
 	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
 	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushRotary")
 	var brush_teeth: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTeeth")
