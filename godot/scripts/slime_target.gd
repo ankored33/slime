@@ -14,6 +14,14 @@ extends Area2D
 ## true なら画像を等倍（原寸ピクセル）で表示し、当たり判定半径も画像サイズから取る。
 var image_native_size := false
 
+## 対応する胸レイヤーの縮小に合わせて乳首を少し縮ませる（0.9〜1.0）。
+## 拡大方向には反応しない。breast_layer.gd が毎フレーム設定する。
+## 胸レイヤーが無いターゲットは常に1.0のまま。
+var nipple_shrink := 1.0:
+	set(value):
+		nipple_shrink = clampf(value, 0.9, 1.0)
+		_sync_visuals()
+
 @export var fill_color := Color(0.454902, 1.0, 0.8, 0.92):
 	set(value):
 		fill_color = value
@@ -203,6 +211,7 @@ func reset_pressure() -> void:
 	_tremble_strength = 0.0
 	_tremble_offset = Vector2.ZERO
 	_apply_tremble_visual()
+	nipple_shrink = 1.0
 
 func apply_species(species: Dictionary, side_label: String, side_config: Dictionary = {}) -> void:
 	slime_id = str(species.get("id", ""))
@@ -249,11 +258,11 @@ func _sync_visuals() -> void:
 	if _sprite.texture != null:
 		var tex_size := _sprite.texture.get_size()
 		if image_native_size:
-			_sprite.scale = Vector2.ONE
+			_sprite.scale = Vector2.ONE * nipple_shrink
 		elif tex_size.x > 0.0 and tex_size.y > 0.0:
 			var target_diameter := radius * 2.0
-			var scale_x := target_diameter / tex_size.x
-			var scale_y := target_diameter / tex_size.y
+			var scale_x := target_diameter / tex_size.x * nipple_shrink
+			var scale_y := target_diameter / tex_size.y * nipple_shrink
 			_sprite.scale = Vector2(scale_x, scale_y)
 		_sprite.visible = true
 		_body.visible = false

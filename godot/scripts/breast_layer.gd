@@ -48,3 +48,5 @@ func _process(delta: float) -> void:
 	var frac_x := clampf(_x_sign * _offset.x / STRETCH_REFERENCE, -1.0, 1.0) * MAX_STRETCH
 	var frac_y := clampf(-_offset.y / STRETCH_REFERENCE, -1.0, 1.0) * MAX_STRETCH
 	scale = _base_scale * Vector2(1.0 + frac_x, 1.0 + frac_y)
+	# 乳首は胸が縮んだ分だけ追従して縮ませる（拡大方向は無視、下限は nipple_shrink 側でクランプ）。
+	_target.nipple_shrink = minf(1.0 + frac_x, 1.0 + frac_y)
