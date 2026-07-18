@@ -43,6 +43,7 @@ func _ready() -> void:
 	_pause_menu.title_requested.connect(_on_pause_title_confirmed)
 	_pause_menu.quit_requested.connect(_on_pause_quit_confirmed)
 	_opening_screen.finished.connect(_on_opening_finished)
+	_opening_screen.selection_requested.connect(_on_opening_selection_requested)
 	_game_screen.day_finished.connect(_on_day_finished)
 	_select_screen.character_selected.connect(_on_character_selected)
 	_select_screen.progress_changed.connect(_save_progress)
@@ -219,6 +220,10 @@ func _on_opening_finished() -> void:
 	_characters[_selected_index] = chara
 	_save_progress()
 	_show_day_intro()
+
+func _on_opening_selection_requested() -> void:
+	_showing_day_intro = false
+	_transition(_show_select_screen)
 
 func _on_return_pressed() -> void:
 	GameAudio.play_se("ui_click")

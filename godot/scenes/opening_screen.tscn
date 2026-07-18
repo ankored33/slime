@@ -167,6 +167,19 @@ modulate = Color(0.8, 0.8, 0.85, 0.75)
 text = "クリックで教導開始"
 mouse_filter = 2
 
+[node name="SelectionButton" type="Button" parent="CurtainReveal"]
+visible = false
+layout_mode = 1
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 24.0
+offset_top = -68.0
+offset_right = 224.0
+offset_bottom = -24.0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+text = "キャラ選択へ戻る"
+
 [node name="ProfileCard" type="PanelContainer" parent="CurtainReveal"]
 visible = false
 layout_mode = 1

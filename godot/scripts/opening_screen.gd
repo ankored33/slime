@@ -4,6 +4,7 @@ extends Control
 const GameAudio = preload("res://scripts/game_audio.gd")
 
 signal finished
+signal selection_requested
 
 ## 文の区切り（。または既存の改行）ごとに1行としてフェードインさせる演出。
 ## クリック/advance()は「未表示の文を1つ出す」→ 出し切ったら「次のページへ」の順で進む。
@@ -34,6 +35,7 @@ var _auto_advance_tween: Tween
 @onready var _curtain_left: ColorRect = $CurtainReveal/CurtainLeft
 @onready var _curtain_right: ColorRect = $CurtainReveal/CurtainRight
 @onready var _curtain_click_hint: Label = $CurtainReveal/ClickHint
+@onready var _selection_button: Button = $CurtainReveal/SelectionButton
 @onready var _profile_card: PanelContainer = $CurtainReveal/ProfileCard
 @onready var _profile_epithet: Label = $CurtainReveal/ProfileCard/Margin/VBox/EpithetLabel
 @onready var _profile_name: Label = $CurtainReveal/ProfileCard/Margin/VBox/NameLabel
@@ -43,6 +45,7 @@ var _auto_advance_tween: Tween
 
 func _ready() -> void:
 	_next_button.pressed.connect(advance)
+	_selection_button.pressed.connect(_on_selection_pressed)
 	# 暗転ページを含め、画面のどこをクリックしても進める。
 	gui_input.connect(_on_gui_input)
 
@@ -68,6 +71,7 @@ func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 	_auto_advance_delay = 0.0
 	_auto_advance_delays.clear()
 	_curtain_click_hint.visible = false
+	_selection_button.visible = false
 	_profile_card.visible = false
 	visible = true
 	_render_page()
@@ -142,12 +146,14 @@ func _render_curtain(page: Dictionary) -> void:
 	_curtain_left.position.x = 0.0
 	_curtain_right.position.x = half_width
 	_curtain_click_hint.visible = false
+	_selection_button.visible = false
 	_profile_card.visible = false
 	_render_profile_card()
 	if DisplayServer.get_name() == "headless":
 		_curtain_left.position.x = -half_width
 		_curtain_right.position.x = size.x
 		_curtain_click_hint.visible = true
+		_selection_button.visible = true
 		_profile_card.visible = true
 		return
 	_page_transitioning = true
@@ -165,7 +171,12 @@ func _render_curtain(page: Dictionary) -> void:
 func _finish_curtain_open() -> void:
 	_page_transitioning = false
 	_curtain_click_hint.visible = true
+	_selection_button.visible = true
 	_profile_card.visible = true
+
+func _on_selection_pressed() -> void:
+	GameAudio.play_se("ui_click")
+	selection_requested.emit()
 
 func _render_profile_card() -> void:
 	_profile_epithet.text = CharacterDefs.display_epithet(_character)
