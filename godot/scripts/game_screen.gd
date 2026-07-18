@@ -366,7 +366,7 @@ func _update_brush_facing(delta: float) -> void:
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
 	var rates := _brush_effect_rates(brush, _current_level())
 	for slime in _slimes:
-		if brush.position.distance_to(slime.position) <= brush.get_contact_radius() + slime.get_hit_radius():
+		if _is_brush_touching_slime(brush, slime):
 			var side := String(slime.side)
 			var state: Dictionary = _slime_state.get(side, {})
 			# 快感には上限を設けない（高感度帯は1フレームでしきい値の何倍にも達する）。
@@ -395,6 +395,12 @@ func _brush_effect_rates(brush: Brush, level: int) -> Dictionary:
 		"soothe": brush.get_effective_soothe_gain() * rub
 	}
 
+## ゲーム効果上の接触判定。効果適用・表情・痛み回復で必ず同じ条件を使う。
+## 押し込み表現は変形量を求めるため base radius 基準の overlap を別途計算する。
+func _is_brush_touching_slime(brush: Brush, slime: SlimeTarget) -> bool:
+	return brush.position.distance_to(slime.position) \
+		<= brush.get_contact_radius() + slime.get_hit_radius()
+
 ## アクティブなブラシの接触状態と、いま掛かっている上昇量/秒（補正込み）。
 ## touched_sides は side名 → 接触中フラグ（痛み自然回復の判定に使う）。
 func _compute_touch_info() -> Dictionary:
@@ -408,7 +414,7 @@ func _compute_touch_info() -> Dictionary:
 			continue
 		var rates := _brush_effect_rates(brush, level)
 		for slime in _slimes:
-			if brush.position.distance_to(slime.position) <= brush.get_contact_radius() + slime.get_hit_radius():
+			if _is_brush_touching_slime(brush, slime):
 				touching = true
 				touched_sides[String(slime.side)] = true
 				# _apply_brush_effects と同じ係数で「ゲージが実際に動く速さ」を比較する。
