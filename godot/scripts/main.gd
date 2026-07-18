@@ -21,6 +21,7 @@ var _fade_tween: Tween
 @onready var _game_screen: Control = $GameScreen
 @onready var _result_screen: Control = $CanvasLayer/Frame/Margin/VBox/ResultScreen
 @onready var _result_body: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/ResultScreen/ResultPanel/Margin/ResultBody
+@onready var _result_chara_image: TextureRect = $CanvasLayer/ResultCharaImage
 @onready var _return_button: Button = $CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions/ReturnButton
 @onready var _title_screen: Control = $CanvasLayer/TitleScreen
 @onready var _title_start_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleStartButton
@@ -115,6 +116,7 @@ func _hide_all_screens() -> void:
 	_select_screen.visible = false
 	_game_screen.visible = false
 	_result_screen.visible = false
+	_result_chara_image.visible = false
 	_title_screen.visible = false
 	_opening_screen.visible = false
 	_options_screen.visible = false
@@ -206,6 +208,7 @@ func _on_day_finished(result: Dictionary) -> void:
 
 func _render_result() -> void:
 	var chara: Dictionary = _characters[_selected_index]
+	_update_result_chara_image(str(chara.get("id", "")))
 	var level_after := int(chara["level"])
 	var level_before := int(_last_result.get("level_before", level_after))
 	var level_line := "レベル: %d / %d" % [level_after, GameRules.MAX_LEVEL]
@@ -235,6 +238,17 @@ func _render_result() -> void:
 		NumberFormat.group(int(chara["finish_total"])),
 		int(chara["pain_fail_total"])
 	]
+
+## res://assets/chara/<id>/result.png があればリザルト画面右に表示する。無ければ隠す。
+func _update_result_chara_image(character_id: String) -> void:
+	var path := "res://assets/chara/%s/result.png" % character_id
+	if ResourceLoader.exists(path):
+		var texture := load(path)
+		if texture is Texture2D:
+			_result_chara_image.texture = texture
+			_result_chara_image.visible = true
+			return
+	_result_chara_image.visible = false
 
 func _save_progress() -> void:
 	_progress_store.save(_characters)

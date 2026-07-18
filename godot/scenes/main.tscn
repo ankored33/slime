@@ -99,6 +99,15 @@ theme_override_constants/separation = 12
 [node name="ReturnButton" type="Button" parent="CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions"]
 text = "選択画面へ戻る"
 
+[node name="ResultCharaImage" type="TextureRect" parent="CanvasLayer"]
+visible = false
+offset_left = 630.0
+offset_top = 20.0
+offset_right = 1125.0
+offset_bottom = 680.0
+expand_mode = 1
+stretch_mode = 5
+
 [node name="TitleScreen" type="Control" parent="CanvasLayer"]
 anchors_preset = 15
 anchor_right = 1.0
