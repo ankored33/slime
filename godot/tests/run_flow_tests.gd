@@ -130,7 +130,12 @@ func _setup_and_test_opening() -> void:
 	while opening._revealed_count < opening._sentences.size():
 		opening.advance()
 	opening.advance()
-	_check(game.visible and not opening.visible, "opening end -> game screen")
+	# 初回オープニングの直後も、2回目以降と同じ一言演出を挟んでから磨き画面へ進む。
+	_check(opening.visible and not game.visible, "opening end -> day-intro beat before the game screen")
+	while opening._revealed_count < opening._sentences.size():
+		opening.advance()
+	opening.advance()
+	_check(game.visible and not opening.visible, "day-intro beat -> game screen")
 	_check(bool(main._characters[0]["opening_seen"]), "opening marked as seen")
 	var game_background: TextureRect = main.get_node("GameScreen/Playfield/ZoomRoot/CharaImage")
 	_check(game_background.texture != null, "game: character background loaded")

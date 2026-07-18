@@ -177,7 +177,6 @@ func _on_character_selected(index: int) -> void:
 	_selected_index = index
 	var chara: Dictionary = _characters[_selected_index]
 	if not bool(chara.get("opening_seen", false)):
-		# 初回は自己紹介オープニングのみ。この一言演出は挟まない。
 		_transition(_show_opening_screen)
 	else:
 		_transition(_show_day_intro)
@@ -187,8 +186,8 @@ func _begin_day() -> void:
 	_game_screen.setup_species(chara)
 	_transition(_show_game_screen)
 
-## 磨き画面に入る直前、2回目以降の選択時だけ挟む短い暗転演出。
-## OpeningScreen（キャラOPと同じ見た目）を1ページだけ流用する。
+## 磨き画面に入る直前、毎回（初回の自己紹介オープニングの直後も含む）挟む
+## 短い暗転演出。OpeningScreen（キャラOPと同じ見た目）を1ページだけ流用する。
 func _show_day_intro() -> void:
 	_hide_all_screens()
 	_showing_day_intro = true
@@ -204,11 +203,13 @@ func _on_opening_finished() -> void:
 		_showing_day_intro = false
 		_begin_day()
 		return
+	# 初回の自己紹介オープニングが終わった直後。既読フラグを立ててから、
+	# この一言演出（_show_day_intro）を挟んでから磨き画面へ進む。
 	var chara: Dictionary = _characters[_selected_index]
 	chara["opening_seen"] = true
 	_characters[_selected_index] = chara
 	_save_progress()
-	_begin_day()
+	_show_day_intro()
 
 func _on_return_pressed() -> void:
 	GameAudio.play_se("ui_click")
