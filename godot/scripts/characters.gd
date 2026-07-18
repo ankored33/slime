@@ -70,6 +70,10 @@ static func _validate(chara: Dictionary) -> void:
 	for key in REQUIRED_KEYS:
 		if not chara.has(key):
 			push_error("CharacterDefs: character '%s' is missing required key '%s'" % [id, key])
+	for side in ["left", "right"]:
+		var target: Dictionary = chara.get(side, {})
+		if target.has("breast") and not target.has("breast_root"):
+			push_error("CharacterDefs: character '%s' side '%s' has 'breast' but no 'breast_root' (layer will not be added)" % [id, side])
 
 static func create() -> Array[Dictionary]:
 	var characters: Array[Dictionary] = [
