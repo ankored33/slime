@@ -20,6 +20,7 @@ var _revealed_count := 0
 var _page_transitioning := false
 var _curtain_tween: Tween
 var _auto_advance_delay := 0.0
+var _auto_advance_delays: Array = []
 var _auto_advance_tween: Tween
 
 @onready var _split: Control = $SplitView
@@ -65,6 +66,7 @@ func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 	page_index = 0
 	_page_transitioning = false
 	_auto_advance_delay = 0.0
+	_auto_advance_delays.clear()
 	_curtain_click_hint.visible = false
 	_profile_card.visible = false
 	visible = true
@@ -77,7 +79,7 @@ func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 func advance(automatic: bool = false) -> void:
 	if _page_transitioning:
 		return
-	if _auto_advance_delay > 0.0 and not automatic and DisplayServer.get_name() != "headless":
+	if _current_auto_advance_delay() > 0.0 and not automatic and DisplayServer.get_name() != "headless":
 		return
 	GameAudio.play_se("ui_click")
 	if _revealed_count < _sentences.size():
@@ -103,6 +105,8 @@ func _render_page() -> void:
 	var page: Dictionary = _pages[page_index]
 	var style := str(page.get("style", "split"))
 	_auto_advance_delay = float(page.get("auto_advance_delay", 0.0))
+	var delays_value: Variant = page.get("auto_advance_delays", [])
+	_auto_advance_delays = delays_value.duplicate() if delays_value is Array else []
 	var is_blackout := style == "blackout"
 	var is_curtain := style == "curtain"
 	_split.visible = not is_blackout and not is_curtain
@@ -162,7 +166,6 @@ func _finish_curtain_open() -> void:
 	_page_transitioning = false
 	_curtain_click_hint.visible = true
 	_profile_card.visible = true
-	_fit_profile_card.call_deferred()
 
 func _render_profile_card() -> void:
 	_profile_epithet.text = CharacterDefs.display_epithet(_character)
@@ -181,10 +184,6 @@ func _render_profile_card() -> void:
 		int(_character.get("finish_total", 0)),
 		int(_character.get("pain_fail_total", 0))
 	]
-
-func _fit_profile_card() -> void:
-	if is_instance_valid(_profile_card):
-		_profile_card.offset_top = _profile_card.offset_bottom - _profile_card.get_combined_minimum_size().y
 
 func _current_sentence_list() -> VBoxContainer:
 	return _blackout_sentence_list if _blackout.visible else _sentence_list
@@ -219,13 +218,20 @@ func _reveal_next_sentence() -> void:
 	_schedule_auto_advance()
 
 func _schedule_auto_advance() -> void:
-	if _auto_advance_delay <= 0.0 or DisplayServer.get_name() == "headless":
+	var delay := _current_auto_advance_delay()
+	if delay <= 0.0 or DisplayServer.get_name() == "headless":
 		return
 	if _auto_advance_tween != null and _auto_advance_tween.is_running():
 		_auto_advance_tween.kill()
 	_auto_advance_tween = create_tween()
-	_auto_advance_tween.tween_interval(_auto_advance_delay)
+	_auto_advance_tween.tween_interval(delay)
 	_auto_advance_tween.tween_callback(advance.bind(true))
+
+func _current_auto_advance_delay() -> float:
+	var delay_index := _revealed_count - 1
+	if delay_index >= 0 and delay_index < _auto_advance_delays.size():
+		return float(_auto_advance_delays[delay_index])
+	return _auto_advance_delay
 
 ## 「。」で文を割る。既存の改行（空行含む）も区切りとして扱うので、
 ## 段落分けや短い演出セリフの改行はそのまま独立した行として表示される。

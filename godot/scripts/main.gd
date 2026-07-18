@@ -198,7 +198,7 @@ func _show_day_intro() -> void:
 		{
 			"style": "blackout",
 			"text": "%s。\n貴様の教導を開始する" % prisoner_number,
-			"auto_advance_delay": 0.5
+			"auto_advance_delays": [1.0, 2.0]
 		},
 		{
 			"style": "curtain",
