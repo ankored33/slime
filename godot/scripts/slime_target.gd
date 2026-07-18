@@ -11,6 +11,9 @@ extends Area2D
 		radius = max(value, 8.0)
 		_sync_visuals()
 
+## true なら画像を等倍（原寸ピクセル）で表示し、当たり判定半径も画像サイズから取る。
+var image_native_size := false
+
 @export var fill_color := Color(0.454902, 1.0, 0.8, 0.92):
 	set(value):
 		fill_color = value
@@ -112,6 +115,10 @@ var _push_offset := Vector2.ZERO
 var _push_velocity := Vector2.ZERO
 var _pull_active := false
 
+## 押し込み・挟み引っ張りによる現在の変位（胸レイヤーの追従元）。
+func get_push_offset() -> Vector2:
+	return _push_offset
+
 func get_hit_radius() -> float:
 	# Squishy hitbox: compressed while pressed, briefly overshoots on release.
 	return clampf(radius - _squish, radius * (1.0 - MAX_SQUISH_RATIO), radius * (1.0 + MAX_SQUISH_RATIO * 0.5))
@@ -179,6 +186,10 @@ func apply_species(species: Dictionary, side_label: String, side_config: Diction
 			_sprite.texture = texture
 	else:
 		_sprite.texture = null
+	image_native_size = bool(side_config.get("image_native_size", false)) and _sprite.texture != null
+	if image_native_size:
+		var tex_size := _sprite.texture.get_size()
+		radius = maxf(tex_size.x, tex_size.y) / 2.0
 	_sync_visuals()
 
 func _sync_visuals() -> void:
@@ -205,7 +216,9 @@ func _sync_visuals() -> void:
 	_outline.width = 4.0
 	if _sprite.texture != null:
 		var tex_size := _sprite.texture.get_size()
-		if tex_size.x > 0.0 and tex_size.y > 0.0:
+		if image_native_size:
+			_sprite.scale = Vector2.ONE
+		elif tex_size.x > 0.0 and tex_size.y > 0.0:
 			var target_diameter := radius * 2.0
 			var scale_x := target_diameter / tex_size.x
 			var scale_y := target_diameter / tex_size.y

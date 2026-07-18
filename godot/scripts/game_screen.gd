@@ -38,6 +38,7 @@ var _slime_state := {
 	"right": {"polish": 0.0, "pain": 0.0}
 }
 var _species: Dictionary = {}
+var _breast_layers: Array[BreastLayer] = []
 var _day_finish_count := 0
 var _day_time := 0.0
 var _last_finish_at := -1000.0
@@ -140,6 +141,7 @@ func setup_species(species: Dictionary) -> void:
 	_apply_slime_layout(_right_slime, right_config)
 	_left_slime.apply_species(_species, "L", left_config)
 	_right_slime.apply_species(_species, "R", right_config)
+	_setup_breast_layers()
 	var level := int(_species.get("level", 1))
 	finish_threshold = GameRules.finish_threshold(level)
 	_brushes.apply_unlocks(level)
@@ -151,6 +153,27 @@ func _apply_slime_layout(slime: SlimeTarget, cfg: Dictionary) -> void:
 	var pos_variant: Variant = cfg.get("position", null)
 	if pos_variant is Vector2:
 		slime.position = pos_variant
+
+## side_config に breast 画像があるキャラは、立ち絵の上に胸レイヤーを重ねて
+## 乳首ターゲットの動きへ追従させる。無ければ従来どおり1枚絵のまま。
+func _setup_breast_layers() -> void:
+	for layer in _breast_layers:
+		layer.queue_free()
+	_breast_layers.clear()
+	for pair: Array in [["left", _left_slime], ["right", _right_slime]]:
+		var cfg: Dictionary = _species.get(pair[0], {})
+		var path := str(cfg.get("breast", ""))
+		if path == "" or not ResourceLoader.exists(path):
+			continue
+		var tex := load(path)
+		if tex is not Texture2D:
+			continue
+		var layer := BreastLayer.new()
+		_chara_image.add_child(layer)
+		layer.setup(tex, _chara_image.size, pair[1])
+		_breast_layers.append(layer)
+	# 立ち絵プレースホルダのラベルはレイヤーより手前を保つ。
+	_chara_image.move_child(_expression_label, -1)
 
 func _start_finish_fx() -> void:
 	_tool_actions.clear()

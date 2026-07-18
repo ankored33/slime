@@ -369,6 +369,23 @@ func _run_tests() -> void:
 	root.add_child(reloaded)
 	_check(bool(reloaded._characters[0]["opening_seen"]), "opening_seen persisted to save")
 
+	# 胸レイヤー: breast 指定のあるキャラは立ち絵の上に胸スプライトが載り、
+	# 乳首画像は等倍表示＋画像サイズ由来の当たり判定になる。無いキャラは載らない。
+	var chara_image: Control = game.get_node("Playfield/CharaImage")
+	var left_target: SlimeTarget = game.get_node("Playfield/LeftSlime")
+	var live_breast_layers := func() -> Array:
+		return chara_image.get_children().filter(
+			func(c: Node) -> bool: return c is BreastLayer and not c.is_queued_for_deletion())
+	game.setup_species(main._characters[1])
+	var admiral_layers: Array = live_breast_layers.call()
+	_check(admiral_layers.size() == 1, "breast layer: created for admiral left side")
+	_check(left_target.image_native_size, "breast layer: admiral nipple uses native image size")
+	_check(absf(left_target.radius - 32.5) < 0.6, "breast layer: hit radius derived from nipple image")
+	game.setup_species(main._characters[0])
+	var general_layers: Array = live_breast_layers.call()
+	_check(general_layers.is_empty(), "breast layer: absent for characters without breast assets")
+	_check(not left_target.image_native_size, "breast layer: general target back to circle sizing")
+
 	if had_save:
 		var file := FileAccess.open(save_path, FileAccess.WRITE)
 		file.store_string(save_backup)

@@ -5,6 +5,10 @@ class_name CharacterDefs
 ## - left / right は磨きターゲット2点の配置。
 ##   座標は 800x800 素材の画面換算: screen_x = 280 + src_x*0.9, screen_y = src_y*0.9
 ##   （640x720 枠・cover 表示・左右40pxクロップ前提。素材を差し替えたら要再計測）
+##   image_native_size: true なら乳首画像を等倍表示し、当たり判定半径も画像サイズから取る
+##   （radius 指定は無視される）。
+##   breast: 胸レイヤー画像（立ち絵と同一キャンバスの透過PNG）。指定すると立ち絵の上に
+##   重なり、乳首ターゲットの動きに部分追従する（breast_layer.gd）。
 ## - expressions は表情id → 画像パス。空のままなら既定パス
 ##   res://assets/chara/<id>/<表情id>.png を探す（無ければ表情名ラベルで代替表示）。
 ##   表情id一覧: idle_a〜idle_d（ブラシ無し）, touch_a〜touch_d（ブラシ当て）,
@@ -91,12 +95,14 @@ static func create() -> Array[Dictionary]:
 			"profile_after_opening": "種族：ハイエルフ\n性別：女\n年齢：455\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(0.47, 0.9, 0.78, 0.92),
 			"left": {
-				"position": Vector2(341.0, 455.0),
+				"position": Vector2(372.7, 390.2),
 				"radius": 40.0,
-				"image": ""
+				"image": "res://assets/chara/admiral/nipple_left.png",
+				"image_native_size": true,
+				"breast": "res://assets/chara/admiral/breast_left.png"
 			},
 			"right": {
-				"position": Vector2(618.0, 360.0),
+				"position": Vector2(921.7, 285.3),
 				"radius": 40.0,
 				"image": ""
 			},
