@@ -40,9 +40,8 @@ static func rub_multiplier(speed: float) -> float:
 		return 0.0
 	return clampf(0.25 + speed * 0.0025, 0.0, RUB_MAX_MULTIPLIER)
 
-## 序盤（連鎖開始前）のレベル別テーブル。Lv6以降は式で連続的に伸びる。
+## 序盤（Lv6未満）のレベル別しきい値テーブル。Lv6以降は式で連続的に伸びる。
 const EARLY_LEVEL_THRESHOLDS: Array[int] = [0, 2, 5, 9, 14, 20]
-const EARLY_RETENTION: Array[float] = [0.0, 0.1, 0.2, 0.35, 0.5]
 
 ## 連鎖の最終目標ペース（理論値・回/秒）。フレーム離散化で2割強目減りするため、
 ## 実効でおよそ10万回/秒に着地するよう大きめに取ってある。
@@ -90,14 +89,9 @@ static func polish_bonus(level: int) -> float:
 static func pain_resist(level: int) -> float:
 	return maxf(0.0, 1.0 - float(maxi(0, level - 1)) * 0.05)
 
-## FINISH後に残る快感の割合＝連鎖の燃費。回転ブラシ（磨き200/秒）を
-## 置きっぱなしにした時 chain_rate_target のペースに収束するよう逆算する。
-static func retention_ratio(level: int) -> float:
-	if level <= EARLY_RETENTION.size():
-		return EARLY_RETENTION[maxi(1, level) - 1]
-	var supply := 200.0 * polish_bonus(level)
-	var target := chain_rate_target(level)
-	return clampf(1.0 - supply / (finish_threshold(level) * target), 0.0, 0.9999999)
+## FINISH後に残る快感の割合。常に0＝連鎖なし、FINISHのたびに快感は必ずゼロへ戻る。
+static func retention_ratio(_level: int) -> float:
+	return 0.0
 
 ## 連鎖会計: 現在の合計快感がしきい値を超えている間に成立するFINISH回数と、
 ## 快感に掛ける保持係数（retention^count）を返す。終盤は1フレームで千回超に

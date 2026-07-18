@@ -86,14 +86,11 @@ func _test_pain_resist() -> void:
 
 func _test_retention_ratio() -> void:
 	_check_near(GameRules.retention_ratio(1), 0.0, "retention: Lv1 keeps nothing")
-	_check_near(GameRules.retention_ratio(4), 0.35, "retention: Lv4")
-	_check_near(GameRules.retention_ratio(6), 0.784, "retention: Lv6 targets 1 finish/sec")
+	_check_near(GameRules.retention_ratio(4), 0.0, "retention: Lv4 keeps nothing")
+	_check_near(GameRules.retention_ratio(6), 0.0, "retention: Lv6 keeps nothing")
+	_check_near(GameRules.retention_ratio(1000), 0.0, "retention: Lv1000 keeps nothing")
 	_check_near(GameRules.chain_rate_target(1000), GameRules.FINAL_CHAIN_RATE,
-		"retention: Lv1000 targets the final chain rate")
-	_check_near(GameRules.retention_ratio(1000),
-		1.0 - 600.0 / (900.0 * GameRules.FINAL_CHAIN_RATE),
-		"retention: Lv1000 derived from final rate")
-	_check(GameRules.retention_ratio(1000) < 1.0, "retention: never reaches 1")
+		"chain_rate_target: Lv1000 targets the final chain rate")
 
 func _test_chain_finishes() -> void:
 	var below: Dictionary = GameRules.chain_finishes(500.0, 900.0, 0.63)
@@ -112,14 +109,11 @@ func _test_chain_finishes() -> void:
 	_check_eq(int(multi["count"]), 3, "chain: high retention chains within one frame")
 	_check_near(float(multi["factor"]), pow(0.95, 3), "chain: factor is retention^count")
 
-	# 終盤想定: 1フレームの供給超過で千回超のFINISHが立つ。
-	var endgame_r := GameRules.retention_ratio(1000)
-	var endgame: Dictionary = GameRules.chain_finishes(906.5, 900.0, endgame_r)
-	var count := int(endgame["count"])
-	var remaining: float = 906.5 * float(endgame["factor"])
-	_check(count > 1000, "chain: endgame frame yields 1000+ finishes (got %d)" % count)
-	_check(remaining < 900.0, "chain: remaining polish drops below threshold")
-	_check(remaining / endgame_r >= 900.0, "chain: count is minimal (one less would still cross)")
+	# 実際のゲームは常に retention_ratio()==0 を渡すので、しきい値を大きく超えても
+	# 1回のFINISHで快感が完全にゼロへ落ちる（連鎖しない）。
+	var actual: Dictionary = GameRules.chain_finishes(5000.0, 900.0, GameRules.retention_ratio(1000))
+	_check_eq(int(actual["count"]), 1, "chain: actual game never chains beyond one finish")
+	_check_near(float(actual["factor"]), 0.0, "chain: actual game always drains polish to zero")
 
 func _test_number_format() -> void:
 	_check_eq(NumberFormat.group(0), "0", "format: zero")
