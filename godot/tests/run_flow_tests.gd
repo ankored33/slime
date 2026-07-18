@@ -85,6 +85,7 @@ func _run_tests() -> void:
 	_check(confirm_dialog.visible, "select: card click opens confirmation")
 	_check_eq(confirm_dialog.dialog_text, "このキャラクターを選択しますか？", "select: confirmation message")
 	confirm_dialog.emit_signal("confirmed")
+	confirm_dialog.hide()
 	_check(opening.visible and not select.visible, "first start -> opening screen")
 	_check_eq(opening.page_index, 0, "opening starts at page 0")
 
@@ -116,6 +117,17 @@ func _run_tests() -> void:
 	_check(bool(brush_rotary.is_rotating), "rotating brush: scene marks it as rotating")
 	var brush_name_label: Label = main.get_node("GameScreen/Hud/BrushNameLabel")
 	_check_eq(brush_name_label.text, "指", "brush HUD: finger is the default display")
+	var end_day_button: Button = main.get_node("GameScreen/Hud/EndDayButton")
+	var end_day_dialog: ConfirmationDialog = main.get_node("GameScreen/EndDayConfirmDialog")
+	end_day_button.emit_signal("pressed")
+	_check(end_day_dialog.visible, "end day: button opens confirmation")
+	_check_eq(end_day_dialog.dialog_text,
+		"1日を終えますか？\n（本日のFINISHを確定します）",
+		"end day: confirmation message")
+	_check(game._menu_paused, "end day: confirmation pauses gameplay")
+	end_day_dialog.emit_signal("canceled")
+	_check(not end_day_dialog.visible and not game._menu_paused,
+		"end day: cancel closes confirmation and resumes gameplay")
 
 	# ホイールズーム: キャラ画像の上だけで効き、上回転で1段階2倍、下回転で等倍へ戻る。
 	var zoom_root: Control = main.get_node("GameScreen/Playfield/ZoomRoot")
@@ -316,13 +328,11 @@ func _run_tests() -> void:
 	game.reset_day()
 	_check(not game._fx.fail_active, "fx: reset clears fail effect")
 
-	main._on_day_finished({
-		"species_id": "general",
-		"species_name": "test",
-		"day_finish_count": 4,
-		"banked_finish_count": 4,
-		"failed_by_pain": false
-	})
+	game._day_finish_count = 4
+	end_day_button.emit_signal("pressed")
+	_check(game.visible and not result.visible,
+		"end day: button does not finish before confirmation")
+	end_day_dialog.emit_signal("confirmed")
 	_check(result.visible and frame.visible and not game.visible, "day end -> result screen")
 
 	main._on_return_pressed()
@@ -365,6 +375,18 @@ func _run_tests() -> void:
 	main._characters[1]["pain_fail_total"] = 3
 	main._characters[1]["opening_seen"] = true
 	select.refresh_character_card(1)
+	var admiral_level: Button = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugLevelButton")
+	var level_dialog: ConfirmationDialog = main.get_node(
+		"CanvasLayer/SelectScreen/LevelEditDialog")
+	_check(admiral_level.visible, "debug level: visible in debug builds")
+	admiral_level.emit_signal("pressed")
+	_check(level_dialog.visible, "debug level: button opens editor")
+	select._level_spin_box.value = 42
+	level_dialog.emit_signal("confirmed")
+	_check_eq(int(main._characters[1]["level"]), 42, "debug level: applies entered level")
+	_check_eq(int(main._characters[1]["finish_total"]), GameRules.required_finish_total(42),
+		"debug level: aligns finish total so level persists")
 	var admiral_reset: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugResetButton")
 	# headless テストは常にデバッグビルドで走る。リリース時の非表示はここでは検証できない。
 	_check(admiral_reset.visible, "debug reset: visible in debug builds")
