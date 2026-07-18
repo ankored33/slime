@@ -198,6 +198,7 @@ func _on_day_finished(result: Dictionary) -> void:
 	chara["finish_total"] = int(chara["finish_total"]) + int(result.get("banked_finish_count", 0))
 	if bool(result.get("failed_by_pain", false)):
 		chara["pain_fail_total"] = int(chara["pain_fail_total"]) + 1
+	_last_result["level_before"] = int(chara["level"])
 	chara["level"] = GameRules.level_for_finish_total(int(chara["finish_total"]))
 	_characters[_selected_index] = chara
 	_save_progress()
@@ -205,6 +206,13 @@ func _on_day_finished(result: Dictionary) -> void:
 
 func _render_result() -> void:
 	var chara: Dictionary = _characters[_selected_index]
+	var level_after := int(chara["level"])
+	var level_before := int(_last_result.get("level_before", level_after))
+	var level_line := "レベル: %d / %d" % [level_after, GameRules.MAX_LEVEL]
+	if level_after > level_before:
+		GameAudio.play_se("levelup")
+		level_line = "レベル: %d → [b][color=#ffd75e]%d[/color][/b] / %d　[color=#ffd75e]LEVEL UP! +%d[/color]" % [
+			level_before, level_after, GameRules.MAX_LEVEL, level_after - level_before]
 	var failed := bool(_last_result.get("failed_by_pain", false))
 	var status_text := "痛みが限界に達した。今日の成果は半減となった。" if failed else "任意終了。成果をすべて持ち帰った。"
 	_result_body.text = (
@@ -212,7 +220,7 @@ func _render_result() -> void:
 		+ "%s\n\n"
 		+ "本日のFINISH: %s\n"
 		+ "持ち帰りFINISH: %s\n"
-		+ "レベル: %d / %d\n"
+		+ "%s\n"
 		+ "累計FINISH: %s\n"
 		+ "痛み失敗: %d\n\n"
 		+ "成長で伸びるもの:\n"
@@ -225,8 +233,7 @@ func _render_result() -> void:
 		status_text,
 		NumberFormat.group(int(_last_result.get("day_finish_count", 0))),
 		NumberFormat.group(int(_last_result.get("banked_finish_count", 0))),
-		int(chara["level"]),
-		GameRules.MAX_LEVEL,
+		level_line,
 		NumberFormat.group(int(chara["finish_total"])),
 		int(chara["pain_fail_total"])
 	]

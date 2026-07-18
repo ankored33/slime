@@ -7,7 +7,8 @@ extends Node
 ##     title（タイトル画面） / select（キャラ選択・リザルト） /
 ##     opening_<キャラid>（キャラ別OP） / game_a〜game_c（磨き画面・ランダム）
 ##   SE:    res://assets/audio/se/<id>.ogg       （climax / despair / heartbeat / ui_click /
-##                                                 brush_soft / brush_mid / brush_strong / brush_pain）
+##                                                 brush_soft / brush_mid / brush_strong / brush_pain /
+##                                                 levelup）
 ##   ボイス: res://assets/audio/voice/<キャラid>/<表情id>.ogg
 ## main.tscn に1ノード置くことで static 経由（GameAudio.play_se(...) 等）で
 ## どこからでも呼べる。ノードが無い環境（単体テスト等）では全呼び出しが no-op。
