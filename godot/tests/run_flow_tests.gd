@@ -117,12 +117,18 @@ func _setup_and_test_opening() -> void:
 	_check(opening.visible and not select.visible, "first start -> opening screen")
 	_check_eq(opening.page_index, 0, "opening starts at page 0")
 
+	# 各ページは「。」/改行ごとに1文ずつフェード表示され、文を出し切ってから
+	# advance() を押すと次のページに進む（opening_screen.gd）。
 	var pages: Array = main._characters[0]["opening_pages"]
 	for i in range(pages.size() - 1):
+		while opening._revealed_count < opening._sentences.size():
+			opening.advance()
 		opening.advance()
 	_check(opening.visible, "opening: still open on last page")
 	_check_eq(String(next_button.text), "はじめる ▶", "opening: last page button label")
 
+	while opening._revealed_count < opening._sentences.size():
+		opening.advance()
 	opening.advance()
 	_check(game.visible and not opening.visible, "opening end -> game screen")
 	_check(bool(main._characters[0]["opening_seen"]), "opening marked as seen")

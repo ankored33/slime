@@ -26,6 +26,8 @@ func _init() -> void:
 	_test_rub_multiplier()
 	_test_brush_action()
 	_test_dialogue_loader()
+	_test_opening_loader()
+	_test_opening_sentence_split()
 	print("---")
 	print("Passed: %d, Failed: %d" % [_passes, _failures])
 	quit(1 if _failures > 0 else 0)
@@ -238,3 +240,42 @@ func _test_dialogue_loader() -> void:
 			for line in candidates:
 				_check(str(line).strip_edges() != "",
 					"dialogue: %s/%s has no blank lines" % [character_id, expression_id])
+
+func _test_opening_loader() -> void:
+	var missing := OpeningLoader.load_pages("no_such_character")
+	_check(missing.is_empty(), "opening: unknown character id yields an empty array")
+
+	for character_id in ["general", "admiral"]:
+		var pages := OpeningLoader.load_pages(character_id)
+		_check(pages.size() >= 2, "opening: %s has multiple pages" % character_id)
+		var has_blackout := false
+		for page in pages:
+			var style := str(page.get("style", ""))
+			_check(style in ["split", "blackout"], "opening: %s page style is valid" % character_id)
+			_check(str(page.get("text", "")).strip_edges() != "",
+				"opening: %s page has text" % character_id)
+			if style == "blackout":
+				has_blackout = true
+			else:
+				_check(str(page.get("portrait", "")) != "",
+					"opening: %s split page has a portrait key" % character_id)
+		_check(has_blackout, "opening: %s includes at least one blackout beat" % character_id)
+
+func _test_opening_sentence_split() -> void:
+	var single := OpeningScreen._split_sentences("これは一文だけ。")
+	_check_eq(single.size(), 1, "sentence split: single sentence stays one line")
+
+	var two := OpeningScreen._split_sentences("一つ目の文。二つ目の文。")
+	_check_eq(two.size(), 2, "sentence split: splits on every 。")
+	_check_eq(two[0], "一つ目の文。", "sentence split: keeps the 。 attached to the line")
+	_check_eq(two[1], "二つ目の文。", "sentence split: second sentence keeps its own 。")
+
+	var with_linebreak := OpeningScreen._split_sentences("だが捕らえた。\n帝国の7つの軍団が\nついに降伏したのだ。")
+	_check_eq(with_linebreak.size(), 3, "sentence split: manual line breaks also split, even without 。")
+
+	var trailing_fragment := OpeningScreen._split_sentences("句点なしの断片")
+	_check_eq(trailing_fragment.size(), 1, "sentence split: text without 。 still yields one line")
+
+	var blank_paragraph := OpeningScreen._split_sentences("一段落目。\n\n二段落目。")
+	_check_eq(blank_paragraph.size(), 2,
+		"sentence split: blank separator lines are skipped, not emitted as empty entries")
