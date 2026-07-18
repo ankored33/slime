@@ -65,14 +65,14 @@ func refresh_character_card(index: int, force_original: bool = false) -> void:
 	var portrait: TextureRect = card.get_node("Margin/VBox/PortraitArea/Portrait")
 	var placeholder: Label = card.get_node("Margin/VBox/PortraitArea/PortraitPlaceholder")
 	var view_original_button: Button = card.get_node("InteractionLayer/ViewOriginalButton")
-	var opening_seen := bool(chara.get("opening_seen", false))
+	var opening_seen := bool(chara["opening_seen"])
 	view_original_button.visible = opening_seen
 	var use_after_opening := opening_seen and not force_original
-	name_label.text = str(chara.get("name", "")) if force_original else CharacterDefs.display_name(chara)
-	epithet_label.text = str(chara.get("epithet", "")) if force_original else CharacterDefs.display_epithet(chara)
-	var profile_text := str(chara.get("profile_after_opening", "")) if use_after_opening else ""
+	name_label.text = str(chara["name"]) if force_original else CharacterDefs.display_name(chara)
+	epithet_label.text = str(chara["epithet"]) if force_original else CharacterDefs.display_epithet(chara)
+	var profile_text := str(chara["profile_after_opening"]) if use_after_opening else ""
 	if profile_text == "":
-		profile_text = str(chara.get("profile", ""))
+		profile_text = str(chara["profile"])
 	var stats_text := ""
 	if use_after_opening:
 		stats_text = (
@@ -87,12 +87,9 @@ func refresh_character_card(index: int, force_original: bool = false) -> void:
 			int(chara["pain_fail_total"])
 		]
 	profile_body.text = profile_text + stats_text
-	var portrait_path := str(chara.get(
-		"portrait_after_opening" if use_after_opening else "portrait",
-		""
-	))
+	var portrait_path := str(chara["portrait_after_opening"] if use_after_opening else chara["portrait"])
 	if portrait_path == "":
-		portrait_path = str(chara.get("portrait", ""))
+		portrait_path = str(chara["portrait"])
 	var texture: Texture2D = null
 	if portrait_path != "" and ResourceLoader.exists(portrait_path):
 		texture = load(portrait_path)

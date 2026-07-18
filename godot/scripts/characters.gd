@@ -13,7 +13,10 @@ class_name CharacterDefs
 ##   src_x/src_y そのまま。screen換算はしない）で指定する。身体に近い側・下端が目安。
 ##   breast を指定して breast_root を書き忘れるとレイヤーは追加されない。
 ## - expressions は表情id → 画像パス。空のままなら既定パス
-##   res://assets/chara/<id>/<表情id>.png を探す（無ければ表情名ラベルで代替表示）。
+##   res://assets/chara/<id>/<表情id>.png を探す。それも無ければ暫定的に
+##   game_background を使い、それも無ければ表情名ラベルで代替表示する
+##   （game_background 段は表情差分素材が揃うまでの暫定。game_screen.gd の
+##   _resolve_expression_texture 参照）。
 ##   表情id一覧: idle_a〜idle_d（ブラシ無し）, touch_a〜touch_d（ブラシ当て）,
 ##   climax（絶頂）, despair（絶望）, exhausted（憔悴）。詳細は expression_rules.gd。
 ## - dialogue は表情id → セリフ候補の配列（画面下部のセリフパネルに「」付きで表示）。
@@ -43,14 +46,33 @@ static func display_epithet(chara: Dictionary) -> String:
 	return _resolve_after_opening(chara, "epithet", "epithet_after_opening")
 
 static func _resolve_after_opening(chara: Dictionary, base_key: String, after_key: String) -> String:
-	if bool(chara.get("opening_seen", false)):
-		var after := str(chara.get(after_key, ""))
+	if bool(chara["opening_seen"]):
+		var after := str(chara[after_key])
 		if after != "":
 			return after
-	return str(chara.get(base_key, ""))
+	return str(chara[base_key])
+
+## create() が組み立てる各キャラ辞書に必ず入っている前提のキー。他の画面は
+## ここにある項目を chara["name"] のように直接参照してよい（欠けていたら
+## _validate() が起動時に push_error で知らせる）。profile_after_opening /
+## epithet_after_opening は空文字を許容する（意図的に profile / epithet を
+## そのまま使い回すための仕様）。
+const REQUIRED_KEYS: Array[String] = [
+	"id", "name", "epithet", "name_after_opening", "epithet_after_opening",
+	"portrait", "portrait_after_opening", "result", "game_background",
+	"expressions", "dialogue", "profile", "profile_after_opening", "color",
+	"left", "right", "level", "finish_total", "pain_fail_total",
+	"opening_seen", "opening_pages"
+]
+
+static func _validate(chara: Dictionary) -> void:
+	var id := str(chara.get("id", "?"))
+	for key in REQUIRED_KEYS:
+		if not chara.has(key):
+			push_error("CharacterDefs: character '%s' is missing required key '%s'" % [id, key])
 
 static func create() -> Array[Dictionary]:
-	return [
+	var characters: Array[Dictionary] = [
 		{
 			"id": "general",
 			"name": "アリスティア",
@@ -117,3 +139,6 @@ static func create() -> Array[Dictionary]:
 			"opening_pages": OpeningLoader.load_pages("admiral")
 		}
 	]
+	for chara in characters:
+		_validate(chara)
+	return characters

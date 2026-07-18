@@ -10,11 +10,11 @@ func save(characters: Array[Dictionary]) -> void:
 	}
 	for chara in characters:
 		payload["characters"].append({
-			"id": str(chara.get("id", "")),
-			"level": int(chara.get("level", 1)),
-			"finish_total": int(chara.get("finish_total", 0)),
-			"pain_fail_total": int(chara.get("pain_fail_total", 0)),
-			"opening_seen": bool(chara.get("opening_seen", false))
+			"id": str(chara["id"]),
+			"level": int(chara["level"]),
+			"finish_total": int(chara["finish_total"]),
+			"pain_fail_total": int(chara["pain_fail_total"]),
+			"opening_seen": bool(chara["opening_seen"])
 		})
 	var file := FileAccess.open(SAVE_PATH, FileAccess.WRITE)
 	if file == null:
@@ -43,7 +43,7 @@ func load_into(characters: Array[Dictionary]) -> void:
 			by_id[str(entry.get("id", ""))] = entry
 	for index in range(characters.size()):
 		var chara: Dictionary = characters[index]
-		var character_id := str(chara.get("id", ""))
+		var character_id := str(chara["id"])
 		if not by_id.has(character_id):
 			continue
 		var saved: Dictionary = by_id[character_id]

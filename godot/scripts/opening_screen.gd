@@ -63,7 +63,7 @@ func _ready() -> void:
 
 ## character.opening_pages を表示する、初回の自己紹介オープニング用の入口。
 func start(character: Dictionary) -> void:
-	_play(character, character.get("opening_pages", []), true)
+	_play(character, character["opening_pages"], true)
 
 ## 任意のページ列を挟み込みたいとき用の入口（例: 毎回の磨き画面前の一言）。
 ## opening_pages とは無関係なので、既読フラグ等には触れない。呼び出し側が
@@ -89,7 +89,7 @@ func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 	visible = true
 	_render_page()
 	if play_music:
-		GameAudio.play_bgm("opening_%s" % str(_character.get("id", "")))
+		GameAudio.play_bgm("opening_%s" % str(_character["id"]))
 
 ## 未表示の文が残っていればそれを1つフェードインさせる。出し切っていれば次のページへ、
 ## 最終ページなら演出を終える。curtain ページで confirm_text が指定されていれば、
@@ -239,16 +239,16 @@ func _on_selection_pressed() -> void:
 ## force_original: 「元の経歴を見る」ボタン押下中、名前・二つ名・プロフィール文・立ち絵を
 ## すべて初回（オープニング未読時）のものへ一時的に戻す（select_screen.gd と同じ挙動）。
 func _render_profile_card(force_original: bool = false) -> void:
-	_profile_epithet.text = str(_character.get("epithet", "")) if force_original \
+	_profile_epithet.text = str(_character["epithet"]) if force_original \
 		else CharacterDefs.display_epithet(_character)
-	_profile_name.text = str(_character.get("name", "")) if force_original \
+	_profile_name.text = str(_character["name"]) if force_original \
 		else CharacterDefs.display_name(_character)
 	_update_curtain_image(force_original)
-	var opening_seen := bool(_character.get("opening_seen", false))
+	var opening_seen := bool(_character["opening_seen"])
 	var use_after_opening := opening_seen and not force_original
-	var profile_text := str(_character.get("profile_after_opening", "")) if use_after_opening else ""
+	var profile_text := str(_character["profile_after_opening"]) if use_after_opening else ""
 	if profile_text == "":
-		profile_text = str(_character.get("profile", ""))
+		profile_text = str(_character["profile"])
 	if not use_after_opening:
 		_profile_body.text = profile_text
 		return
@@ -258,10 +258,10 @@ func _render_profile_card(force_original: bool = false) -> void:
 		+ "\n累計FINISH: %d"
 		+ "\n痛み失敗: %d"
 	) % [
-		int(_character.get("level", 1)),
+		int(_character["level"]),
 		GameRules.MAX_LEVEL,
-		int(_character.get("finish_total", 0)),
-		int(_character.get("pain_fail_total", 0))
+		int(_character["finish_total"]),
+		int(_character["pain_fail_total"])
 	]
 
 ## force_original: 立ち絵を "portrait"（オープニング前の元絵）に戻す。離せば curtain

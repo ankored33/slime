@@ -177,7 +177,7 @@ func _on_title_start_pressed() -> void:
 func _on_character_selected(index: int) -> void:
 	_selected_index = index
 	var chara: Dictionary = _characters[_selected_index]
-	if not bool(chara.get("opening_seen", false)):
+	if not bool(chara["opening_seen"]):
 		_transition(_show_opening_screen)
 	else:
 		_transition(_show_day_intro)
@@ -194,7 +194,7 @@ func _show_day_intro() -> void:
 	_hide_all_screens()
 	_showing_day_intro = true
 	var chara: Dictionary = _characters[_selected_index]
-	var prisoner_number := str(chara.get("name_after_opening", ""))
+	var prisoner_number := str(chara["name_after_opening"])
 	_opening_screen.start_with_pages(chara, [
 		{
 			"style": "curtain",
@@ -244,7 +244,7 @@ func _on_day_finished(result: Dictionary) -> void:
 
 func _render_result() -> void:
 	var chara: Dictionary = _characters[_selected_index]
-	_update_result_chara_image(str(chara.get("result", "")))
+	_update_result_chara_image(str(chara["result"]))
 	var level_after := int(chara["level"])
 	var level_before := int(_last_result.get("level_before", level_after))
 	var level_line := "レベル: %d / %d" % [level_after, GameRules.MAX_LEVEL]

@@ -107,7 +107,9 @@ func _ready() -> void:
 		_brushes.register_interactive(_debug_panel)
 	_update_gauges()
 	_update_brush_controls()
-	reset_day()
+	# ここで reset_day() は呼ばない: _is_running を立てると setup_species() 前から
+	# _process() のゲームループが回り出し、まだ空の _species を読みにいってしまう。
+	# setup_species() が末尾で reset_day() を呼ぶので、最初の日はそちらに任せる。
 
 func _input(event: InputEvent) -> void:
 	if _debug_panel != null and event is InputEventKey \
@@ -213,14 +215,14 @@ func setup_species(species: Dictionary) -> void:
 	_species = species.duplicate(true)
 	var display_name := CharacterDefs.display_name(_species)
 	_title_label.text = display_name if display_name != "" else "スライム"
-	var left_config: Dictionary = _species.get("left", {})
-	var right_config: Dictionary = _species.get("right", {})
+	var left_config: Dictionary = _species["left"]
+	var right_config: Dictionary = _species["right"]
 	_apply_slime_layout(_left_slime, left_config)
 	_apply_slime_layout(_right_slime, right_config)
 	_left_slime.apply_species(_species, "L", left_config)
 	_right_slime.apply_species(_species, "R", right_config)
 	_setup_breast_layers()
-	var level := int(_species.get("level", 1))
+	var level := int(_species["level"])
 	finish_threshold = GameRules.finish_threshold(level)
 	_brushes.apply_unlocks(level)
 	_meta_label.text = "LV %d" % level
@@ -239,7 +241,7 @@ func _setup_breast_layers() -> void:
 		layer.queue_free()
 	_breast_layers.clear()
 	for pair: Array in [["left", _left_slime], ["right", _right_slime]]:
-		var cfg: Dictionary = _species.get(pair[0], {})
+		var cfg: Dictionary = _species[pair[0]]
 		var path := str(cfg.get("breast", ""))
 		if path == "" or not ResourceLoader.exists(path):
 			continue
@@ -408,7 +410,7 @@ func _compute_touch_info() -> Dictionary:
 	var touched_sides := {}
 	var polish_rate := 0.0
 	var pain_rate := 0.0
-	var level := int(_species.get("level", 1))
+	var level := int(_species["level"])
 	for brush: Brush in _brushes.brush_map.values():
 		if not brush.visible or not brush.is_effective():
 			continue
@@ -463,28 +465,30 @@ func _apply_expression(expression_id: String) -> void:
 	_expression_label.text = "立ち絵：%s" % ExpressionRules.display_name(expression_id)
 	_update_dialogue(expression_id)
 	# 表情が変わった瞬間だけボイス再生を試みる（素材が無ければ無音、連射は抑制済み）。
-	GameAudio.play_voice(str(_species.get("id", "")), expression_id)
+	GameAudio.play_voice(str(_species["id"]), expression_id)
 
 ## 表情idに対応するセリフを表示する。characters.gd の dialogue は表情id→候補配列で、
 ## その表情に入るたびランダムに1つ選ぶ（未設定・空配列なら空欄のまま）。
 func _update_dialogue(expression_id: String) -> void:
-	var dialogue: Dictionary = _species.get("dialogue", {})
+	var dialogue: Dictionary = _species["dialogue"]
 	var lines: Array = dialogue.get(expression_id, [])
 	var line := str(lines.pick_random()) if not lines.is_empty() else ""
 	_dialogue_label.text = "「%s」" % line if line != "" else ""
 
 ## キャラ定義の expressions 辞書を優先し、次に既定の表情パスを探す。
 ## 表情素材が無い場合は、磨き画面用の固定背景 game_background を使う。
+## 表情差分素材が揃うまでの暫定段（game_background 段）。全表情分の画像が揃ったら
+## この段は削り、個別指定→既定パス→ラベルの2段に戻すこと（欠落を隠さないため）。
 func _resolve_expression_texture(expression_id: String) -> Texture2D:
-	var expressions: Dictionary = _species.get("expressions", {})
+	var expressions: Dictionary = _species["expressions"]
 	var path := str(expressions.get(expression_id, ""))
 	if path == "":
-		path = ExpressionRules.default_image_path(str(_species.get("id", "")), expression_id)
+		path = ExpressionRules.default_image_path(str(_species["id"]), expression_id)
 	if ResourceLoader.exists(path):
 		var texture := load(path)
 		if texture is Texture2D:
 			return texture
-	var background_path := str(_species.get("game_background", ""))
+	var background_path := str(_species["game_background"])
 	if background_path != "" and ResourceLoader.exists(background_path):
 		var background := load(background_path)
 		if background is Texture2D:
@@ -536,7 +540,7 @@ func _get_combined_polish() -> float:
 	return float(_slime_state["left"]["polish"]) + float(_slime_state["right"]["polish"])
 
 func _current_level() -> int:
-	return int(_species.get("level", 1))
+	return int(_species["level"])
 
 func _check_finish() -> void:
 	var count := GameRules.finish_count(_get_combined_polish(), finish_threshold)
@@ -575,7 +579,7 @@ func _check_failure() -> void:
 # --- デバッグパネル用フック（debug_panel.gd から呼ばれる。リリースでは未使用） ---
 
 func debug_get_level() -> int:
-	return int(_species.get("level", 1))
+	return int(_species["level"])
 
 func debug_set_level(level: int) -> void:
 	level = clampi(level, 1, GameRules.MAX_LEVEL)
@@ -643,7 +647,7 @@ func _finish_day(failed_by_pain: bool) -> void:
 		slime.set_hearts_active(false)
 	var banked_finish := GameRules.banked_finish(_day_finish_count, failed_by_pain)
 	day_finished.emit({
-		"species_id": str(_species.get("id", "")),
+		"species_id": str(_species["id"]),
 		"species_name": CharacterDefs.display_name(_species),
 		"day_finish_count": _day_finish_count,
 		"banked_finish_count": banked_finish,
