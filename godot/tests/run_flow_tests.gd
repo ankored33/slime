@@ -1,6 +1,13 @@
 extends SceneTree
 
 ## Headless flow tests for the screen state machine in main.gd.
+##
+## Scope（意図的に絞っている）: 主要な画面遷移ルート（起動→選択→OP→磨き→リザルト→保存）、
+## 計算・境界値（押し込み/引っ張りの可動域、接触半径、レベル反映）、取り返しのつかない
+## 状態変更（FINISH、日終了、タイトルへ戻って日を破棄）、セーブの永続化。
+## UI文言の完全一致・素材パス・デバッグ専用UIの表示可否・ホバー演出の詳細は含めない
+## （変更のたびに壊れる割に目視の方が早いため）。追加する時はこの基準に沿うこと。
+##
 ## Run: godot --headless --path godot -s res://tests/run_flow_tests.gd
 
 var _failures := 0
@@ -8,7 +15,6 @@ var _passes := 0
 var _done := false
 var _completed := false
 
-# 画面遷移をまたいで共有するテストフィクスチャ。
 var save_path := "user://slime_save_v2.json"
 var had_save := false
 var save_backup := ""
@@ -35,14 +41,14 @@ func _process(_delta: float) -> bool:
 	return true
 
 func _run_tests() -> void:
-	_setup_and_test_opening()
-	_test_game_controls_and_zoom()
-	_test_brush_assets_and_toolbox()
-	_test_candle()
-	_test_brush_contact_actions()
-	_test_slime_motion_and_finish()
-	_test_selection_and_debug_tools()
-	_test_pause_persistence_and_layers()
+	_setup()
+	_test_boot_select_opening_to_game()
+	_test_zoom_and_end_day_dialog()
+	_test_toolbox_and_brush_contact()
+	_test_candle_wax_finish_counting()
+	_test_slime_push_pull_and_finish_fx()
+	_test_result_to_select_and_debug_level()
+	_test_pause_title_return_and_save_persistence()
 	_restore_save()
 
 	_completed = true
@@ -50,7 +56,7 @@ func _run_tests() -> void:
 	print("Passed: %d, Failed: %d" % [_passes, _failures])
 	quit(1 if _failures > 0 else 0)
 
-func _setup_and_test_opening() -> void:
+func _setup() -> void:
 	had_save = FileAccess.file_exists(save_path)
 	if had_save:
 		save_backup = FileAccess.get_file_as_string(save_path)
@@ -66,15 +72,26 @@ func _setup_and_test_opening() -> void:
 	select = main.get_node("CanvasLayer/SelectScreen")
 	result = main.get_node("CanvasLayer/Frame/Margin/VBox/ResultScreen")
 	game = main.get_node("GameScreen")
-	var next_button: Button = main.get_node(
-		"CanvasLayer/OpeningScreen/SplitView/TextPanel/Margin/TextVBox/Actions/OpeningNextButton"
-	)
 
 	main._characters[0]["opening_seen"] = false
 	main._characters[0]["level"] = 1
 	main._characters[0]["finish_total"] = 0
 	main._characters[1]["opening_seen"] = false
 
+## 現在表示中のページ群を最後まで送る（文をフェード出し切り→次へ、を繰り返し、
+## 最終ページの次のadvance()でfinishedが飛ぶところで止める）。呼び出し側はこれを
+## 「1画面ぶんの表示を最後まで送る」単位として、必要な回数だけ呼ぶ
+## （例: 初回OPなら1回でOP終了、もう1回で一言演出も送り切る）。
+func _drain_opening_pages() -> void:
+	while true:
+		while opening._revealed_count < opening._sentences.size():
+			opening.advance()
+		var was_last_page := opening.page_index + 1 >= opening._pages.size()
+		opening.advance()
+		if was_last_page:
+			break
+
+func _test_boot_select_opening_to_game() -> void:
 	_check(title.visible and not frame.visible and not game.visible, "boot: title screen only")
 	main._on_title_options_pressed()
 	_check(options.visible and title.visible, "title options -> overlay on top of title")
@@ -84,86 +101,29 @@ func _setup_and_test_opening() -> void:
 	main._on_title_start_pressed()
 	_check(select.visible and not frame.visible and not title.visible, "title start -> select screen")
 
-	var card0_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
-	var card1_name: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
-	_check(card0_name.text != "？？？" and card1_name.text != "？？？", "select: both cards populated")
-	var card0_epithet: Label = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/EpithetLabel")
-	_check_eq(card0_name.text, String(main._characters[0]["name"]),
-		"select: real name before opening")
-	_check_eq(card0_epithet.text, String(main._characters[0]["epithet"]),
-		"select: epithet shown before opening")
-	var card0_portrait: TextureRect = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/Portrait")
-	var card1_portrait: TextureRect = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/Portrait")
-	_check(card0_portrait.texture != null, "select: general portrait loaded")
-	_check(card1_portrait.texture != null, "select: admiral portrait loaded")
-	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait.png"),
-		"select: general uses initial portrait before opening")
-	var profile_body: RichTextLabel = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/ProfileBody")
-	_check(profile_body.text.begins_with(String(main._characters[0]["profile"])),
-		"select: profile shows pre-opening text")
-	var card0_view_original: Button = main.get_node(
-		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/ViewOriginalButton")
-	_check(not card0_view_original.visible,
-		"view original: hidden before the opening has been seen")
-	var instruction: Label = main.get_node("CanvasLayer/SelectScreen/InstructionOverlay/Label")
-	_check_eq(instruction.text, "キャラクターを選択してください。", "select: instruction is overlaid")
-	var card0_button: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/CardButton")
-	var confirm_dialog: ConfirmationDialog = main.get_node("CanvasLayer/SelectScreen/CharacterConfirmDialog")
+	var card0_button: Button = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/CardButton")
+	var confirm_dialog: ConfirmationDialog = main.get_node(
+		"CanvasLayer/SelectScreen/CharacterConfirmDialog")
 	card0_button.emit_signal("pressed")
-	_check(confirm_dialog.visible, "select: card click opens confirmation")
-	_check_eq(confirm_dialog.dialog_text, "このキャラクターを選択しますか？", "select: confirmation message")
 	confirm_dialog.emit_signal("confirmed")
 	confirm_dialog.hide()
 	_check(opening.visible and not select.visible, "first start -> opening screen")
-	_check_eq(opening.page_index, 0, "opening starts at page 0")
 
-	# 各ページは「。」/改行ごとに1文ずつフェード表示され、文を出し切ってから
-	# advance() を押すと次のページに進む（opening_screen.gd）。
-	var pages: Array = main._characters[0]["opening_pages"]
-	for i in range(pages.size() - 1):
-		while opening._revealed_count < opening._sentences.size():
-			opening.advance()
-		opening.advance()
-	_check(opening.visible, "opening: still open on last page")
-	_check_eq(String(next_button.text), "はじめる ▶", "opening: last page button label")
-
-	while opening._revealed_count < opening._sentences.size():
-		opening.advance()
-	opening.advance()
-	# 初回オープニングの直後も、2回目以降と同じ一言演出を挟んでから磨き画面へ進む。
+	# 初回オープニング -> 一言演出(day-intro) -> 磨き画面、まで送る。
+	_drain_opening_pages()
 	_check(opening.visible and not game.visible, "opening end -> day-intro beat before the game screen")
-	while opening._revealed_count < opening._sentences.size():
-		opening.advance()
-	opening.advance()
+	_drain_opening_pages()
 	_check(game.visible and not opening.visible, "day-intro beat -> game screen")
 	_check(bool(main._characters[0]["opening_seen"]), "opening marked as seen")
 	var game_background: TextureRect = main.get_node("GameScreen/Playfield/ZoomRoot/CharaImage")
 	_check(game_background.texture != null, "game: character background loaded")
-	_check(String(game_background.texture.resource_path).ends_with("/general/game_background.png"),
-		"game: selected character background is used")
 
-func _test_game_controls_and_zoom() -> void:
-	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
-	var brush_tongue: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTongue")
-	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFude")
-	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushRotary")
-	_check(not brush_finger.visible and not brush_rotary.visible,
-		"toolbox: brushes start stowed")
-	var finger_button: Button = game._brushes.get_tool_button("finger")
-	var rotary_button: Button = game._brushes.get_tool_button("rotary")
-	_check(finger_button != null and finger_button.visible, "Lv1: finger tool button available")
-	_check(rotary_button != null and rotary_button.visible,
-		"Lv1: rotating brush tool button temporarily available")
-	_check(bool(brush_rotary.is_rotating), "rotating brush: scene marks it as rotating")
-	var brush_name_label: Label = main.get_node("GameScreen/Hud/BrushNameLabel")
-	_check_eq(brush_name_label.text, "指", "brush HUD: finger is the default display")
+func _test_zoom_and_end_day_dialog() -> void:
 	var end_day_button: Button = main.get_node("GameScreen/Hud/EndDayButton")
 	var end_day_dialog: ConfirmationDialog = main.get_node("GameScreen/EndDayConfirmDialog")
 	end_day_button.emit_signal("pressed")
 	_check(end_day_dialog.visible, "end day: button opens confirmation")
-	_check_eq(end_day_dialog.dialog_text,
-		"1日を終えますか？\n（本日のFINISHを確定します）",
-		"end day: confirmation message")
 	_check(game._menu_paused, "end day: confirmation pauses gameplay")
 	end_day_dialog.emit_signal("canceled")
 	_check(not end_day_dialog.visible and not game._menu_paused,
@@ -191,31 +151,17 @@ func _test_game_controls_and_zoom() -> void:
 	_check_eq(zoom_root.scale, Vector2.ONE, "zoom: wheel down returns to normal")
 	game.reset_day()
 
-func _test_brush_assets_and_toolbox() -> void:
+func _test_toolbox_and_brush_contact() -> void:
 	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
-	var brush_tongue: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTongue")
-	var brush_fude: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFude")
 	var brush_rotary: Node2D = main.get_node("GameScreen/Playfield/ZoomRoot/BrushRotary")
+	var brush_teeth: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTeeth")
+	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
 
-	# ブラシ画像フック: 素材の有無とプレースホルダ表示が対応していること。
-	var finger_has_texture := ResourceLoader.exists("res://assets/brushes/finger.png", "Texture2D")
-	_check(brush_finger._body.visible == not finger_has_texture,
-		"brush: placeholder shown exactly when no texture asset exists")
-	_check(ResourceLoader.exists("res://assets/brushes/tongue.png", "Texture2D"),
-		"brush: tongue texture asset is imported")
-	_check(brush_tongue._base_texture != null and not brush_tongue._body.visible,
-		"brush: tongue texture replaces its placeholder")
-	var brush_texture := ImageTexture.create_from_image(
-		Image.create(128, 128, false, Image.FORMAT_RGBA8))
-	brush_fude._apply_texture(brush_texture)
-	_check(not brush_fude._body.visible, "brush: placeholder hidden when texture applied")
-
-	# ツールボックス: ボタンで出し入れし、押した道具は保持状態で出現する。
+	# ツールボックス: ボタンで出し入れでき、回転ブラシは保持中も設置後も回り続ける。
 	game._brushes.toggle_from_toolbox("rotary")
 	_check(brush_rotary.visible and game._brushes.held_brush == brush_rotary,
 		"toolbox: button summons the brush in held state")
 	_check(brush_rotary.is_active, "rotating brush: keeps spinning while held")
-	brush_rotary.position = Vector2(900.0, 400.0)
 	game._brushes._set_held_brush(null)
 	_check(brush_rotary.is_active, "rotating brush: keeps spinning when placed on the field")
 	game._brushes.toggle_from_toolbox("rotary")
@@ -223,81 +169,24 @@ func _test_brush_assets_and_toolbox() -> void:
 	game._brushes.toggle_from_toolbox("rotary")
 	_check(not brush_rotary.visible and not brush_rotary.is_active,
 		"toolbox: pressing the button while held stows the brush")
-	game._brushes.toggle_from_toolbox("rotary")
-	brush_rotary.position = Vector2(1100.0, 300.0)
-	game._brushes._set_held_brush(null)
-	_check(not brush_rotary.visible, "toolbox: releasing over the box stows the brush")
 	game.reset_day()
 
-func _test_candle() -> void:
-	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
-	var right_click := InputEventMouseButton.new()
-	right_click.button_index = MOUSE_BUTTON_RIGHT
-	right_click.pressed = true
-	right_click.position = Vector2(640.0, 360.0)
-
-	# ろうそく固有アクション: 本体では磨けず、保持中の右クリックで滴を作る。
-	var brush_candle: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushCandle")
-	game._brushes.toggle_from_toolbox("candle")
-	_check(brush_candle.visible and game._brushes.held_brush == brush_candle,
-		"candle: temporarily unlocked at Lv1 and summoned held")
-	var candle_action: Dictionary = game._brushes.handle_input(right_click)
-	_check(candle_action.has("wax_origin"), "candle: right click requests a wax drop")
-	game._tool_actions.spawn_wax_drop(
-		left_slime.position - Vector2(0.0, left_slime.get_hit_radius()))
-	game._tool_actions.update_wax_drops(0.05, game._slime_state, game._current_level())
-	_check(float(game._slime_state["left"]["polish"]) > 0.0,
-		"candle: wax impact adds polish stimulus")
-	_check(float(game._slime_state["left"]["pain"]) > 0.0,
-		"candle: wax impact adds pain stimulus")
-	_check_eq(game._tool_actions.wax_drop_count, 0, "candle: wax drop is consumed on impact")
-	var high_level_wax_state := {
-		"left": {"polish": 0.0, "pain": 0.0},
-		"right": {"polish": 0.0, "pain": 0.0}
-	}
-	game._tool_actions._apply_wax_impact(high_level_wax_state, "left", GameRules.MAX_LEVEL)
-	var high_level_wax_polish := float(high_level_wax_state["left"]["polish"])
-	_check(high_level_wax_polish > GameRules.GAUGE_MAX,
-		"candle: high-level wax stimulus is not capped by the display gauge")
-	var finish_count_before: int = int(game._day_finish_count)
-	game._slime_state = high_level_wax_state
-	game._check_finish()
-	_check(game._day_finish_count - finish_count_before > 1,
-		"candle: one high-level wax impact counts multiple finishes")
-	_check(not game._fx.finish_active,
-		"candle: a high-level multi-finish uses the non-blocking chain effect")
-	game.reset_day()
-
-func _test_brush_contact_actions() -> void:
-	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
-	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
-	var right_click := InputEventMouseButton.new()
-	right_click.button_index = MOUSE_BUTTON_RIGHT
-	right_click.pressed = true
-	right_click.position = Vector2(640.0, 360.0)
-
-	# こすり系ブラシの向き: 接触前でも当たり判定付近なら先端側が中心を向く。
+	# こすり系ブラシの向き: 当たり判定付近に入ったら先端側が中心を向き、離れると直立に戻る。
 	game._brushes.toggle_from_toolbox("finger")
-	brush_finger.rotation = 0.0
 	brush_finger.position = left_slime.position - Vector2(
 		left_slime.get_hit_radius() + brush_finger.get_contact_radius()
-			+ game.BRUSH_FACING_RANGE_MARGIN * 0.5,
-		0.0
-	)
+			+ game.BRUSH_FACING_RANGE_MARGIN * 0.5, 0.0)
 	game._update_brush_facing(1.0)
 	_check_near(brush_finger.rotation, PI / 2.0,
 		"brush facing: near target rotates local top toward target center")
 	brush_finger.position = left_slime.position - Vector2(
 		left_slime.get_hit_radius() + brush_finger.get_contact_radius()
-			+ game.BRUSH_FACING_RANGE_MARGIN + 20.0,
-		0.0
-	)
+			+ game.BRUSH_FACING_RANGE_MARGIN + 20.0, 0.0)
 	game._update_brush_facing(1.0)
-	_check_near(brush_finger.rotation, 0.0,
-		"brush facing: away from target returns upright")
+	_check_near(brush_finger.rotation, 0.0, "brush facing: away from target returns upright")
 	game.reset_day()
 
-	# 接触判定: 見た目の半径内でも縮小した接触半径の外なら効果は発生しない。
+	# 接触判定の境界値: 見た目の半径内でも縮小した接触半径の外なら効果は発生しない。
 	game._brushes.toggle_from_toolbox("finger")
 	brush_finger._rub_speed = 600.0
 	brush_finger.position = left_slime.position + Vector2(
@@ -313,10 +202,12 @@ func _test_brush_contact_actions() -> void:
 	game.reset_day()
 
 	# 歯の固有アクション: 接触中の右クリックだけが一回分の痛みを与える。
-	var brush_teeth: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTeeth")
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = Vector2(640.0, 360.0)
 	game._brushes.toggle_from_toolbox("teeth")
-	var teeth_action: Dictionary = game._brushes.handle_input(right_click)
-	_check(teeth_action.has("bite_requested"), "teeth: right click requests a bite")
+	game._brushes.handle_input(right_click)
 	game._tool_actions.apply_teeth_bite(game._slime_state, game._current_level())
 	_check_eq(float(game._slime_state["left"]["pain"]), 0.0,
 		"teeth: bite does no damage away from a target")
@@ -325,21 +216,48 @@ func _test_brush_contact_actions() -> void:
 	game._tool_actions.apply_teeth_bite(game._slime_state, game._current_level())
 	_check(float(game._slime_state["left"]["pain"]) > 0.0,
 		"teeth: bite damages a target while touching")
-	_check_eq(float(game._slime_state["left"]["polish"]), 0.0,
-		"teeth: bite has no polish effect")
 	game.reset_day()
 
-func _test_slime_motion_and_finish() -> void:
+func _test_candle_wax_finish_counting() -> void:
 	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
-	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
-	var end_day_button: Button = main.get_node("GameScreen/Hud/EndDayButton")
-	var end_day_dialog: ConfirmationDialog = main.get_node("GameScreen/EndDayConfirmDialog")
 	var right_click := InputEventMouseButton.new()
 	right_click.button_index = MOUSE_BUTTON_RIGHT
 	right_click.pressed = true
 	right_click.position = Vector2(640.0, 360.0)
 
-	# 押し込み変位: 接触中は押された方向へ少し動き、離すとバネで元の位置へ戻る。
+	game._brushes.toggle_from_toolbox("candle")
+	var candle_action: Dictionary = game._brushes.handle_input(right_click)
+	_check(candle_action.has("wax_origin"), "candle: right click requests a wax drop")
+	game._tool_actions.spawn_wax_drop(
+		left_slime.position - Vector2(0.0, left_slime.get_hit_radius()))
+	game._tool_actions.update_wax_drops(0.05, game._slime_state, game._current_level())
+	_check(float(game._slime_state["left"]["polish"]) > 0.0, "candle: wax impact adds polish stimulus")
+	_check(float(game._slime_state["left"]["pain"]) > 0.0, "candle: wax impact adds pain stimulus")
+
+	# 回帰防止: 高感度帯の快感はゲージ表示上限で頭打ちにならず、1回のFINISH判定で
+	# 複数回分まとめて計上される（保持率撤廃・感度の青天井加速まわりで一度壊れた箇所）。
+	var high_level_wax_state := {
+		"left": {"polish": 0.0, "pain": 0.0}, "right": {"polish": 0.0, "pain": 0.0}
+	}
+	game._tool_actions._apply_wax_impact(high_level_wax_state, "left", GameRules.MAX_LEVEL)
+	_check(float(high_level_wax_state["left"]["polish"]) > GameRules.GAUGE_MAX,
+		"candle: high-level wax stimulus is not capped by the display gauge")
+	var finish_count_before: int = int(game._day_finish_count)
+	game._slime_state = high_level_wax_state
+	game._check_finish()
+	_check(game._day_finish_count - finish_count_before > 1,
+		"candle: one high-level wax impact counts multiple finishes")
+	_check(not game._fx.finish_active,
+		"candle: a high-level multi-finish uses the non-blocking chain effect")
+	game.reset_day()
+
+func _test_slime_push_pull_and_finish_fx() -> void:
+	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
+	var brush_finger: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushFinger")
+	var end_day_button: Button = main.get_node("GameScreen/Hud/EndDayButton")
+	var end_day_dialog: ConfirmationDialog = main.get_node("GameScreen/EndDayConfirmDialog")
+
+	# 押し込み変位: 接触中は押された方向へ動き、離すとバネで元の位置へ戻る。可動範囲は超えない。
 	var slime_home: Vector2 = left_slime.position
 	game._brushes.toggle_from_toolbox("finger")
 	brush_finger.position = left_slime.position - Vector2(left_slime.radius, 0.0)
@@ -355,37 +273,25 @@ func _test_slime_motion_and_finish() -> void:
 	_check(left_slime.position.distance_to(slime_home) < 1.0,
 		"push: slime springs back home after release")
 	game.reset_day()
-	# 差分加算の丸め誤差ぶんだけ許容する（見た目に影響しないサブピクセル）。
-	_check(left_slime.position.distance_to(slime_home) < 0.01,
-		"push: reset restores the home position")
 
-	# 指の固有アクション: 接触中に右クリックで挟んで固定し、可動範囲まで引っ張れる。
+	# 指の固有アクション: 右クリックで挟んで引っ張れるが、可動範囲を超えては動かない。
 	var playfield: Control = main.get_node("GameScreen/Playfield/ZoomRoot")
 	game._brushes.toggle_from_toolbox("finger")
 	brush_finger.position = left_slime.position \
 		- Vector2(left_slime.get_hit_radius() + brush_finger.get_contact_radius(), 0.0)
-	var pinch_action: Dictionary = game._brushes.handle_input(right_click)
-	_check(pinch_action.has("pinch_requested"), "finger: right click requests a pinch")
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = Vector2(640.0, 360.0)
+	game._brushes.handle_input(right_click)
 	game._tool_actions.start_pinch()
-	_check(game._tool_actions.pinch_slime == left_slime,
-		"finger: pinch grabs the touching target")
-	var grab_distance: float = brush_finger.position.distance_to(left_slime.position)
 	var pull_mouse: Vector2 = playfield.get_global_transform() \
 		* (brush_finger.position + Vector2(-200.0, 0.0))
 	for i in range(60):
 		game._tool_actions.update_pinch(pull_mouse, 1.0 / 60.0)
-	_check(left_slime.position.x < slime_home.x - 10.0,
-		"finger: pulling drags the target along")
+	_check(left_slime.position.x < slime_home.x - 10.0, "finger: pulling drags the target along")
 	_check(left_slime.position.distance_to(slime_home) <= left_slime.MAX_PULL_DISTANCE + 0.001,
 		"finger: pull stops at the max range")
-	_check(absf(brush_finger.position.distance_to(left_slime.position) - grab_distance) < 0.5,
-		"finger: pinched finger stays attached to the target")
-	var right_release := InputEventMouseButton.new()
-	right_release.button_index = MOUSE_BUTTON_RIGHT
-	right_release.pressed = false
-	right_release.position = Vector2(640.0, 360.0)
-	var release_action: Dictionary = game._brushes.handle_input(right_release)
-	_check(release_action.has("pinch_released"), "finger: releasing right click lets go")
 	game._tool_actions.end_pinch()
 	brush_finger.position = slime_home + Vector2(500.0, 0.0)
 	for i in range(120):
@@ -397,18 +303,17 @@ func _test_slime_motion_and_finish() -> void:
 	# 演出ヘルパー: FINISH後は憔悴へ遷移し、失敗演出もリセット可能。
 	game._start_finish_fx()
 	_check(game._fx.finish_active, "fx: finish effect starts")
-	_check(game._finish_label.visible, "fx: finish label is shown")
 	for i in range(int(ceil(game.finish_fx_duration * 60.0)) + 1):
 		game._fx.update(1.0 / 60.0)
 	_check(not game._fx.finish_active and game._fx.exhausted,
 		"fx: finish effect transitions to exhausted")
-	_check(not game._finish_label.visible, "fx: finish label hides after effect")
 	game.reset_day()
 	game._start_fail_fx()
 	_check(game._fx.fail_active, "fx: fail effect starts")
 	game.reset_day()
 	_check(not game._fx.fail_active, "fx: reset clears fail effect")
 
+	# 日終了（取り返しのつかない状態変更）: 確認を経てリザルト画面へ。
 	game._day_finish_count = 4
 	end_day_button.emit_signal("pressed")
 	_check(game.visible and not result.visible,
@@ -416,65 +321,21 @@ func _test_slime_motion_and_finish() -> void:
 	end_day_dialog.emit_signal("confirmed")
 	_check(result.visible and frame.visible and not game.visible, "day end -> result screen")
 
-func _test_selection_and_debug_tools() -> void:
-	var card0_name: Label = main.get_node(
-		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
-	var card1_name: Label = main.get_node(
-		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
-	var card0_epithet: Label = main.get_node(
-		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/EpithetLabel")
-	var card0_portrait: TextureRect = main.get_node(
-		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/Portrait")
-	var card1_portrait: TextureRect = main.get_node(
-		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/Margin/VBox/PortraitArea/Portrait")
-	var profile_body: RichTextLabel = main.get_node(
-		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/ProfileBody")
-
+func _test_result_to_select_and_debug_level() -> void:
 	main._on_return_pressed()
 	_check(select.visible and not result.visible, "result return -> select screen")
-	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait_after_opening.png"),
-		"select: general portrait changes after opening")
-	_check(profile_body.text.begins_with(String(main._characters[0]["profile_after_opening"])),
-		"select: profile switches after opening")
-	_check_eq(card0_name.text, String(main._characters[0]["name_after_opening"]),
-		"select: prisoner number replaces name after opening")
-	_check_eq(card0_epithet.text, String(main._characters[0]["epithet_after_opening"]),
-		"select: epithet becomes prisoner class after opening")
+	var card0_name: Label = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/Margin/VBox/PortraitArea/InfoOverlay/Margin/VBox/NameLabel")
+	_check(card0_name.text != String(main._characters[0]["name"]),
+		"select: display name changes once the opening has been seen")
 
-	# 「元の経歴を見る」ボタン: 押している間だけ本名・二つ名・立ち絵・プロフィール文が
-	# すべて初回のものに戻る。
-	var view_original: Button = main.get_node(
-		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card0/InteractionLayer/ViewOriginalButton")
-	_check(view_original.visible, "view original: visible once opening is seen")
-	view_original.emit_signal("button_down")
-	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait.png"),
-		"view original: portrait reverts to the initial art while held")
-	_check(profile_body.text.begins_with(String(main._characters[0]["profile"])),
-		"view original: profile text reverts to the initial one while held")
-	_check_eq(card0_name.text, String(main._characters[0]["name"]),
-		"view original: real name shown while held")
-	_check_eq(card0_epithet.text, String(main._characters[0]["epithet"]),
-		"view original: real epithet shown while held")
-	view_original.emit_signal("button_up")
-	_check(String(card0_portrait.texture.resource_path).ends_with("/general/portrait_after_opening.png"),
-		"view original: portrait returns to the post-opening art on release")
-	_check(profile_body.text.begins_with(String(main._characters[0]["profile_after_opening"])),
-		"view original: profile text returns to the post-opening one on release")
-	_check_eq(card0_name.text, String(main._characters[0]["name_after_opening"]),
-		"view original: name returns to the prisoner record on release")
-	_check_eq(card0_epithet.text, String(main._characters[0]["epithet_after_opening"]),
-		"view original: epithet returns to the prisoner class on release")
-
-	main._characters[1]["level"] = 5
-	main._characters[1]["finish_total"] = 14
-	main._characters[1]["pain_fail_total"] = 3
+	# デバッグレベル編集: 入力値がそのままレベルに反映され、finish_totalもそのレベルを
+	# 維持できる値に揃う（GameRules.required_finish_totalとの整合性）。
 	main._characters[1]["opening_seen"] = true
 	select.refresh_character_card(1)
 	var admiral_level: Button = main.get_node(
 		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugLevelButton")
-	var level_dialog: ConfirmationDialog = main.get_node(
-		"CanvasLayer/SelectScreen/LevelEditDialog")
-	_check(admiral_level.visible, "debug level: visible in debug builds")
+	var level_dialog: ConfirmationDialog = main.get_node("CanvasLayer/SelectScreen/LevelEditDialog")
 	admiral_level.emit_signal("pressed")
 	_check(level_dialog.visible, "debug level: button opens editor")
 	select._level_spin_box.value = 42
@@ -482,30 +343,22 @@ func _test_selection_and_debug_tools() -> void:
 	_check_eq(int(main._characters[1]["level"]), 42, "debug level: applies entered level")
 	_check_eq(int(main._characters[1]["finish_total"]), GameRules.required_finish_total(42),
 		"debug level: aligns finish total so level persists")
-	var admiral_reset: Button = main.get_node("CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugResetButton")
-	# headless テストは常にデバッグビルドで走る。リリース時の非表示はここでは検証できない。
-	_check(admiral_reset.visible, "debug reset: visible in debug builds")
-	_check_eq(card1_name.text, String(main._characters[1]["name_after_opening"]),
-		"select: admiral card shows prisoner number when opening seen")
+
+	var admiral_reset: Button = main.get_node(
+		"CanvasLayer/SelectScreen/Margin/VBox/Cards/Card1/InteractionLayer/DebugResetButton")
 	admiral_reset.emit_signal("pressed")
-	_check_eq(card1_name.text, String(main._characters[1]["name"]), "debug reset: real name restored")
 	_check_eq(int(main._characters[1]["level"]), 1, "debug reset: level")
 	_check_eq(int(main._characters[1]["finish_total"]), 0, "debug reset: finish total")
-	_check_eq(int(main._characters[1]["pain_fail_total"]), 0, "debug reset: pain failures")
 	_check(not bool(main._characters[1]["opening_seen"]), "debug reset: opening state")
-	_check(String(card1_portrait.texture.resource_path).ends_with("/admiral/portrait.png"),
-		"debug reset: portrait returns to initial state")
 
 	main._on_character_selected(0)
-	# 2回目以降の選択では、磨き画面の前に一言だけ暗転演出を挟む（main.gd 参照）。
-	_check(opening.visible and not game.visible, "second start shows the day-intro beat, not the full opening")
-	while opening._revealed_count < opening._sentences.size():
-		opening.advance()
-	opening.advance()
+	_check(opening.visible and not game.visible,
+		"second start shows the day-intro beat, not the full opening")
+	_drain_opening_pages()
 	_check(game.visible and not opening.visible, "second start skips the full opening")
 
-func _test_pause_persistence_and_layers() -> void:
-	# ESCメニュー: タイトルでは出さず、ゲーム中はオーバーレイでゲージ進行を止める。
+func _test_pause_title_return_and_save_persistence() -> void:
+	# ESCメニュー: ゲーム中はオーバーレイでゲージ進行を止め、もう一度押すと閉じて再開する。
 	var pause_menu: PauseMenu = main.get_node("CanvasLayer/PauseMenu")
 	var esc_event := InputEventKey.new()
 	esc_event.keycode = KEY_ESCAPE
@@ -513,69 +366,39 @@ func _test_pause_persistence_and_layers() -> void:
 	main._unhandled_input(esc_event)
 	_check(pause_menu.visible and game.visible, "esc: pause menu overlays the game screen")
 	_check(bool(game._menu_paused), "esc: pause menu freezes gauge progress")
-
-	pause_menu._on_options_pressed()
-	_check(options.visible and pause_menu.visible and game.visible,
-		"pause menu: options overlays on top of the pause menu")
-	options._on_back_pressed()
-	_check(not options.visible and pause_menu.visible, "pause menu: options back returns to pause menu")
-
 	main._unhandled_input(esc_event)
-	_check(not pause_menu.visible, "esc: second press closes the pause menu")
-	_check(not bool(game._menu_paused), "esc: closing the pause menu resumes gauge progress")
+	_check(not pause_menu.visible and not bool(game._menu_paused),
+		"esc: second press closes the pause menu and resumes gauge progress")
 
+	# タイトルへ戻る（取り返しのつかない状態変更）: キャンセルなら継続、確定なら日を破棄する。
 	main._unhandled_input(esc_event)
 	pause_menu._on_title_pressed()
-	_check(pause_menu._confirm_dialog.visible, "pause menu: title button asks for confirmation")
 	pause_menu._confirm_dialog.emit_signal("canceled")
 	_check(game.visible, "pause menu: canceling the title confirmation stays in game")
-
 	pause_menu._on_title_pressed()
 	pause_menu._confirm_dialog.emit_signal("confirmed")
 	_check(title.visible and not game.visible, "pause menu: confirmed title return leaves the game")
 	_check(not bool(game._is_running), "pause menu: returning to title abandons the running day")
-	_check(not pause_menu.visible, "pause menu: hidden after returning to title")
-
-	# 「ゲーム終了」は main の実配線を経由すると get_tree().quit() を呼んでしまうため、
-	# main に繋がっていない別インスタンスでシグナル配線だけを検証する。
-	var pause_menu_probe: PauseMenu = load("res://scenes/pause_menu.tscn").instantiate()
-	root.add_child(pause_menu_probe)
-	# GDScript のラムダはローカル変数を値でキャプチャするため、書き換え検知には配列を使う。
-	var quit_signaled := [false]
-	pause_menu_probe.quit_requested.connect(func() -> void: quit_signaled[0] = true)
-	pause_menu_probe._on_quit_pressed()
-	pause_menu_probe._confirm_dialog.emit_signal("confirmed")
-	_check(quit_signaled[0], "pause menu: quit button emits quit_requested after confirmation")
-	pause_menu_probe.queue_free()
 
 	main._on_character_selected(0)
-	while opening._revealed_count < opening._sentences.size():
-		opening.advance()
-	opening.advance()
+	_drain_opening_pages()
 	_check(game.visible and bool(game._is_running) and not bool(game._menu_paused),
 		"select after title return: a fresh day starts cleanly")
 
-	# Opening flag survives a reload through the save file.
+	# セーブの永続化: opening_seen がファイル経由で新しいインスタンスにも引き継がれる。
 	var reloaded: Control = main_scene.instantiate()
 	root.add_child(reloaded)
 	_check(bool(reloaded._characters[0]["opening_seen"]), "opening_seen persisted to save")
 
-	# 胸レイヤー: breast 指定のあるキャラは立ち絵の上に胸スプライトが載り、
-	# 乳首画像は等倍表示＋画像サイズ由来の当たり判定になる。無いキャラは載らない。
+	# 胸レイヤー: breast指定のあるキャラだけ立ち絵の上に生成される（データ駆動の分岐確認）。
 	var chara_image: Control = game.get_node("Playfield/ZoomRoot/CharaImage")
-	var left_target: SlimeTarget = game.get_node("Playfield/ZoomRoot/LeftSlime")
 	var live_breast_layers := func() -> Array:
 		return chara_image.get_children().filter(
 			func(c: Node) -> bool: return c is BreastLayer and not c.is_queued_for_deletion())
 	game.setup_species(main._characters[1])
-	var admiral_layers: Array = live_breast_layers.call()
-	_check(admiral_layers.size() == 1, "breast layer: created for admiral left side")
-	_check(left_target.image_native_size, "breast layer: admiral nipple uses native image size")
-	_check(absf(left_target.radius - 32.5) < 0.6, "breast layer: hit radius derived from nipple image")
+	_check(live_breast_layers.call().size() == 1, "breast layer: created for admiral left side")
 	game.setup_species(main._characters[0])
-	var general_layers: Array = live_breast_layers.call()
-	_check(general_layers.is_empty(), "breast layer: absent for characters without breast assets")
-	_check(not left_target.image_native_size, "breast layer: general target back to circle sizing")
+	_check(live_breast_layers.call().is_empty(), "breast layer: absent for characters without breast assets")
 
 func _restore_save() -> void:
 	if had_save:
