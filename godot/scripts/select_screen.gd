@@ -8,15 +8,22 @@ signal progress_changed
 
 var _characters: Array[Dictionary] = []
 var _pending_character_index := -1
+var _pending_level_index := -1
 
 @onready var _cards: HBoxContainer = $Margin/VBox/Cards
 @onready var _character_confirm_dialog: ConfirmationDialog = $CharacterConfirmDialog
+@onready var _level_edit_dialog: ConfirmationDialog = $LevelEditDialog
+@onready var _level_spin_box: SpinBox = $LevelEditDialog/LevelSpinBox
 
 func _ready() -> void:
 	_character_confirm_dialog.confirmed.connect(_on_character_confirmed)
 	_character_confirm_dialog.canceled.connect(_on_character_selection_canceled)
 	_character_confirm_dialog.get_ok_button().text = "選択"
 	_character_confirm_dialog.get_cancel_button().text = "キャンセル"
+	_level_edit_dialog.confirmed.connect(_on_level_edit_confirmed)
+	_level_edit_dialog.canceled.connect(_on_level_edit_canceled)
+	_level_edit_dialog.get_ok_button().text = "設定"
+	_level_edit_dialog.get_cancel_button().text = "キャンセル"
 
 func setup(characters: Array[Dictionary]) -> void:
 	_characters = characters
@@ -30,13 +37,20 @@ func setup(characters: Array[Dictionary]) -> void:
 		reset_button.disabled = not show_debug_tools
 		if show_debug_tools:
 			reset_button.pressed.connect(_on_character_reset_pressed.bind(index))
+		var level_button: Button = card.get_node("InteractionLayer/DebugLevelButton")
+		level_button.visible = show_debug_tools
+		level_button.disabled = not show_debug_tools
+		if show_debug_tools:
+			level_button.pressed.connect(_on_level_edit_pressed.bind(index))
 		var view_original_button: Button = card.get_node("InteractionLayer/ViewOriginalButton")
 		view_original_button.button_down.connect(refresh_character_card.bind(index, true))
 		view_original_button.button_up.connect(refresh_character_card.bind(index, false))
 
 func show_characters() -> void:
 	_pending_character_index = -1
+	_pending_level_index = -1
 	_character_confirm_dialog.hide()
+	_level_edit_dialog.hide()
 	visible = true
 	refresh_character_cards()
 
@@ -117,6 +131,33 @@ func _on_character_confirmed() -> void:
 
 func _on_character_selection_canceled() -> void:
 	_pending_character_index = -1
+
+func _on_level_edit_pressed(index: int) -> void:
+	if not OS.is_debug_build() or index < 0 or index >= _characters.size():
+		return
+	GameAudio.play_se("ui_click")
+	_pending_level_index = index
+	_level_spin_box.value = float(_characters[index].get("level", 1))
+	_level_edit_dialog.popup_centered(Vector2i(360, 180))
+
+func _on_level_edit_confirmed() -> void:
+	if _pending_level_index < 0 or _pending_level_index >= _characters.size():
+		return
+	var index := _pending_level_index
+	_pending_level_index = -1
+	var level := clampi(int(_level_spin_box.value), 1, GameRules.MAX_LEVEL)
+	var chara: Dictionary = _characters[index]
+	chara["level"] = level
+	chara["finish_total"] = GameRules.required_finish_total(level)
+	_characters[index] = chara
+	_level_edit_dialog.hide()
+	GameAudio.play_se("ui_click")
+	progress_changed.emit()
+	refresh_character_card(index)
+
+func _on_level_edit_canceled() -> void:
+	_pending_level_index = -1
+	_level_edit_dialog.hide()
 
 func _on_character_reset_pressed(index: int) -> void:
 	if not OS.is_debug_build() or index < 0 or index >= _characters.size():

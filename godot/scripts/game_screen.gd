@@ -513,6 +513,7 @@ func _on_end_day_pressed() -> void:
 
 func _on_end_day_confirmed() -> void:
 	GameAudio.play_se("ui_click")
+	_end_day_confirm_dialog.hide()
 	resume_from_menu()
 	_finish_day(false)
 

@@ -151,6 +151,20 @@ mouse_default_cursor_shape = 2
 theme_override_font_sizes/font_size = 13
 text = "状態リセット（DEBUG）"
 
+[node name="DebugLevelButton" type="Button" parent="InteractionLayer"]
+layout_mode = 1
+anchors_preset = 2
+anchor_top = 1.0
+anchor_bottom = 1.0
+offset_left = 196.0
+offset_top = -52.0
+offset_right = 350.0
+offset_bottom = -14.0
+grow_vertical = 0
+mouse_default_cursor_shape = 2
+theme_override_font_sizes/font_size = 13
+text = "LV変更（DEBUG）"
+
 [node name="ViewOriginalButton" type="Button" parent="InteractionLayer"]
 layout_mode = 1
 anchors_preset = 3
