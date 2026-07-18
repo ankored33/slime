@@ -53,7 +53,7 @@ func _setup_heart_particles() -> void:
 	_hearts.amount = 24
 	_hearts.lifetime = 1.2
 	_hearts.local_coords = false
-	_hearts.texture = FxTextures.heart()
+	_hearts.texture = FxTextures.random_heart()
 	_hearts.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	_hearts.direction = Vector2.UP
 	_hearts.spread = 25.0
@@ -64,7 +64,6 @@ func _setup_heart_particles() -> void:
 	_hearts.scale_amount_max = 1.2
 	_hearts.angular_velocity_min = -90.0
 	_hearts.angular_velocity_max = 90.0
-	_hearts.color = Color(1.0, 0.5, 0.65, 1.0)
 	var fade := Gradient.new()
 	fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
 	fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
@@ -80,7 +79,7 @@ func _setup_heart_particles() -> void:
 	_heart_burst.amount = 36
 	_heart_burst.lifetime = 1.5
 	_heart_burst.local_coords = false
-	_heart_burst.texture = FxTextures.heart()
+	_heart_burst.texture = FxTextures.random_heart()
 	_heart_burst.emission_shape = CPUParticles2D.EMISSION_SHAPE_SPHERE
 	_heart_burst.direction = Vector2.UP
 	_heart_burst.spread = 180.0
@@ -91,7 +90,6 @@ func _setup_heart_particles() -> void:
 	_heart_burst.scale_amount_max = 1.7
 	_heart_burst.angular_velocity_min = -180.0
 	_heart_burst.angular_velocity_max = 180.0
-	_heart_burst.color = Color(1.0, 0.6, 0.75, 1.0)
 	var burst_fade := Gradient.new()
 	burst_fade.set_color(0, Color(1.0, 1.0, 1.0, 1.0))
 	burst_fade.set_color(1, Color(1.0, 1.0, 1.0, 0.0))
