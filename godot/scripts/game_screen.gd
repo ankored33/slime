@@ -135,21 +135,30 @@ func _handle_zoom_wheel(zoom_in: bool, screen_pos: Vector2) -> void:
 		_zoom_root.scale = Vector2.ONE
 		_zoom_root.position = Vector2.ZERO
 
-## ズーム中のWASD操作。画像（ZoomRoot）をずらし、キャラ画像（CharaImage）が
-## 画面から切れて背後の空白（Arenaの余白）が見えないよう端でクランプする。
+## ズーム中のWASD操作。画像（ZoomRoot）をずらし、ズーム領域（Arena全体）が
+## 画面から切れないよう端でクランプする。
 ## （キャラだけでなくブラシ類も一緒にずれる。ラックとHUDは対象外）
+##
+## クランプ基準はCharaImage単体ではなくZoomRoot全体にすること。CharaImage基準だと
+## クリック位置（pivot_offset）が画像中央から外れるだけで、ズームした瞬間に
+## クランプがpositionを強制的にずらしてしまい（左右の可動域が約160pxしかなく、
+## 乳首付近でズームすると187px前後の強制ジャンプが起きる）、「クリック点を中心に
+## ズーム」が成立しなくなる。ZoomRoot全体基準なら position=0 が常に有効範囲内に
+## 収まるため、この問題が起きない。
 func _update_zoom_pan(delta: float) -> void:
 	if _zoom_root.scale.x <= 1.0:
 		return
+	# position を直接動かすと画面内容は反対方向に動くため、見た目がキー方向と
+	# 一致するよう符号を反転させる（Wで見えている範囲が上へ、Aで左へ動く）。
 	var dir := Vector2.ZERO
 	if Input.is_key_pressed(KEY_A):
-		dir.x -= 1.0
-	if Input.is_key_pressed(KEY_D):
 		dir.x += 1.0
+	if Input.is_key_pressed(KEY_D):
+		dir.x -= 1.0
 	if Input.is_key_pressed(KEY_W):
-		dir.y -= 1.0
-	if Input.is_key_pressed(KEY_S):
 		dir.y += 1.0
+	if Input.is_key_pressed(KEY_S):
+		dir.y -= 1.0
 	if dir != Vector2.ZERO:
 		_zoom_root.position += dir.normalized() * ZOOM_PAN_SPEED * delta
 	_clamp_zoom_pan()
@@ -158,10 +167,8 @@ func _clamp_zoom_pan() -> void:
 	var scale := _zoom_root.scale.x
 	var piv := _zoom_root.pivot_offset
 	var viewport := _zoom_root.size
-	var chara_pos := _chara_image.position
-	var chara_size := _chara_image.size
-	var pos_min := viewport - scale * (chara_pos + chara_size) + piv * (scale - 1.0)
-	var pos_max := -scale * chara_pos + piv * (scale - 1.0)
+	var pos_min := (piv - viewport) * (scale - 1.0)
+	var pos_max := piv * (scale - 1.0)
 	_zoom_root.position = _zoom_root.position.clamp(pos_min, pos_max)
 
 func _process(delta: float) -> void:
