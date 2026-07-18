@@ -459,10 +459,12 @@ func _apply_expression(expression_id: String) -> void:
 	# 表情が変わった瞬間だけボイス再生を試みる（素材が無ければ無音、連射は抑制済み）。
 	GameAudio.play_voice(str(_species.get("id", "")), expression_id)
 
-## 表情idに対応するセリフを表示する。characters.gd の dialogue に未設定なら空欄のまま。
+## 表情idに対応するセリフを表示する。characters.gd の dialogue は表情id→候補配列で、
+## その表情に入るたびランダムに1つ選ぶ（未設定・空配列なら空欄のまま）。
 func _update_dialogue(expression_id: String) -> void:
 	var dialogue: Dictionary = _species.get("dialogue", {})
-	var line := str(dialogue.get(expression_id, ""))
+	var lines: Array = dialogue.get(expression_id, [])
+	var line := str(lines.pick_random()) if not lines.is_empty() else ""
 	_dialogue_label.text = "「%s」" % line if line != "" else ""
 
 ## キャラ定義の expressions 辞書を優先し、次に既定の表情パスを探す。
