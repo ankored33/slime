@@ -8,7 +8,10 @@ class_name CharacterDefs
 ##   image_native_size: true なら乳首画像を等倍表示し、当たり判定半径も画像サイズから取る
 ##   （radius 指定は無視される）。
 ##   breast: 胸レイヤー画像（立ち絵と同一キャンバスの透過PNG）。指定すると立ち絵の上に
-##   重なり、乳首ターゲットの動きに部分追従する（breast_layer.gd）。
+##   重なり、乳首ターゲットの動きに応じて根元を固定したまま伸び縮みする（breast_layer.gd）。
+##   breast_root: 伸縮の固定点（付け根）。breast 画像の素材ピクセル座標（800x800基準、
+##   src_x/src_y そのまま。screen換算はしない）で指定する。身体に近い側・下端が目安。
+##   breast を指定して breast_root を書き忘れるとレイヤーは追加されない。
 ## - expressions は表情id → 画像パス。空のままなら既定パス
 ##   res://assets/chara/<id>/<表情id>.png を探す（無ければ表情名ラベルで代替表示）。
 ##   表情id一覧: idle_a〜idle_d（ブラシ無し）, touch_a〜touch_d（ブラシ当て）,
@@ -99,7 +102,8 @@ static func create() -> Array[Dictionary]:
 				"radius": 40.0,
 				"image": "res://assets/chara/admiral/nipple_left.png",
 				"image_native_size": true,
-				"breast": "res://assets/chara/admiral/breast_left.png"
+				"breast": "res://assets/chara/admiral/breast_left.png",
+				"breast_root": Vector2(461.0, 765.0)
 			},
 			"right": {
 				"position": Vector2(921.7, 285.3),

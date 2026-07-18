@@ -195,9 +195,12 @@ func _setup_breast_layers() -> void:
 		var tex := load(path)
 		if tex is not Texture2D:
 			continue
+		var root_variant: Variant = cfg.get("breast_root", null)
+		if root_variant is not Vector2:
+			continue
 		var layer := BreastLayer.new()
 		_chara_image.add_child(layer)
-		layer.setup(tex, _chara_image.size, pair[1])
+		layer.setup(tex, _chara_image.size, pair[1], pair[0], root_variant)
 		_breast_layers.append(layer)
 	# 立ち絵プレースホルダのラベルはレイヤーより手前を保つ。
 	_chara_image.move_child(_expression_label, -1)
