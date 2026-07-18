@@ -103,9 +103,6 @@ func toggle_from_toolbox(brush_id: String) -> void:
 			_to_playfield_local(_playfield.get_global_mouse_position()), brush)
 	_set_held_brush(brush)
 
-func get_tool_button(brush_id: String) -> Button:
-	return _tool_buttons.get(brush_id)
-
 func _stow(brush: Brush) -> void:
 	brush.visible = false
 	brush.is_active = false
@@ -274,9 +271,6 @@ func deactivate_all() -> void:
 	for brush: Brush in brush_map.values():
 		brush.is_active = false
 		brush.is_held = false
-
-func get_brush(brush_id: String) -> Brush:
-	return brush_map.get(brush_id)
 
 func update_controls(name_label: Label, spec_label: Label) -> void:
 	_update_tool_button_states()

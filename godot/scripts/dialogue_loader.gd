@@ -38,6 +38,9 @@ static func load_dialogue(character_id: String) -> Dictionary:
 		if expression_id == "" or line.strip_edges() == "":
 			push_warning("DialogueLoader: %s:%d has an empty expression_id or line, skipped" % [path, line_number])
 			continue
+		if not ExpressionRules.ALL_IDS.has(expression_id):
+			push_warning("DialogueLoader: %s:%d has unknown expression_id '%s', skipped" % [path, line_number, expression_id])
+			continue
 		if not result.has(expression_id):
 			result[expression_id] = []
 		result[expression_id].append(line)

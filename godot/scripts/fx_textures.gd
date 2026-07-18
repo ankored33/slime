@@ -9,9 +9,6 @@ const HEART_FILES := [
 	"heart_e.png", "heart_f.png", "heart_g.png", "heart_double.png"
 ]
 
-static func random_heart() -> Texture2D:
-	return load("%s/%s" % [HEART_DIR, HEART_FILES.pick_random()])
-
 ## count 種類のハートを重複無しで選ぶ（1回のパーティクル群に混ぜて出すため）。
 ## count が素材数を超える場合は素材数まで。
 static func random_hearts(count: int) -> Array[Texture2D]:

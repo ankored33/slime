@@ -52,10 +52,6 @@ static func play_bgm(id: String) -> void:
 	if _instance != null:
 		_instance._play_bgm(id)
 
-static func stop_bgm() -> void:
-	if _instance != null:
-		_instance._stop_bgm()
-
 static func play_se(id: String) -> void:
 	if _instance != null:
 		_instance._play_se(id)
@@ -98,10 +94,6 @@ func _play_bgm(id: String) -> void:
 		return
 	_bgm_player.stream = stream
 	_bgm_player.play()
-
-func _stop_bgm() -> void:
-	_bgm_id = ""
-	_bgm_player.stop()
 
 func _play_se(id: String) -> void:
 	var stream := _load_stream("res://assets/audio/se/%s" % id, false)

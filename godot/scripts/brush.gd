@@ -98,9 +98,6 @@ func _track_rub_speed(delta: float) -> void:
 	_rub_speed = lerpf(_rub_speed, speed, minf(1.0, 10.0 * delta))
 	_prev_position = position
 
-func get_rub_speed() -> float:
-	return _rub_speed
-
 ## 本体（スライムターゲット）との接触に使う半径。見た目・壁・ラック判定は hit_radius のまま。
 func get_contact_radius() -> float:
 	return hit_radius * CONTACT_RATIO
