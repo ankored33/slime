@@ -66,11 +66,15 @@ func _load_texture() -> void:
 	if ResourceLoader.exists(pinch_path, "Texture2D"):
 		_pinch_texture = load(pinch_path)
 
+## つまみアクション中、画像を本体中心方向（ローカル-Y）へ寄せて食い込んで見せる量。
+const PINCH_APPROACH := 20.0
+
 ## つまみアクション中の見た目切り替え。専用画像が無いブラシでは何もしない。
 func set_pinching(on: bool) -> void:
 	if _base_texture == null or _pinch_texture == null:
 		return
 	_apply_texture(_pinch_texture if on else _base_texture)
+	_sprite.position = Vector2(0.0, -PINCH_APPROACH) if on else Vector2.ZERO
 
 func _apply_texture(texture: Texture2D) -> void:
 	if _sprite == null:
