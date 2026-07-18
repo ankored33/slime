@@ -220,34 +220,36 @@ mouse_filter = 2
 
 [node name="PolishL" parent="Hud" unique_id=1734165133 instance=ExtResource("2")]
 layout_mode = 0
+offset_left = 300.0
 offset_top = 615.0
-offset_right = 270.0
+offset_right = 570.0
 offset_bottom = 630.0
 gauge_id = "polish-L"
 caption = "快感 L"
 
 [node name="PainL" parent="Hud" unique_id=1519828551 instance=ExtResource("2")]
 layout_mode = 0
+offset_left = 300.0
 offset_top = 655.0
-offset_right = 270.0
+offset_right = 570.0
 offset_bottom = 670.0
 gauge_id = "pain-L"
 caption = "痛み L"
 
 [node name="PolishR" parent="Hud" unique_id=1842442508 instance=ExtResource("2")]
 layout_mode = 0
-offset_left = 1010.0
+offset_left = 710.0
 offset_top = 615.0
-offset_right = 1280.0
+offset_right = 980.0
 offset_bottom = 630.0
 gauge_id = "polish-R"
 caption = "快感 R"
 
 [node name="PainR" parent="Hud" unique_id=807932175 instance=ExtResource("2")]
 layout_mode = 0
-offset_left = 1010.0
+offset_left = 710.0
 offset_top = 655.0
-offset_right = 1280.0
+offset_right = 980.0
 offset_bottom = 670.0
 gauge_id = "pain-R"
 caption = "痛み R"
@@ -294,16 +296,12 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "本日のFINISH: 0"
 
-[node name="Controls" type="VBoxContainer" parent="Hud" unique_id=1312439738]
+[node name="EndDayButton" type="Button" parent="Hud" unique_id=1017712887]
 layout_mode = 0
-offset_left = 26.0
-offset_top = 454.0
-offset_right = 270.0
-offset_bottom = 510.0
-theme_override_constants/separation = 10
-
-[node name="EndDayButton" type="Button" parent="Hud/Controls" unique_id=1017712887]
-layout_mode = 2
+offset_left = 1010.0
+offset_top = 650.0
+offset_right = 1270.0
+offset_bottom = 690.0
 text = "1日を終える"
 
 [node name="CharaNameLabel" type="Label" parent="Hud" unique_id=1875689029]
