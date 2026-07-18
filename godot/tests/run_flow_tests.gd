@@ -46,6 +46,7 @@ func _run_tests() -> void:
 	_test_zoom_and_end_day_dialog()
 	_test_toolbox_and_brush_contact()
 	_test_candle_wax_finish_counting()
+	_test_deep_kiss()
 	_test_slime_push_pull_and_finish_fx()
 	_test_result_to_select_and_debug_level()
 	_test_pause_title_return_and_save_persistence()
@@ -251,6 +252,58 @@ func _test_candle_wax_finish_counting() -> void:
 		"candle: one high-level wax impact counts multiple finishes")
 	_check(not game._fx.finish_active,
 		"candle: a high-level multi-finish uses the non-blocking chain effect")
+	game.reset_day()
+
+func _test_deep_kiss() -> void:
+	var brush_tongue: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushTongue")
+	var mouth_pos: Vector2 = game._mouth_position()
+	var mouth_radius: float = game._mouth_radius()
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = Vector2(640.0, 360.0)
+
+	# 舌の右クリックは口づけを要求する（handle_input の返す固有アクションの形）。
+	game._brushes.toggle_from_toolbox("tongue")
+	var tongue_action: Dictionary = game._brushes.handle_input(right_click)
+	_check(tongue_action.has("kiss_requested"), "kiss: tongue's right click requests a kiss")
+
+	# 口から離れた状態で始めようとしても口づけは始まらない。
+	brush_tongue.position = mouth_pos + Vector2(500.0, 500.0)
+	game._tool_actions.start_kiss(mouth_pos, mouth_radius)
+	_check(not game._tool_actions.kiss_active, "kiss: away from the mouth does not start")
+
+	# 口に重ねて始めると、押し続けている間は快感が増え痛みが減る。
+	brush_tongue.position = mouth_pos
+	game._tool_actions.start_kiss(mouth_pos, mouth_radius)
+	_check(game._tool_actions.kiss_active, "kiss: touching the mouth starts it")
+	game._slime_state["left"]["pain"] = 100.0
+	game._slime_state["right"]["pain"] = 100.0
+	var polish_before: float = float(game._slime_state["left"]["polish"])
+	game._tool_actions.update_kiss(
+		mouth_pos, mouth_radius, game._slime_state, game._current_level(), 1.0)
+	_check(float(game._slime_state["left"]["polish"]) > polish_before,
+		"kiss: holding it adds polish to the left target")
+	_check(float(game._slime_state["right"]["pain"]) < 100.0,
+		"kiss: holding it soothes pain on the right target")
+	_check_eq(ExpressionRules.pick({"kissing": true, "touching": true, "polish_rate": 999.0}),
+		ExpressionRules.KISS, "kiss: expression overrides a plain touch state")
+
+	# 口から離れると、押しっぱなしでも自動的に終わる。
+	brush_tongue.position = mouth_pos + Vector2(500.0, 500.0)
+	game._tool_actions.update_kiss(
+		mouth_pos, mouth_radius, game._slime_state, game._current_level(), 1.0)
+	_check(not game._tool_actions.kiss_active, "kiss: moving away from the mouth ends it")
+
+	# 右クリックを離すと（game._input を通しても）明示的に終わる。
+	brush_tongue.position = mouth_pos
+	game._tool_actions.start_kiss(mouth_pos, mouth_radius)
+	_check(game._tool_actions.kiss_active, "kiss: re-touching the mouth restarts it")
+	var right_release := InputEventMouseButton.new()
+	right_release.button_index = MOUSE_BUTTON_RIGHT
+	right_release.pressed = false
+	game._input(right_release)
+	_check(not game._tool_actions.kiss_active, "kiss: releasing right click ends it")
 	game.reset_day()
 
 func _test_slime_push_pull_and_finish_fx() -> void:

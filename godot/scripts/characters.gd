@@ -12,13 +12,16 @@ class_name CharacterDefs
 ##   breast_root: 伸縮の固定点（付け根）。breast 画像の素材ピクセル座標（800x800基準、
 ##   src_x/src_y そのまま。screen換算はしない）で指定する。身体に近い側・下端が目安。
 ##   breast を指定して breast_root を書き忘れるとレイヤーは追加されない。
+## - mouth: 舌の固有アクション（ディープキス）用の当たり判定点。position/radius のみ
+##   （left/right と違い画像・胸レイヤーは持たない）。座標換算は left/right と同じ規則。
 ## - expressions は表情id → 画像パス。空のままなら既定パス
 ##   res://assets/chara/<id>/<表情id>.png を探す。それも無ければ暫定的に
 ##   game_background を使い、それも無ければ表情名ラベルで代替表示する
 ##   （game_background 段は表情差分素材が揃うまでの暫定。game_screen.gd の
 ##   _resolve_expression_texture 参照）。
 ##   表情id一覧: idle_a〜idle_d（ブラシ無し）, touch_a〜touch_d（ブラシ当て）,
-##   climax（絶頂）, despair（絶望）, exhausted（憔悴）。詳細は expression_rules.gd。
+##   climax（絶頂）, despair（絶望）, exhausted（憔悴）, kiss（口づけ）。
+##   詳細は expression_rules.gd。
 ## - dialogue は表情id → セリフ候補の配列（画面下部のセリフパネルに「」付きで表示）。
 ##   その表情に入るたびランダムに1つ選ぶ。expressions と同じ表情idキーを使う。
 ##   未設定・空配列の表情ではパネルを空欄にする。
@@ -61,7 +64,7 @@ const REQUIRED_KEYS: Array[String] = [
 	"id", "name", "epithet", "name_after_opening", "epithet_after_opening",
 	"portrait", "portrait_after_opening", "result", "game_background",
 	"expressions", "dialogue", "profile", "profile_after_opening", "color",
-	"left", "right", "level", "finish_total", "pain_fail_total",
+	"left", "right", "mouth", "level", "finish_total", "pain_fail_total",
 	"opening_seen", "opening_pages"
 ]
 
@@ -102,6 +105,11 @@ static func create() -> Array[Dictionary]:
 				"radius": 40.0,
 				"image": ""
 			},
+			# 仮座標。顔まわりの実際の立ち絵に合わせて要再計測。
+			"mouth": {
+				"position": Vector2(600.0, 160.0),
+				"radius": 40.0
+			},
 			"level": 1,
 			"finish_total": 0,
 			"pain_fail_total": 0,
@@ -135,6 +143,11 @@ static func create() -> Array[Dictionary]:
 				"position": Vector2(921.7, 285.3),
 				"radius": 40.0,
 				"image": ""
+			},
+			# 仮座標。顔まわりの実際の立ち絵に合わせて要再計測。
+			"mouth": {
+				"position": Vector2(600.0, 160.0),
+				"radius": 40.0
 			},
 			"level": 1,
 			"finish_total": 0,

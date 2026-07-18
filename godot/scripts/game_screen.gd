@@ -130,8 +130,11 @@ func _input(event: InputEvent) -> void:
 		_tool_actions.apply_teeth_bite(_slime_state, _current_level(), blocked)
 	elif action.has("pinch_requested"):
 		_tool_actions.start_pinch(blocked)
+	elif action.has("kiss_requested"):
+		_tool_actions.start_kiss(_mouth_position(), _mouth_radius(), blocked)
 	elif action.has("pinch_released"):
 		_tool_actions.end_pinch()
+		_tool_actions.end_kiss()
 
 ## キャラ画像の上（左右パネルを除く中央部）でのみ反応するホイールズーム。
 ## 上回転: マウス位置を中心に CHARA_ZOOM 倍（1段階のみ）。下回転: 等倍へ戻す。
@@ -199,6 +202,8 @@ func _process(delta: float) -> void:
 			if brush.is_effective():
 				_apply_brush_effects(brush, delta)
 		_tool_actions.update_wax_drops(delta, _slime_state, _current_level())
+		_tool_actions.update_kiss(
+			_mouth_position(), _mouth_radius(), _slime_state, _current_level(), delta)
 	if not _fx.fail_active:
 		_apply_pain_recovery(touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
@@ -440,7 +445,8 @@ func _update_expression(info: Dictionary = {}) -> void:
 		"pain_rate": float(info["pain_rate"]),
 		"climax": _fx.finish_active or _is_chain_climax(),
 		"despair": _fx.fail_active,
-		"exhausted": _fx.exhausted
+		"exhausted": _fx.exhausted,
+		"kissing": _tool_actions.kiss_active
 	})
 	if _debug_expression_override != "":
 		expression = _debug_expression_override
@@ -541,6 +547,14 @@ func _get_combined_polish() -> float:
 
 func _current_level() -> int:
 	return int(_species["level"])
+
+func _mouth_position() -> Vector2:
+	var mouth: Dictionary = _species.get("mouth", {})
+	return mouth.get("position", Vector2.ZERO) as Vector2
+
+func _mouth_radius() -> float:
+	var mouth: Dictionary = _species.get("mouth", {})
+	return float(mouth.get("radius", 40.0))
 
 func _check_finish() -> void:
 	var count := GameRules.finish_count(_get_combined_polish(), finish_threshold)

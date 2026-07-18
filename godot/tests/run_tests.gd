@@ -161,9 +161,11 @@ func _test_push_out_from_rect() -> void:
 	_check_eq(escaped_center, Vector2(200, 90), "push_out: deep center escapes via shortest axis (top)")
 
 func _test_expression_pick() -> void:
-	# 優先度: 絶望 > 絶頂 > それ以外
-	_check_eq(ExpressionRules.pick({"despair": true, "climax": true, "touching": true}),
+	# 優先度: 絶望 > 口づけ > 絶頂 > それ以外
+	_check_eq(ExpressionRules.pick({"despair": true, "kissing": true, "climax": true, "touching": true}),
 		ExpressionRules.DESPAIR, "expr: despair wins over everything")
+	_check_eq(ExpressionRules.pick({"kissing": true, "climax": true, "touching": true}),
+		ExpressionRules.KISS, "expr: kissing wins over climax")
 	_check_eq(ExpressionRules.pick({"climax": true, "touching": true, "polish_ratio": 1.0}),
 		ExpressionRules.CLIMAX, "expr: climax wins over touch")
 

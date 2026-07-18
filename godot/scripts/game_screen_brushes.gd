@@ -177,6 +177,8 @@ func handle_input(event: InputEvent) -> Dictionary:
 			return {"bite_requested": true}
 		if held_brush.brush_id == "finger":
 			return {"pinch_requested": true}
+		if held_brush.brush_id == "tongue":
+			return {"kiss_requested": true}
 		return {}
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		_toggle_held_brush(_pick_brush(event.position))
@@ -302,6 +304,8 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 		spec += " / 自動回転"
 	if selected_brush.brush_id == "finger":
 		spec += " / 右クリック長押し：挟んで引っ張る"
+	if selected_brush.brush_id == "tongue":
+		spec += " / 口に重ねて右クリック長押し：口づけ"
 	spec_label.text = spec
 
 func _update_tool_button_states() -> void:

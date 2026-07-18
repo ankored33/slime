@@ -12,6 +12,9 @@ var pinch_brush: Brush
 var pinch_slime: SlimeTarget
 var _pinch_grab_offset := Vector2.ZERO
 
+## 舌を口に重ねて右クリックを押し続けている間だけ true。
+var kiss_active := false
+
 var wax_drop_count: int:
 	get:
 		return _wax_drops.size()
@@ -98,8 +101,44 @@ func update_pinch(global_mouse_position: Vector2, delta: float, blocked: bool = 
 	# 指は挟んだ位置関係のまま本体に張り付く。
 	pinch_brush.position = pinch_slime.position - _pinch_grab_offset
 
+## 右クリックを押している間だけ有効化を試みる。口に触れていなければ何もしない。
+func start_kiss(mouth_position: Vector2, mouth_radius: float, blocked: bool = false) -> void:
+	if blocked:
+		return
+	if _tongue_touches_mouth(mouth_position, mouth_radius):
+		kiss_active = true
+
+func end_kiss() -> void:
+	kiss_active = false
+
+## 右クリック中、舌が口に触れ続けている間だけ継続的に快感を与え痛みを癒す。
+## 離れる・保持ブラシが変わる・FINISH/失敗演出に入るのいずれかで自動的に終わる。
+func update_kiss(
+		mouth_position: Vector2, mouth_radius: float,
+		slime_state: Dictionary, level: int, delta: float, blocked: bool = false) -> void:
+	if not kiss_active:
+		return
+	if blocked or not _tongue_touches_mouth(mouth_position, mouth_radius):
+		end_kiss()
+		return
+	for side in ["left", "right"]:
+		var state: Dictionary = slime_state[side]
+		state["polish"] = maxf(0.0, float(state["polish"])
+			+ GameRules.KISS_POLISH_PER_SEC * 0.5 * GameRules.polish_bonus(level) * delta)
+		state["pain"] = clampf(float(state["pain"])
+			- GameRules.KISS_SOOTHE_PER_SEC * 0.5 * delta, 0.0, GameRules.PAIN_CAP)
+		slime_state[side] = state
+
+func _tongue_touches_mouth(mouth_position: Vector2, mouth_radius: float) -> bool:
+	var tongue: Brush = _brushes.held_brush
+	if tongue == null or tongue.brush_id != "tongue" or not tongue.visible:
+		return false
+	return tongue.position.distance_to(mouth_position) \
+		<= tongue.get_contact_radius() + mouth_radius + 1.0
+
 func clear() -> void:
 	end_pinch()
+	end_kiss()
 	for drop in _wax_drops:
 		if is_instance_valid(drop):
 			drop.queue_free()

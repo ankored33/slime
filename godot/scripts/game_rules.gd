@@ -30,6 +30,11 @@ const WAX_DROP_LIFETIME := 3.0
 ## 歯を接触させて右クリックした時の一回分の痛みダメージ。
 const BITE_PAIN_IMPACT := 240.0
 
+## 舌の固有アクション（ディープキス）。口に重ねて右クリックを押し続けている間、
+## 毎秒この量を左右へ半分ずつ与える／癒す（左右合算のcombined polishに乗る）。
+const KISS_POLISH_PER_SEC := 180.0
+const KISS_SOOTHE_PER_SEC := 40.0
+
 ## こすり判定: ブラシ移動速度(px/秒)による効果倍率。
 ## 微小な揺れは無視し、実際に動かしたときだけ効果が出る。
 const RUB_START_SPEED := 20.0
