@@ -225,9 +225,7 @@ func _render_result() -> void:
 		+ "痛み失敗: %d\n\n"
 		+ "成長で伸びるもの:\n"
 		+ "- 感度（快感の上がりやすさ）\n"
-		+ "- FINISHに必要な快感量が減る\n"
-		+ "- 痛みへの耐性\n"
-		+ "- FINISH後に残る快感量"
+		+ "- 痛みへの耐性"
 	) % [
 		str(_last_result.get("species_name", "？？？")),
 		status_text,
