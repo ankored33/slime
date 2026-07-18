@@ -187,7 +187,8 @@ func _begin_day() -> void:
 	_transition(_show_game_screen)
 
 ## 磨き画面に入る直前、毎回（初回の自己紹介オープニングの直後も含む）挟む
-## 短い導入演出。宣告のあと、左右分割画面にリザルト用のキャラ画像を出す。
+## 短い導入演出。宣告のあと、黒い幕が中央から左右へ開いて
+## リザルト用のキャラ画像を見せる。
 func _show_day_intro() -> void:
 	_hide_all_screens()
 	_showing_day_intro = true
@@ -199,7 +200,7 @@ func _show_day_intro() -> void:
 			"text": "%s。\nこれより貴様の矯導を開始する" % prisoner_number
 		},
 		{
-			"style": "split",
+			"style": "curtain",
 			"portrait": "result",
 			"text": ""
 		}

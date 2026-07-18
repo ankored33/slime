@@ -8,6 +8,7 @@ signal finished
 ## 文の区切り（。または既存の改行）ごとに1行としてフェードインさせる演出。
 ## クリック/advance()は「未表示の文を1つ出す」→ 出し切ったら「次のページへ」の順で進む。
 const SENTENCE_FADE_DURATION := 0.35
+const CURTAIN_OPEN_DURATION := 1.6
 const SPLIT_FONT_SIZE := 22
 const BLACKOUT_FONT_SIZE := 44
 
@@ -16,6 +17,8 @@ var _character: Dictionary = {}
 var _pages: Array = []
 var _sentences: Array[String] = []
 var _revealed_count := 0
+var _page_transitioning := false
+var _curtain_tween: Tween
 
 @onready var _split: Control = $SplitView
 @onready var _portrait: TextureRect = $SplitView/PortraitRect
@@ -23,6 +26,11 @@ var _revealed_count := 0
 @onready var _sentence_list: VBoxContainer = $SplitView/TextPanel/Margin/TextVBox/TextScroll/SentenceList
 @onready var _page_label: Label = $SplitView/TextPanel/Margin/TextVBox/Actions/PageLabel
 @onready var _next_button: Button = $SplitView/TextPanel/Margin/TextVBox/Actions/OpeningNextButton
+@onready var _curtain: Control = $CurtainReveal
+@onready var _curtain_image: TextureRect = $CurtainReveal/CharacterImage
+@onready var _curtain_left: ColorRect = $CurtainReveal/CurtainLeft
+@onready var _curtain_right: ColorRect = $CurtainReveal/CurtainRight
+@onready var _curtain_click_hint: Label = $CurtainReveal/ClickHint
 @onready var _blackout: Control = $BlackoutView
 @onready var _blackout_sentence_list: VBoxContainer = $BlackoutView/BlackoutCenter/SentenceList
 
@@ -42,9 +50,13 @@ func start_with_pages(character: Dictionary, pages: Array, play_music: bool = fa
 	_play(character, pages, play_music)
 
 func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
+	if _curtain_tween != null and _curtain_tween.is_running():
+		_curtain_tween.kill()
 	_character = character
 	_pages = pages
 	page_index = 0
+	_page_transitioning = false
+	_curtain_click_hint.visible = false
 	visible = true
 	_render_page()
 	if play_music:
@@ -53,6 +65,8 @@ func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 ## 未表示の文が残っていればそれを1つフェードインさせる。出し切っていれば次のページへ、
 ## 最終ページなら演出を終える。
 func advance() -> void:
+	if _page_transitioning:
+		return
 	GameAudio.play_se("ui_click")
 	if _revealed_count < _sentences.size():
 		_reveal_next_sentence()
@@ -71,14 +85,21 @@ func _on_gui_input(event: InputEvent) -> void:
 func _render_page() -> void:
 	if _pages.is_empty():
 		_split.visible = false
+		_curtain.visible = false
 		_blackout.visible = false
 		return
 	var page: Dictionary = _pages[page_index]
-	var is_blackout := str(page.get("style", "split")) == "blackout"
-	_split.visible = not is_blackout
+	var style := str(page.get("style", "split"))
+	var is_blackout := style == "blackout"
+	var is_curtain := style == "curtain"
+	_split.visible = not is_blackout and not is_curtain
+	_curtain.visible = is_curtain
 	_blackout.visible = is_blackout
 	_sentences = _split_sentences(str(page.get("text", "")))
 	_revealed_count = 0
+	if is_curtain:
+		_render_curtain(page)
+		return
 	_clear_sentences(_current_sentence_list())
 	if is_blackout:
 		_reveal_next_sentence()
@@ -93,6 +114,37 @@ func _render_page() -> void:
 	_portrait_placeholder.visible = texture == null
 	_next_button.text = "はじめる ▶" if page_index + 1 >= _pages.size() else "次へ ▼"
 	_reveal_next_sentence()
+
+## 全画面のキャラ画を覆う左右の黒幕を、中央の継ぎ目から外側へ開く。
+## 開き切ったら入力待ちにし、次のクリックで通常の暗転遷移へつなぐ。
+func _render_curtain(page: Dictionary) -> void:
+	var portrait_key := str(page.get("portrait", "result"))
+	var image_path := str(_character.get(portrait_key, ""))
+	_curtain_image.texture = load(image_path) if image_path != "" and ResourceLoader.exists(image_path) else null
+	var half_width := size.x * 0.5
+	_curtain_left.position.x = 0.0
+	_curtain_right.position.x = half_width
+	_curtain_click_hint.visible = false
+	if DisplayServer.get_name() == "headless":
+		_curtain_left.position.x = -half_width
+		_curtain_right.position.x = size.x
+		_curtain_click_hint.visible = true
+		return
+	_page_transitioning = true
+	_curtain_tween = create_tween()
+	_curtain_tween.set_parallel(true)
+	_curtain_tween.tween_property(
+		_curtain_left, "position:x", -half_width, CURTAIN_OPEN_DURATION
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	_curtain_tween.tween_property(
+		_curtain_right, "position:x", size.x, CURTAIN_OPEN_DURATION
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	_curtain_tween.set_parallel(false)
+	_curtain_tween.tween_callback(_finish_curtain_open)
+
+func _finish_curtain_open() -> void:
+	_page_transitioning = false
+	_curtain_click_hint.visible = true
 
 func _current_sentence_list() -> VBoxContainer:
 	return _blackout_sentence_list if _blackout.visible else _sentence_list
