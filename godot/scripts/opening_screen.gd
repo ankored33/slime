@@ -40,12 +40,17 @@ var _auto_advance_tween: Tween
 @onready var _profile_epithet: Label = $CurtainReveal/ProfileCard/Margin/VBox/EpithetLabel
 @onready var _profile_name: Label = $CurtainReveal/ProfileCard/Margin/VBox/NameLabel
 @onready var _profile_body: RichTextLabel = $CurtainReveal/ProfileCard/Margin/VBox/ProfileBody
+@onready var _view_original_button: Button = $CurtainReveal/ViewOriginalButton
 @onready var _blackout: Control = $BlackoutView
 @onready var _blackout_sentence_list: VBoxContainer = $BlackoutView/BlackoutCenter/SentenceList
 
 func _ready() -> void:
 	_next_button.pressed.connect(advance)
 	_selection_button.pressed.connect(_on_selection_pressed)
+	# 「元の経歴を見る」: 選択画面のカードと同じく、押している間だけ本来の名前・
+	# 二つ名・プロフィール文に戻す。
+	_view_original_button.button_down.connect(_render_profile_card.bind(true))
+	_view_original_button.button_up.connect(_render_profile_card.bind(false))
 	# 暗転ページを含め、画面のどこをクリックしても進める。
 	gui_input.connect(_on_gui_input)
 
@@ -73,6 +78,7 @@ func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 	_curtain_click_hint.visible = false
 	_selection_button.visible = false
 	_profile_card.visible = false
+	_view_original_button.visible = false
 	visible = true
 	_render_page()
 	if play_music:
@@ -148,6 +154,7 @@ func _render_curtain(page: Dictionary) -> void:
 	_curtain_click_hint.visible = false
 	_selection_button.visible = false
 	_profile_card.visible = false
+	_view_original_button.visible = false
 	_render_profile_card()
 	if DisplayServer.get_name() == "headless":
 		_curtain_left.position.x = -half_width
@@ -155,6 +162,7 @@ func _render_curtain(page: Dictionary) -> void:
 		_curtain_click_hint.visible = true
 		_selection_button.visible = true
 		_profile_card.visible = true
+		_view_original_button.visible = true
 		return
 	_page_transitioning = true
 	_curtain_tween = create_tween()
@@ -173,17 +181,27 @@ func _finish_curtain_open() -> void:
 	_curtain_click_hint.visible = true
 	_selection_button.visible = true
 	_profile_card.visible = true
+	_view_original_button.visible = true
 
 func _on_selection_pressed() -> void:
 	GameAudio.play_se("ui_click")
 	selection_requested.emit()
 
-func _render_profile_card() -> void:
-	_profile_epithet.text = CharacterDefs.display_epithet(_character)
-	_profile_name.text = CharacterDefs.display_name(_character)
-	var profile_text := str(_character.get("profile_after_opening", ""))
+## force_original: 「元の経歴を見る」ボタン押下中、名前・二つ名・プロフィール文を
+## すべて初回（オープニング未読時）のものへ一時的に戻す（select_screen.gd と同じ挙動）。
+func _render_profile_card(force_original: bool = false) -> void:
+	_profile_epithet.text = str(_character.get("epithet", "")) if force_original \
+		else CharacterDefs.display_epithet(_character)
+	_profile_name.text = str(_character.get("name", "")) if force_original \
+		else CharacterDefs.display_name(_character)
+	var opening_seen := bool(_character.get("opening_seen", false))
+	var use_after_opening := opening_seen and not force_original
+	var profile_text := str(_character.get("profile_after_opening", "")) if use_after_opening else ""
 	if profile_text == "":
 		profile_text = str(_character.get("profile", ""))
+	if not use_after_opening:
+		_profile_body.text = profile_text
+		return
 	_profile_body.text = (
 		profile_text
 		+ "\n\nレベル: [b]%d[/b] / %d"
