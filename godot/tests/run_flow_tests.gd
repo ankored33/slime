@@ -385,6 +385,7 @@ func _test_pause_title_return_and_save_persistence() -> void:
 	var reloaded: Control = main_scene.instantiate()
 	root.add_child(reloaded)
 	_check(bool(reloaded._characters[0]["opening_seen"]), "opening_seen persisted to save")
+	reloaded.queue_free()
 
 	# 胸レイヤー: breast指定のあるキャラだけ立ち絵の上に生成される（データ駆動の分岐確認）。
 	var chara_image: Control = game.get_node("Playfield/ZoomRoot/CharaImage")
