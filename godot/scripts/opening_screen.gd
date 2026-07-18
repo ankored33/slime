@@ -19,6 +19,8 @@ var _sentences: Array[String] = []
 var _revealed_count := 0
 var _page_transitioning := false
 var _curtain_tween: Tween
+var _auto_advance_delay := 0.0
+var _auto_advance_tween: Tween
 
 @onready var _split: Control = $SplitView
 @onready var _portrait: TextureRect = $SplitView/PortraitRect
@@ -31,6 +33,10 @@ var _curtain_tween: Tween
 @onready var _curtain_left: ColorRect = $CurtainReveal/CurtainLeft
 @onready var _curtain_right: ColorRect = $CurtainReveal/CurtainRight
 @onready var _curtain_click_hint: Label = $CurtainReveal/ClickHint
+@onready var _profile_card: PanelContainer = $CurtainReveal/ProfileCard
+@onready var _profile_epithet: Label = $CurtainReveal/ProfileCard/Margin/VBox/EpithetLabel
+@onready var _profile_name: Label = $CurtainReveal/ProfileCard/Margin/VBox/NameLabel
+@onready var _profile_body: RichTextLabel = $CurtainReveal/ProfileCard/Margin/VBox/ProfileBody
 @onready var _blackout: Control = $BlackoutView
 @onready var _blackout_sentence_list: VBoxContainer = $BlackoutView/BlackoutCenter/SentenceList
 
@@ -52,11 +58,15 @@ func start_with_pages(character: Dictionary, pages: Array, play_music: bool = fa
 func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 	if _curtain_tween != null and _curtain_tween.is_running():
 		_curtain_tween.kill()
+	if _auto_advance_tween != null and _auto_advance_tween.is_running():
+		_auto_advance_tween.kill()
 	_character = character
 	_pages = pages
 	page_index = 0
 	_page_transitioning = false
+	_auto_advance_delay = 0.0
 	_curtain_click_hint.visible = false
+	_profile_card.visible = false
 	visible = true
 	_render_page()
 	if play_music:
@@ -64,8 +74,10 @@ func _play(character: Dictionary, pages: Array, play_music: bool) -> void:
 
 ## 未表示の文が残っていればそれを1つフェードインさせる。出し切っていれば次のページへ、
 ## 最終ページなら演出を終える。
-func advance() -> void:
+func advance(automatic: bool = false) -> void:
 	if _page_transitioning:
+		return
+	if _auto_advance_delay > 0.0 and not automatic and DisplayServer.get_name() != "headless":
 		return
 	GameAudio.play_se("ui_click")
 	if _revealed_count < _sentences.size():
@@ -90,6 +102,7 @@ func _render_page() -> void:
 		return
 	var page: Dictionary = _pages[page_index]
 	var style := str(page.get("style", "split"))
+	_auto_advance_delay = float(page.get("auto_advance_delay", 0.0))
 	var is_blackout := style == "blackout"
 	var is_curtain := style == "curtain"
 	_split.visible = not is_blackout and not is_curtain
@@ -125,10 +138,13 @@ func _render_curtain(page: Dictionary) -> void:
 	_curtain_left.position.x = 0.0
 	_curtain_right.position.x = half_width
 	_curtain_click_hint.visible = false
+	_profile_card.visible = false
+	_render_profile_card()
 	if DisplayServer.get_name() == "headless":
 		_curtain_left.position.x = -half_width
 		_curtain_right.position.x = size.x
 		_curtain_click_hint.visible = true
+		_profile_card.visible = true
 		return
 	_page_transitioning = true
 	_curtain_tween = create_tween()
@@ -145,6 +161,30 @@ func _render_curtain(page: Dictionary) -> void:
 func _finish_curtain_open() -> void:
 	_page_transitioning = false
 	_curtain_click_hint.visible = true
+	_profile_card.visible = true
+	_fit_profile_card.call_deferred()
+
+func _render_profile_card() -> void:
+	_profile_epithet.text = CharacterDefs.display_epithet(_character)
+	_profile_name.text = CharacterDefs.display_name(_character)
+	var profile_text := str(_character.get("profile_after_opening", ""))
+	if profile_text == "":
+		profile_text = str(_character.get("profile", ""))
+	_profile_body.text = (
+		profile_text
+		+ "\n\nレベル: [b]%d[/b] / %d"
+		+ "\n累計FINISH: %d"
+		+ "\n痛み失敗: %d"
+	) % [
+		int(_character.get("level", 1)),
+		GameRules.MAX_LEVEL,
+		int(_character.get("finish_total", 0)),
+		int(_character.get("pain_fail_total", 0))
+	]
+
+func _fit_profile_card() -> void:
+	if is_instance_valid(_profile_card):
+		_profile_card.offset_top = _profile_card.offset_bottom - _profile_card.get_combined_minimum_size().y
 
 func _current_sentence_list() -> VBoxContainer:
 	return _blackout_sentence_list if _blackout.visible else _sentence_list
@@ -176,6 +216,16 @@ func _reveal_next_sentence() -> void:
 	_current_sentence_list().add_child(label)
 	var tween := create_tween()
 	tween.tween_property(label, "modulate:a", 1.0, SENTENCE_FADE_DURATION)
+	_schedule_auto_advance()
+
+func _schedule_auto_advance() -> void:
+	if _auto_advance_delay <= 0.0 or DisplayServer.get_name() == "headless":
+		return
+	if _auto_advance_tween != null and _auto_advance_tween.is_running():
+		_auto_advance_tween.kill()
+	_auto_advance_tween = create_tween()
+	_auto_advance_tween.tween_interval(_auto_advance_delay)
+	_auto_advance_tween.tween_callback(advance.bind(true))
 
 ## 「。」で文を割る。既存の改行（空行含む）も区切りとして扱うので、
 ## 段落分けや短い演出セリフの改行はそのまま独立した行として表示される。

@@ -197,7 +197,8 @@ func _show_day_intro() -> void:
 	_opening_screen.start_with_pages(chara, [
 		{
 			"style": "blackout",
-			"text": "%s。\nこれより貴様の矯導を開始する" % prisoner_number
+			"text": "%s。\n貴様の教導を開始する" % prisoner_number,
+			"auto_advance_delay": 0.5
 		},
 		{
 			"style": "curtain",

@@ -1,6 +1,18 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/opening_screen.gd" id="1"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_profile"]
+bg_color = Color(0.025, 0.03, 0.05, 0.9)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.72, 0.76, 0.86, 0.32)
+corner_radius_top_left = 10
+corner_radius_top_right = 10
+corner_radius_bottom_right = 10
+corner_radius_bottom_left = 10
 
 [node name="OpeningScreen" type="Control"]
 script = ExtResource("1")
@@ -152,8 +164,54 @@ offset_top = -60.0
 offset_bottom = -28.0
 horizontal_alignment = 1
 modulate = Color(0.8, 0.8, 0.85, 0.75)
-text = "クリックで矯導開始"
+text = "クリックで教導開始"
 mouse_filter = 2
+
+[node name="ProfileCard" type="PanelContainer" parent="CurtainReveal"]
+visible = false
+layout_mode = 1
+anchors_preset = 3
+anchor_left = 1.0
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -380.0
+offset_top = -330.0
+offset_right = -24.0
+offset_bottom = -24.0
+grow_horizontal = 0
+grow_vertical = 0
+mouse_filter = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_profile")
+
+[node name="Margin" type="MarginContainer" parent="CurtainReveal/ProfileCard"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+mouse_filter = 2
+
+[node name="VBox" type="VBoxContainer" parent="CurtainReveal/ProfileCard/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 5
+mouse_filter = 2
+
+[node name="EpithetLabel" type="Label" parent="CurtainReveal/ProfileCard/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+modulate = Color(0.8, 0.84, 0.9, 0.92)
+
+[node name="NameLabel" type="Label" parent="CurtainReveal/ProfileCard/Margin/VBox"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "？？？"
+
+[node name="ProfileBody" type="RichTextLabel" parent="CurtainReveal/ProfileCard/Margin/VBox"]
+layout_mode = 2
+bbcode_enabled = true
+fit_content = true
+scroll_active = false
 
 [node name="BlackoutView" type="Control" parent="."]
 visible = false
