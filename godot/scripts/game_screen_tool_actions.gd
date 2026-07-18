@@ -107,9 +107,11 @@ func clear() -> void:
 
 func _apply_wax_impact(slime_state: Dictionary, side: String, level: int) -> void:
 	var state: Dictionary = slime_state[side]
-	state["polish"] = clampf(
-		float(state["polish"]) + GameRules.WAX_POLISH_IMPACT * GameRules.polish_bonus(level),
-		0.0, GameRules.GAUGE_MAX
+	# 通常ブラシと同様、内部快感値には上限を設けない。高感度帯では一滴で
+	# FINISH数回分を蓄積し、次の判定でまとめて連鎖計上できるようにする。
+	state["polish"] = maxf(
+		0.0,
+		float(state["polish"]) + GameRules.WAX_POLISH_IMPACT * GameRules.polish_bonus(level)
 	)
 	state["pain"] = clampf(
 		float(state["pain"]) + GameRules.WAX_PAIN_IMPACT * GameRules.pain_resist(level),

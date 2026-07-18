@@ -203,6 +203,21 @@ func _run_tests() -> void:
 	_check(float(game._slime_state["left"]["pain"]) > 0.0,
 		"candle: wax impact adds pain stimulus")
 	_check_eq(game._tool_actions.wax_drop_count, 0, "candle: wax drop is consumed on impact")
+	var high_level_wax_state := {
+		"left": {"polish": 0.0, "pain": 0.0},
+		"right": {"polish": 0.0, "pain": 0.0}
+	}
+	game._tool_actions._apply_wax_impact(high_level_wax_state, "left", GameRules.MAX_LEVEL)
+	var high_level_wax_polish := float(high_level_wax_state["left"]["polish"])
+	_check(high_level_wax_polish > GameRules.GAUGE_MAX,
+		"candle: high-level wax stimulus is not capped by the display gauge")
+	var finish_count_before: int = int(game._day_finish_count)
+	game._slime_state = high_level_wax_state
+	game._check_finish()
+	_check(game._day_finish_count - finish_count_before > 1,
+		"candle: one high-level wax impact counts multiple finishes")
+	_check(not game._fx.finish_active,
+		"candle: a high-level multi-finish uses the non-blocking chain effect")
 	game.reset_day()
 
 	# こすり系ブラシの向き: 接触前でも当たり判定付近なら先端側が中心を向く。
