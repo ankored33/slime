@@ -55,6 +55,12 @@ var _slime_state := {
 var _species: Dictionary = {}
 var _breast_layers: Array[BreastLayer] = []
 var _day_finish_count := 0
+## brush_id → このフレームで実際にそのツールが与えた快感量。_process の頭で毎回リセットし、
+## FINISH判定の瞬間に最大のものを「そのFINISHのツール」として採用する
+## （同時に複数効いていても、その瞬間の快感量が最大の1つに単純化する）。
+var _polish_this_tick_by_tool: Dictionary = {}
+## brush_id → 本日その日にツールへ計上されたFINISH数。日をまたいでは保持しない。
+var _finish_count_by_tool: Dictionary = {}
 var _day_time := 0.0
 var _last_finish_at := -1000.0
 var _rate_accum := 0
@@ -198,13 +204,20 @@ func _process(delta: float) -> void:
 		get_global_mouse_position(), delta, _fx.finish_active or _fx.fail_active)
 	_fx.update(delta)
 	var touch_info := _compute_touch_info()
+	_polish_this_tick_by_tool = {}
 	if not _fx.finish_active and not _fx.fail_active:
 		for brush in _brushes.brush_map.values():
 			if brush.is_effective():
 				_apply_brush_effects(brush, delta)
-		_tool_actions.update_wax_drops(delta, _slime_state, _current_level())
-		_tool_actions.update_kiss(
+		var wax_polish := _tool_actions.update_wax_drops(delta, _slime_state, _current_level())
+		if wax_polish > 0.0:
+			_polish_this_tick_by_tool["candle"] = \
+				float(_polish_this_tick_by_tool.get("candle", 0.0)) + wax_polish
+		var kiss_polish := _tool_actions.update_kiss(
 			_mouth_position(), _mouth_radius(), _slime_state, _current_level(), delta)
+		if kiss_polish > 0.0:
+			_polish_this_tick_by_tool["tongue"] = \
+				float(_polish_this_tick_by_tool.get("tongue", 0.0)) + kiss_polish
 	if not _fx.fail_active:
 		_apply_pain_recovery(touch_info["touched_sides"], delta)
 		_apply_polish_decay(touch_info["touched_sides"], delta)
@@ -300,6 +313,8 @@ func abandon_day() -> void:
 
 func reset_day() -> void:
 	_day_finish_count = 0
+	_polish_this_tick_by_tool = {}
+	_finish_count_by_tool = {}
 	_day_time = 0.0
 	_last_finish_at = -1000.0
 	_rate_accum = 0
@@ -382,10 +397,14 @@ func _apply_brush_effects(brush: Brush, delta: float) -> void:
 			# 快感には上限を設けない（高感度帯は1フレームでしきい値の何倍にも達する）。
 			# ゲージ表示側（named_gauge.gd）が GAUGE_MAX でクランプして見せるので、
 			# 表示が壊れることはない。
-			state["polish"] = maxf(0.0, float(state.get("polish", 0.0)) + float(rates["polish"]) * delta)
+			var polish_gain := float(rates["polish"]) * delta
+			state["polish"] = maxf(0.0, float(state.get("polish", 0.0)) + polish_gain)
 			state["pain"] = clamp(float(state.get("pain", 0.0)) + float(rates["pain"]) * delta, 0.0, GameRules.PAIN_CAP)
 			state["pain"] = clamp(float(state["pain"]) - float(rates["soothe"]) * delta, 0.0, GameRules.PAIN_CAP)
 			_slime_state[side] = state
+			if polish_gain > 0.0:
+				_polish_this_tick_by_tool[brush.brush_id] = \
+					float(_polish_this_tick_by_tool.get(brush.brush_id, 0.0)) + polish_gain
 
 ## アクティブなブラシが触れていない部位は痛みが自然回復する。
 func _apply_pain_recovery(touched_sides: Dictionary, delta: float) -> void:
@@ -570,6 +589,7 @@ func _check_finish() -> void:
 		return
 	_day_finish_count += count
 	_rate_accum += count
+	_credit_finish_to_tool(count)
 	for side in ["left", "right"]:
 		var state: Dictionary = _slime_state[side]
 		state["polish"] = 0.0
@@ -579,6 +599,17 @@ func _check_finish() -> void:
 	else:
 		_fx.pulse_chain()
 	_last_finish_at = _day_time
+
+## そのフレームで最も快感を与えていたツールへ、このFINISH分をまとめて計上する。
+func _credit_finish_to_tool(count: int) -> void:
+	var winner := "other"
+	var winner_amount := 0.0
+	for brush_id in _polish_this_tick_by_tool:
+		var amount := float(_polish_this_tick_by_tool[brush_id])
+		if amount > winner_amount:
+			winner_amount = amount
+			winner = brush_id
+	_finish_count_by_tool[winner] = int(_finish_count_by_tool.get(winner, 0)) + count
 
 ## 直近の集計窓のFINISH回数からレート（回/秒）を更新する。
 func _update_finish_rate(delta: float) -> void:
@@ -673,5 +704,17 @@ func _finish_day(failed_by_pain: bool) -> void:
 		"species_name": CharacterDefs.display_name(_species),
 		"day_finish_count": _day_finish_count,
 		"banked_finish_count": banked_finish,
-		"failed_by_pain": failed_by_pain
+		"failed_by_pain": failed_by_pain,
+		"finish_count_by_tool": _finish_count_by_tool_display()
 	})
+
+## brush_id をツール表示名（例: "指"）に解決した { 表示名: FINISH数 } を返す。
+func _finish_count_by_tool_display() -> Dictionary:
+	var result := {}
+	for brush_id in _finish_count_by_tool:
+		var label := str(brush_id)
+		var brush: Brush = _brushes.brush_map.get(brush_id)
+		if brush != null and brush.display_name != "":
+			label = brush.display_name
+		result[label] = _finish_count_by_tool[brush_id]
+	return result

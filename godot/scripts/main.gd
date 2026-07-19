@@ -291,12 +291,14 @@ func _render_result() -> void:
 			level_before, level_after, GameRules.MAX_LEVEL, level_after - level_before]
 	var failed := bool(_last_result.get("failed_by_pain", false))
 	var status_text := "痛みが限界に達した。今日の成果は半減となった。" if failed else "任意終了。成果をすべて持ち帰った。"
+	var tool_lines := _format_finish_by_tool(_last_result.get("finish_count_by_tool", {}))
 	_result_body.text = (
 		"[b]%s[/b]\n"
 		+ "%s\n\n"
 		+ "本日のFINISH: %s\n"
 		+ "持ち帰りFINISH: %s\n"
 		+ "%s\n"
+		+ "%s"
 		+ "累計FINISH: %s\n"
 		+ "痛み失敗: %d\n\n"
 		+ "成長で伸びるもの:\n"
@@ -308,9 +310,21 @@ func _render_result() -> void:
 		NumberFormat.group(int(_last_result.get("day_finish_count", 0))),
 		NumberFormat.group(int(_last_result.get("banked_finish_count", 0))),
 		level_line,
+		tool_lines,
 		NumberFormat.group(int(chara["finish_total"])),
 		int(chara["pain_fail_total"])
 	]
+
+## { ツール表示名: FINISH数 } を件数の多い順に "- 指: 12\n" 形式へ整形する。空なら空文字。
+func _format_finish_by_tool(by_tool: Dictionary) -> String:
+	if by_tool.is_empty():
+		return ""
+	var tool_names := by_tool.keys()
+	tool_names.sort_custom(func(a, b): return int(by_tool[a]) > int(by_tool[b]))
+	var lines := "ツール別FINISH:\n"
+	for tool_name in tool_names:
+		lines += "- %s: %s\n" % [tool_name, NumberFormat.group(int(by_tool[tool_name]))]
+	return lines + "\n"
 
 ## キャラ定義の result 画像があればリザルト画面右に表示する。無ければ隠す。
 func _update_result_chara_image(path: String) -> void:

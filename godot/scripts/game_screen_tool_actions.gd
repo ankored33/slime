@@ -32,7 +32,9 @@ func spawn_wax_drop(origin: Vector2, blocked: bool = false) -> void:
 	_playfield.add_child(drop)
 	_wax_drops.append(drop)
 
-func update_wax_drops(delta: float, slime_state: Dictionary, level: int) -> void:
+## 戻り値: このフレームで着弾したろうが与えた快感量の合計（ツール貢献表示用）。
+func update_wax_drops(delta: float, slime_state: Dictionary, level: int) -> float:
+	var polish_added := 0.0
 	for index in range(_wax_drops.size() - 1, -1, -1):
 		var drop := _wax_drops[index]
 		var previous := drop.advance(delta)
@@ -40,12 +42,13 @@ func update_wax_drops(delta: float, slime_state: Dictionary, level: int) -> void
 		for slime in _slimes:
 			if _segment_distance_to_point(previous, drop.position, slime.position) \
 					<= drop.radius + slime.get_hit_radius():
-				_apply_wax_impact(slime_state, String(slime.side), level)
+				polish_added += _apply_wax_impact(slime_state, String(slime.side), level)
 				hit = true
 				break
 		if hit or drop.is_expired(_playfield.size.y):
 			_wax_drops.remove_at(index)
 			drop.queue_free()
+	return polish_added
 
 func apply_teeth_bite(slime_state: Dictionary, level: int, blocked: bool = false) -> void:
 	if blocked:
@@ -113,21 +116,25 @@ func end_kiss() -> void:
 
 ## 右クリック中、舌が口に触れ続けている間だけ継続的に快感を与え痛みを癒す。
 ## 離れる・保持ブラシが変わる・FINISH/失敗演出に入るのいずれかで自動的に終わる。
+## 戻り値: このフレームで与えた快感量の合計（ツール貢献表示用）。
 func update_kiss(
 		mouth_position: Vector2, mouth_radius: float,
-		slime_state: Dictionary, level: int, delta: float, blocked: bool = false) -> void:
+		slime_state: Dictionary, level: int, delta: float, blocked: bool = false) -> float:
 	if not kiss_active:
-		return
+		return 0.0
 	if blocked or not _tongue_touches_mouth(mouth_position, mouth_radius):
 		end_kiss()
-		return
+		return 0.0
+	var polish_added := 0.0
 	for side in ["left", "right"]:
 		var state: Dictionary = slime_state[side]
-		state["polish"] = maxf(0.0, float(state["polish"])
-			+ GameRules.KISS_POLISH_PER_SEC * 0.5 * GameRules.polish_bonus(level) * delta)
+		var polish_gain := GameRules.KISS_POLISH_PER_SEC * 0.5 * GameRules.polish_bonus(level) * delta
+		state["polish"] = maxf(0.0, float(state["polish"]) + polish_gain)
+		polish_added += polish_gain
 		state["pain"] = clampf(float(state["pain"])
 			- GameRules.KISS_SOOTHE_PER_SEC * 0.5 * delta, 0.0, GameRules.PAIN_CAP)
 		slime_state[side] = state
+	return polish_added
 
 func _tongue_touches_mouth(mouth_position: Vector2, mouth_radius: float) -> bool:
 	var tongue: Brush = _brushes.held_brush
@@ -144,19 +151,18 @@ func clear() -> void:
 			drop.queue_free()
 	_wax_drops.clear()
 
-func _apply_wax_impact(slime_state: Dictionary, side: String, level: int) -> void:
+func _apply_wax_impact(slime_state: Dictionary, side: String, level: int) -> float:
 	var state: Dictionary = slime_state[side]
+	var polish_gain := GameRules.WAX_POLISH_IMPACT * GameRules.polish_bonus(level)
 	# 通常ブラシと同様、内部快感値には上限を設けない。高感度帯では一滴で
 	# FINISH数回分を蓄積し、次の判定でまとめて連鎖計上できるようにする。
-	state["polish"] = maxf(
-		0.0,
-		float(state["polish"]) + GameRules.WAX_POLISH_IMPACT * GameRules.polish_bonus(level)
-	)
+	state["polish"] = maxf(0.0, float(state["polish"]) + polish_gain)
 	state["pain"] = clampf(
 		float(state["pain"]) + GameRules.WAX_PAIN_IMPACT * GameRules.pain_resist(level),
 		0.0, GameRules.PAIN_CAP
 	)
 	slime_state[side] = state
+	return polish_gain
 
 func _segment_distance_to_point(start: Vector2, end: Vector2, point: Vector2) -> float:
 	var segment := end - start
