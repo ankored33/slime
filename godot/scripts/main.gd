@@ -9,9 +9,11 @@ var _characters: Array[Dictionary] = CharacterDefs.create()
 var _progress_store := ProgressStoreScript.new()
 
 const SCREEN_FADE_DURATION := 0.25
-## 日次導入のカーテン開き（opening_screen.gd の CURTAIN_OPEN_DURATION）と同じ長さで
-## 逆再生する、一日を終える時だけの幕閉じ演出。
-const DAY_END_CURTAIN_DURATION := 1.6
+## 一日を終える時だけの幕閉じ演出（日次導入のカーテン開き=opening_screen.gd の
+## CURTAIN_OPEN_DURATION の逆再生がベースだが、こちらは少し速める）。
+const DAY_END_CURTAIN_DURATION := 1.0
+## 幕が閉じ切ったあと、覆われた状態からリザルト画面へフェードインする長さ。
+const DAY_END_RESULT_FADE_DURATION := 0.4
 
 var _selected_index := 0
 var _last_result: Dictionary = {}
@@ -124,7 +126,7 @@ func _on_fade_finished() -> void:
 
 ## 一日を終える時だけの画面切り替え。日次導入のカーテン開き（opening_screen.gd の
 ## _render_curtain）の逆再生: 左右から幕を閉じて画面を覆い隠し、覆われている間に
-## switcher でリザルト画面へ切り替えてから幕を消す。
+## switcher でリザルト画面へ切り替えてから幕をフェードアウトして見せる。
 func _transition_with_curtain_close(switcher: Callable) -> void:
 	if DisplayServer.get_name() == "headless":
 		switcher.call()
@@ -133,6 +135,7 @@ func _transition_with_curtain_close(switcher: Callable) -> void:
 		return
 	var half_width := _day_end_curtain.size.x * 0.5
 	_day_end_curtain.visible = true
+	_day_end_curtain.modulate.a = 1.0
 	_day_end_curtain_left.position.x = -half_width
 	_day_end_curtain_right.position.x = _day_end_curtain.size.x
 	_day_end_curtain_tween = create_tween()
@@ -145,6 +148,9 @@ func _transition_with_curtain_close(switcher: Callable) -> void:
 	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 	_day_end_curtain_tween.set_parallel(false)
 	_day_end_curtain_tween.tween_callback(switcher)
+	_day_end_curtain_tween.tween_property(
+		_day_end_curtain, "modulate:a", 0.0, DAY_END_RESULT_FADE_DURATION
+	)
 	_day_end_curtain_tween.tween_callback(_on_day_end_curtain_finished)
 
 func _on_day_end_curtain_finished() -> void:
