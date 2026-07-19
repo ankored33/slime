@@ -14,13 +14,13 @@ class_name CharacterDefs
 ##   breast を指定して breast_root を書き忘れるとレイヤーは追加されない。
 ## - mouth: 舌の固有アクション（ディープキス）用の当たり判定点。position/radius のみ
 ##   （left/right と違い画像・胸レイヤーは持たない）。座標換算は left/right と同じ規則。
-## - expressions は表情id → 画像パス。空のままなら既定パス
-##   res://assets/chara/<id>/<表情id>.png を探す。それも無ければ暫定的に
-##   game_background を使い、それも無ければ表情名ラベルで代替表示する
-##   （game_background 段は表情差分素材が揃うまでの暫定。game_screen.gd の
-##   _resolve_expression_texture 参照）。
+## - game_background は磨き画面の立ち絵ベース（常時表示・表情では差し替わらない）。
+## - expressions は表情id → 顔だけの差分画像パス（背景・体は透過、game_background の上に
+##   重ねる）。空のままなら既定パス res://assets/chara/<id>/<表情id>.png を探し、
+##   それも無ければ何も重ねず game_background のまま・表情名ラベルで代替表示する
+##   （game_screen.gd の _resolve_face_texture 参照）。
 ##   表情id一覧: idle_a〜idle_d（ブラシ無し）, touch_a〜touch_d（ブラシ当て）,
-##   climax（絶頂）, despair（絶望）, exhausted（憔悴）, kiss（口づけ）。
+##   climax（絶頂）, despair（絶望）, exhausted（憔悴）。
 ##   詳細は expression_rules.gd。
 ## - dialogue は表情id → セリフ候補の配列（画面下部のセリフパネルに「」付きで表示）。
 ##   その表情に入るたびランダムに1つ選ぶ。expressions と同じ表情idキーを使う。

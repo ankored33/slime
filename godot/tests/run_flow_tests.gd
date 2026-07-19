@@ -286,8 +286,6 @@ func _test_deep_kiss() -> void:
 		"kiss: holding it adds polish to the left target")
 	_check(float(game._slime_state["right"]["pain"]) < 100.0,
 		"kiss: holding it soothes pain on the right target")
-	_check_eq(ExpressionRules.pick({"kissing": true, "touching": true, "polish_rate": 999.0}),
-		ExpressionRules.KISS, "kiss: expression overrides a plain touch state")
 
 	# 口から離れると、押しっぱなしでも自動的に終わる。
 	brush_tongue.position = mouth_pos + Vector2(500.0, 500.0)

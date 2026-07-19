@@ -19,7 +19,6 @@ const TOUCH_D := "touch_d"      # 大快感
 const CLIMAX := "climax"        # 絶頂（FINISH演出中）
 const DESPAIR := "despair"      # 絶望（痛み限界）
 const EXHAUSTED := "exhausted"  # 憔悴（FINISH後）
-const KISS := "kiss"            # 口づけ（舌の固有アクション中）
 
 const DISPLAY_NAMES := {
 	IDLE_A: "怒り・軽蔑",
@@ -32,14 +31,13 @@ const DISPLAY_NAMES := {
 	TOUCH_D: "大快感",
 	CLIMAX: "絶頂",
 	DESPAIR: "絶望",
-	EXHAUSTED: "憔悴",
-	KISS: "口づけ"
+	EXHAUSTED: "憔悴"
 }
 
 const ALL_IDS: Array[String] = [
 	IDLE_A, IDLE_B, IDLE_C, IDLE_D,
 	TOUCH_A, TOUCH_B, TOUCH_C, TOUCH_D,
-	CLIMAX, DESPAIR, EXHAUSTED, KISS
+	CLIMAX, DESPAIR, EXHAUSTED
 ]
 
 # 快感ゲージ比率（合計快感 / FINISH閾値）の段階境界
@@ -57,12 +55,9 @@ const IDLE_HIGH := 0.9     # c→d（絶頂寸前で媚び）
 ##   climax: bool          FINISH演出中
 ##   despair: bool         痛み限界演出中
 ##   exhausted: bool       FINISH後の余韻中
-##   kissing: bool         舌の固有アクション（ディープキス）中
 static func pick(state: Dictionary) -> String:
 	if bool(state.get("despair", false)):
 		return DESPAIR
-	if bool(state.get("kissing", false)):
-		return KISS
 	if bool(state.get("climax", false)):
 		return CLIMAX
 	var ratio := float(state.get("polish_ratio", 0.0))

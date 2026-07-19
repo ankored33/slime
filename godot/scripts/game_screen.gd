@@ -82,6 +82,7 @@ var _debug_expression_override := ""
 @onready var _left_slime: SlimeTarget = $Playfield/ZoomRoot/LeftSlime
 @onready var _right_slime: SlimeTarget = $Playfield/ZoomRoot/RightSlime
 @onready var _chara_image: TextureRect = $Playfield/ZoomRoot/CharaImage
+@onready var _face_image: TextureRect = $Playfield/ZoomRoot/CharaImage/FaceImage
 @onready var _expression_label: Label = $Playfield/ZoomRoot/CharaImage/ExpressionLabel
 @onready var _flash_rect: ColorRect = $FlashRect
 
@@ -220,6 +221,7 @@ func setup_species(species: Dictionary) -> void:
 	_species = species.duplicate(true)
 	var display_name := CharacterDefs.display_name(_species)
 	_title_label.text = display_name if display_name != "" else "スライム"
+	_chara_image.texture = _load_texture(str(_species["game_background"]))
 	var left_config: Dictionary = _species["left"]
 	var right_config: Dictionary = _species["right"]
 	_apply_slime_layout(_left_slime, left_config)
@@ -445,8 +447,7 @@ func _update_expression(info: Dictionary = {}) -> void:
 		"pain_rate": float(info["pain_rate"]),
 		"climax": _fx.finish_active or _is_chain_climax(),
 		"despair": _fx.fail_active,
-		"exhausted": _fx.exhausted,
-		"kissing": _tool_actions.kiss_active
+		"exhausted": _fx.exhausted
 	})
 	if _debug_expression_override != "":
 		expression = _debug_expression_override
@@ -465,10 +466,11 @@ func _apply_expression(expression_id: String) -> void:
 	if expression_id == _current_expression:
 		return
 	_current_expression = expression_id
-	var texture := _resolve_expression_texture(expression_id)
-	_chara_image.texture = texture
+	var texture := _resolve_face_texture(expression_id)
+	_face_image.texture = texture
+	_face_image.visible = texture != null
 	_expression_label.visible = texture == null
-	_expression_label.text = "立ち絵：%s" % ExpressionRules.display_name(expression_id)
+	_expression_label.text = "顔差分：%s" % ExpressionRules.display_name(expression_id)
 	_update_dialogue(expression_id)
 	# 表情が変わった瞬間だけボイス再生を試みる（素材が無ければ無音、連射は抑制済み）。
 	GameAudio.play_voice(str(_species["id"]), expression_id)
@@ -482,23 +484,20 @@ func _update_dialogue(expression_id: String) -> void:
 	_dialogue_label.text = "「%s」" % line if line != "" else ""
 
 ## キャラ定義の expressions 辞書を優先し、次に既定の表情パスを探す。
-## 表情素材が無い場合は、磨き画面用の固定背景 game_background を使う。
-## 表情差分素材が揃うまでの暫定段（game_background 段）。全表情分の画像が揃ったら
-## この段は削り、個別指定→既定パス→ラベルの2段に戻すこと（欠落を隠さないため）。
-func _resolve_expression_texture(expression_id: String) -> Texture2D:
+## 立ち絵ベース（game_background、setup_species で一度だけ設定）の上に重ねる
+## 顔だけの差分（背景・体は透過）を返す。無ければ null（ベースがそのまま見える）。
+func _resolve_face_texture(expression_id: String) -> Texture2D:
 	var expressions: Dictionary = _species["expressions"]
 	var path := str(expressions.get(expression_id, ""))
 	if path == "":
 		path = ExpressionRules.default_image_path(str(_species["id"]), expression_id)
-	if ResourceLoader.exists(path):
+	return _load_texture(path)
+
+func _load_texture(path: String) -> Texture2D:
+	if path != "" and ResourceLoader.exists(path):
 		var texture := load(path)
 		if texture is Texture2D:
 			return texture
-	var background_path := str(_species["game_background"])
-	if background_path != "" and ResourceLoader.exists(background_path):
-		var background := load(background_path)
-		if background is Texture2D:
-			return background
 	return null
 
 func _update_gauges() -> void:
