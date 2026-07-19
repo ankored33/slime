@@ -9,10 +9,14 @@ var _characters: Array[Dictionary] = CharacterDefs.create()
 var _progress_store := ProgressStoreScript.new()
 
 const SCREEN_FADE_DURATION := 0.25
+## 日次導入のカーテン開き（opening_screen.gd の CURTAIN_OPEN_DURATION）と同じ長さで
+## 逆再生する、一日を終える時だけの幕閉じ演出。
+const DAY_END_CURTAIN_DURATION := 1.6
 
 var _selected_index := 0
 var _last_result: Dictionary = {}
 var _fade_tween: Tween
+var _day_end_curtain_tween: Tween
 ## _show_day_intro() 中かどうか。同じ OpeningScreen.finished を、初回オープニング
 ## 終了時（_on_opening_finished 本来の処理）と区別するためのフラグ。
 var _showing_day_intro := false
@@ -30,6 +34,9 @@ var _showing_day_intro := false
 @onready var _title_start_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleStartButton
 @onready var _opening_screen: OpeningScreen = $CanvasLayer/OpeningScreen
 @onready var _fade_rect: ColorRect = $CanvasLayer/FadeRect
+@onready var _day_end_curtain: Control = $CanvasLayer/DayEndCurtain
+@onready var _day_end_curtain_left: ColorRect = $CanvasLayer/DayEndCurtain/CurtainLeft
+@onready var _day_end_curtain_right: ColorRect = $CanvasLayer/DayEndCurtain/CurtainRight
 @onready var _title_options_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleOptionsButton
 @onready var _options_screen: OptionsScreen = $CanvasLayer/OptionsScreen
 @onready var _pause_menu: PauseMenu = $CanvasLayer/PauseMenu
@@ -114,6 +121,34 @@ func _transition(switcher: Callable) -> void:
 func _on_fade_finished() -> void:
 	_fade_rect.visible = false
 	_fade_rect.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+## 一日を終える時だけの画面切り替え。日次導入のカーテン開き（opening_screen.gd の
+## _render_curtain）の逆再生: 左右から幕を閉じて画面を覆い隠し、覆われている間に
+## switcher でリザルト画面へ切り替えてから幕を消す（開き直しはしない）。
+func _transition_with_curtain_close(switcher: Callable) -> void:
+	if DisplayServer.get_name() == "headless":
+		switcher.call()
+		return
+	if _day_end_curtain_tween != null and _day_end_curtain_tween.is_running():
+		return
+	var half_width := _day_end_curtain.size.x * 0.5
+	_day_end_curtain.visible = true
+	_day_end_curtain_left.position.x = -half_width
+	_day_end_curtain_right.position.x = _day_end_curtain.size.x
+	_day_end_curtain_tween = create_tween()
+	_day_end_curtain_tween.set_parallel(true)
+	_day_end_curtain_tween.tween_property(
+		_day_end_curtain_left, "position:x", 0.0, DAY_END_CURTAIN_DURATION
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	_day_end_curtain_tween.tween_property(
+		_day_end_curtain_right, "position:x", half_width, DAY_END_CURTAIN_DURATION
+	).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	_day_end_curtain_tween.set_parallel(false)
+	_day_end_curtain_tween.tween_callback(switcher)
+	_day_end_curtain_tween.tween_callback(_on_day_end_curtain_finished)
+
+func _on_day_end_curtain_finished() -> void:
+	_day_end_curtain.visible = false
 
 func _hide_all_screens() -> void:
 	_frame.visible = false
@@ -240,7 +275,7 @@ func _on_day_finished(result: Dictionary) -> void:
 	chara["level"] = GameRules.level_for_finish_total(int(chara["finish_total"]))
 	_characters[_selected_index] = chara
 	_save_progress()
-	_transition(_show_result_screen)
+	_transition_with_curtain_close(_show_result_screen)
 
 func _render_result() -> void:
 	var chara: Dictionary = _characters[_selected_index]
