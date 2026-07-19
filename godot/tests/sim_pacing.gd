@@ -24,7 +24,7 @@ func _init() -> void:
 			# 快感には上限がない（game_screen.gd の _apply_brush_effects と同じ想定）。
 			left += 200.0 * bonus * dt
 			right += 160.0 * bonus * dt
-			var count := GameRules.finish_count(left + right, threshold)
+			var count := GameRules.finish_count(left, right, threshold)
 			total += count
 			if count > 0:
 				left = 0.0

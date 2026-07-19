@@ -105,11 +105,22 @@ static func polish_bonus(level: int) -> float:
 static func pain_resist(level: int) -> float:
 	return maxf(0.0, 1.0 - float(maxi(0, level - 1)) * 0.05)
 
+## 左右どちらかがこの割合（しきい値比）未満しか快感を得ていなければFINISH判定に使わない。
+## 快感に上限が無いぶん片側だけを延々擦り続けるだけでも合計はしきい値に届いてしまうため、
+## 「両方とも一定量は刺激されている」ことをFINISHの条件にするゲート。
+const FINISH_MIN_SIDE_RATIO := 0.2
+
 ## 快感がしきい値の何回分溜まっているかを商で数える（保持なし・端数は必ず捨てる）。
 ## 感度が非常に高い高レベル帯では、1フレームの供給だけでしきい値の何千倍にも
 ## なり得るため、ループではなく単純な除算で一括計上する（コストは値によらず一定）。
-static func finish_count(combined: float, threshold: float) -> int:
-	if threshold <= 0.0 or combined < threshold:
+static func finish_count(left: float, right: float, threshold: float) -> int:
+	if threshold <= 0.0:
+		return 0
+	var min_side := threshold * FINISH_MIN_SIDE_RATIO
+	if left < min_side or right < min_side:
+		return 0
+	var combined := left + right
+	if combined < threshold:
 		return 0
 	return int(floor(combined / threshold))
 

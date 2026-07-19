@@ -582,7 +582,8 @@ func _mouth_radius() -> float:
 	return float(mouth.get("radius", 40.0))
 
 func _check_finish() -> void:
-	var count := GameRules.finish_count(_get_combined_polish(), finish_threshold)
+	var count := GameRules.finish_count(
+		float(_slime_state["left"]["polish"]), float(_slime_state["right"]["polish"]), finish_threshold)
 	if count <= 0:
 		return
 	_day_finish_count += count

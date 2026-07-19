@@ -239,10 +239,12 @@ func _test_candle_wax_finish_counting() -> void:
 
 	# 回帰防止: 高感度帯の快感はゲージ表示上限で頭打ちにならず、1回のFINISH判定で
 	# 複数回分まとめて計上される（保持率撤廃・感度の青天井加速まわりで一度壊れた箇所）。
+	# 左右とも刺激しておく（片側だけではFINISH_MIN_SIDE_RATIOのゲートで弾かれるため）。
 	var high_level_wax_state := {
 		"left": {"polish": 0.0, "pain": 0.0}, "right": {"polish": 0.0, "pain": 0.0}
 	}
 	game._tool_actions._apply_wax_impact(high_level_wax_state, "left", GameRules.MAX_LEVEL)
+	game._tool_actions._apply_wax_impact(high_level_wax_state, "right", GameRules.MAX_LEVEL)
 	_check(float(high_level_wax_state["left"]["polish"]) > GameRules.GAUGE_MAX,
 		"candle: high-level wax stimulus is not capped by the display gauge")
 	var finish_count_before: int = int(game._day_finish_count)

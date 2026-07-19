@@ -98,13 +98,22 @@ func _test_pain_resist() -> void:
 	_check_near(GameRules.pain_resist(1000), 0.0, "pain_resist: stays immune")
 
 func _test_finish_count() -> void:
-	_check_eq(GameRules.finish_count(500.0, 900.0), 0, "finish_count: below threshold yields nothing")
-	_check_eq(GameRules.finish_count(900.0, 900.0), 1, "finish_count: exact threshold is one finish")
-	_check_eq(GameRules.finish_count(1799.9, 900.0), 1, "finish_count: not quite two")
-	_check_eq(GameRules.finish_count(1800.0, 900.0), 2, "finish_count: two full thresholds at once")
-	_check_eq(GameRules.finish_count(45000.0, 900.0), 50,
+	_check_eq(GameRules.finish_count(250.0, 250.0, 900.0), 0, "finish_count: below threshold yields nothing")
+	_check_eq(GameRules.finish_count(450.0, 450.0, 900.0), 1, "finish_count: exact threshold is one finish")
+	_check_eq(GameRules.finish_count(899.95, 899.95, 900.0), 1, "finish_count: not quite two")
+	_check_eq(GameRules.finish_count(900.0, 900.0, 900.0), 2, "finish_count: two full thresholds at once")
+	_check_eq(GameRules.finish_count(22500.0, 22500.0, 900.0), 50,
 		"finish_count: a high-sensitivity frame counts many finishes at once, no loop needed")
-	_check_eq(GameRules.finish_count(500.0, 0.0), 0, "finish_count: zero threshold never finishes")
+	_check_eq(GameRules.finish_count(250.0, 250.0, 0.0), 0, "finish_count: zero threshold never finishes")
+
+	# 片側だけを刺激し続けても、もう片方が最低割合に届かなければFINISHしない
+	# （快感に上限が無いため、これが無いと片側だけの単調プレイでも合計が閾値を超えてしまう）。
+	_check_eq(GameRules.finish_count(1700.0, 0.0, 1700.0), 0,
+		"finish_count: one side alone at full threshold still needs the other side")
+	_check_eq(GameRules.finish_count(1700.0, 100.0, 1700.0), 0,
+		"finish_count: other side below the minimum ratio blocks it")
+	_check_eq(GameRules.finish_count(1360.0, 340.0, 1700.0), 1,
+		"finish_count: other side at exactly the minimum ratio (20%) still counts")
 
 func _test_number_format() -> void:
 	_check_eq(NumberFormat.group(0), "0", "format: zero")
