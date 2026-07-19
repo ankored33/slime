@@ -24,6 +24,7 @@ var _day_end_curtain_tween: Tween
 var _showing_day_intro := false
 
 @onready var _frame: Control = $CanvasLayer/Frame
+@onready var _date_label: Label = $CanvasLayer/Frame/LeftPage/DateLabel
 @onready var _screen_title: Label = $CanvasLayer/Frame/LeftPage/ScreenTitle
 @onready var _screen_subtitle: Label = $CanvasLayer/Frame/LeftPage/ScreenSubtitle
 @onready var _select_screen: SelectScreen = $CanvasLayer/SelectScreen
@@ -282,6 +283,8 @@ func _on_day_finished(result: Dictionary) -> void:
 func _render_result() -> void:
 	var chara: Dictionary = _characters[_selected_index]
 	_update_result_chara_image(str(chara["result"]))
+	var today := Time.get_date_dict_from_system()
+	_date_label.text = "帝国暦%d年%d月%d日" % [int(today["year"]), int(today["month"]), int(today["day"])]
 	var level_after := int(chara["level"])
 	var level_before := int(_last_result.get("level_before", level_after))
 	var level_line := "レベル: %d / %d" % [level_after, GameRules.MAX_LEVEL]
@@ -300,10 +303,7 @@ func _render_result() -> void:
 		+ "%s\n"
 		+ "%s"
 		+ "累計FINISH: %s\n"
-		+ "痛み失敗: %d\n\n"
-		+ "成長で伸びるもの:\n"
-		+ "- 感度（快感の上がりやすさ）\n"
-		+ "- 痛みへの耐性"
+		+ "痛み失敗: %d"
 	) % [
 		str(_last_result.get("species_name", "？？？")),
 		status_text,

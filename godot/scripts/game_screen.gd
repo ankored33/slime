@@ -77,7 +77,6 @@ var _debug_expression_override := ""
 @onready var _title_label: Label = $Hud/CharaNameLabel
 @onready var _meta_label: Label = $Hud/LevelLabel
 @onready var _dialogue_label: RichTextLabel = $Hud/DialogueLabel
-@onready var _day_label: Label = $Hud/DayLabel
 @onready var _brush_name_label: Label = $Hud/BrushNameLabel
 @onready var _brush_spec_label: Label = $Hud/BrushSpecLabel
 @onready var _finish_progress: ProgressBar = $Hud/FinishProgress
@@ -247,7 +246,6 @@ func setup_species(species: Dictionary) -> void:
 	finish_threshold = GameRules.finish_threshold(level)
 	_brushes.apply_unlocks(level)
 	_meta_label.text = "LV %d" % level
-	_day_label.text = "1日目"
 	reset_day()
 
 func _apply_slime_layout(slime: SlimeTarget, cfg: Dictionary) -> void:
