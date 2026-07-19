@@ -32,17 +32,14 @@ func close() -> void:
 	_confirm_dialog.hide()
 
 func _on_options_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	options_requested.emit()
 
 func _on_title_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	_pending_action = "title"
 	_confirm_dialog.dialog_text = "タイトルに戻りますか？\n（今日の進行状況は失われます）"
 	_confirm_dialog.popup_centered()
 
 func _on_quit_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	_pending_action = "quit"
 	_confirm_dialog.dialog_text = "ゲームを終了しますか？"
 	_confirm_dialog.popup_centered()

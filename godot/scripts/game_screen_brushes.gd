@@ -4,7 +4,6 @@ extends RefCounted
 ## Brush-side runtime for GameScreen: discovery, input, controls, unlocks and collision correction.
 
 const GameRules = preload("res://scripts/game_rules.gd")
-const GameAudio = preload("res://scripts/game_audio.gd")
 
 ## ツールボックスのボタン表示順。HUDで未選択時に表示する順序も兼ねる。
 const BRUSH_DISPLAY_ORDER: Array[String] = [
@@ -92,7 +91,6 @@ func toggle_from_toolbox(brush_id: String) -> void:
 	var brush: Brush = brush_map.get(brush_id)
 	if brush == null or not bool(_unlocked.get(brush_id, false)):
 		return
-	GameAudio.play_se("ui_click")
 	if held_brush == brush:
 		_set_held_brush(null)
 		_stow(brush)

@@ -88,7 +88,6 @@ func _toggle_pause_menu() -> void:
 		_open_pause_menu()
 
 func _open_pause_menu() -> void:
-	GameAudio.play_se("ui_click")
 	_pause_menu.open()
 	_game_screen.pause_for_menu()
 
@@ -177,7 +176,6 @@ func _open_options_overlay() -> void:
 	_options_screen.show_options()
 
 func _on_title_options_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	_open_options_overlay()
 
 func _on_options_back_requested() -> void:
@@ -212,7 +210,6 @@ func _show_result_screen() -> void:
 	GameAudio.play_bgm("select")
 
 func _on_title_start_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	_transition(_show_select_screen)
 
 func _on_character_selected(index: int) -> void:
@@ -268,7 +265,6 @@ func _on_opening_selection_requested() -> void:
 	_transition(_show_select_screen)
 
 func _on_return_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	_transition(_show_select_screen)
 
 func _on_day_finished(result: Dictionary) -> void:

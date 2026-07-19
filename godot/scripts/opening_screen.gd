@@ -100,16 +100,13 @@ func advance(automatic: bool = false) -> void:
 	if _current_auto_advance_delay() > 0.0 and not automatic and DisplayServer.get_name() != "headless":
 		return
 	if _revealed_count < _sentences.size():
-		GameAudio.play_se("ui_click")
 		_reveal_next_sentence()
 		return
 	var confirm_text := _current_confirm_text()
 	if confirm_text != "" and DisplayServer.get_name() != "headless":
-		GameAudio.play_se("ui_click")
 		_reform_confirm_dialog.dialog_text = confirm_text
 		_reform_confirm_dialog.popup_centered()
 		return
-	GameAudio.play_se("ui_click")
 	_advance_to_next_page_or_finish()
 
 func _advance_to_next_page_or_finish() -> void:
@@ -233,7 +230,6 @@ func _finish_curtain_open() -> void:
 	_view_original_button.visible = true
 
 func _on_selection_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	selection_requested.emit()
 
 ## force_original: 「元の経歴を見る」ボタン押下中、名前・二つ名・プロフィール文・立ち絵を

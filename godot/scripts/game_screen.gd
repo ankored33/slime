@@ -534,7 +534,6 @@ func _set_gauge(gauge_id: String, current: float) -> void:
 		gauge.set_gauge_value(current, GameRules.GAUGE_MAX)
 
 func _on_end_day_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	pause_for_menu()
 	_end_day_confirm_dialog.popup_centered()
 

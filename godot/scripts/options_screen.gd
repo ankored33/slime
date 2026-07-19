@@ -31,7 +31,6 @@ func show_options() -> void:
 		_update_volume_value_label(category, volume)
 
 func _on_back_pressed() -> void:
-	GameAudio.play_se("ui_click")
 	back_requested.emit()
 
 func _on_volume_changed(value: float, category: String) -> void:

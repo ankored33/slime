@@ -106,13 +106,11 @@ func _fit_profile_overlay(info_overlay: PanelContainer) -> void:
 func _on_character_card_pressed(index: int) -> void:
 	if index < 0 or index >= _characters.size():
 		return
-	GameAudio.play_se("ui_click")
 	character_selected.emit(index)
 
 func _on_level_edit_pressed(index: int) -> void:
 	if not OS.is_debug_build() or index < 0 or index >= _characters.size():
 		return
-	GameAudio.play_se("ui_click")
 	_pending_level_index = index
 	_level_spin_box.value = float(_characters[index].get("level", 1))
 	_level_edit_dialog.popup_centered(Vector2i(360, 180))
@@ -139,7 +137,6 @@ func _on_level_edit_canceled() -> void:
 func _on_character_reset_pressed(index: int) -> void:
 	if not OS.is_debug_build() or index < 0 or index >= _characters.size():
 		return
-	GameAudio.play_se("ui_click")
 	var chara: Dictionary = _characters[index]
 	chara["level"] = 1
 	chara["finish_total"] = 0
