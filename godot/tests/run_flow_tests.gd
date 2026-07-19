@@ -71,7 +71,7 @@ func _setup() -> void:
 	options = main.get_node("CanvasLayer/OptionsScreen")
 	frame = main.get_node("CanvasLayer/Frame")
 	select = main.get_node("CanvasLayer/SelectScreen")
-	result = main.get_node("CanvasLayer/Frame/Margin/VBox/ResultScreen")
+	result = main.get_node("CanvasLayer/Frame/LeftPage/ResultScreen")
 	game = main.get_node("GameScreen")
 
 	main._characters[0]["opening_seen"] = false

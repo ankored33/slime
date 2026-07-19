@@ -24,14 +24,14 @@ var _day_end_curtain_tween: Tween
 var _showing_day_intro := false
 
 @onready var _frame: Control = $CanvasLayer/Frame
-@onready var _screen_title: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenTitle
-@onready var _screen_subtitle: Label = $CanvasLayer/Frame/Margin/VBox/Header/ScreenSubtitle
+@onready var _screen_title: Label = $CanvasLayer/Frame/LeftPage/ScreenTitle
+@onready var _screen_subtitle: Label = $CanvasLayer/Frame/LeftPage/ScreenSubtitle
 @onready var _select_screen: SelectScreen = $CanvasLayer/SelectScreen
 @onready var _game_screen: Control = $GameScreen
-@onready var _result_screen: Control = $CanvasLayer/Frame/Margin/VBox/ResultScreen
-@onready var _result_body: RichTextLabel = $CanvasLayer/Frame/Margin/VBox/ResultScreen/ResultPanel/Margin/ResultBody
-@onready var _result_chara_image: TextureRect = $CanvasLayer/ResultCharaImage
-@onready var _return_button: Button = $CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions/ReturnButton
+@onready var _result_screen: Control = $CanvasLayer/Frame/LeftPage/ResultScreen
+@onready var _result_body: RichTextLabel = $CanvasLayer/Frame/LeftPage/ResultScreen/ResultBody
+@onready var _result_chara_image: TextureRect = $CanvasLayer/Frame/ResultCharaImage
+@onready var _return_button: Button = $CanvasLayer/Frame/LeftPage/ResultScreen/Actions/ReturnButton
 @onready var _title_screen: Control = $CanvasLayer/TitleScreen
 @onready var _title_start_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleStartButton
 @onready var _opening_screen: OpeningScreen = $CanvasLayer/OpeningScreen

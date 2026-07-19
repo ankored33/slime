@@ -1,4 +1,4 @@
-[gd_scene load_steps=9 format=3]
+[gd_scene load_steps=10 format=3]
 
 [ext_resource type="Script" path="res://scripts/main.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/game_screen.tscn" id="2"]
@@ -8,6 +8,7 @@
 [ext_resource type="PackedScene" path="res://scenes/opening_screen.tscn" id="6"]
 [ext_resource type="PackedScene" path="res://scenes/options_screen.tscn" id="7"]
 [ext_resource type="PackedScene" path="res://scenes/pause_menu.tscn" id="8"]
+[ext_resource type="Texture2D" path="res://assets/ui/result_journal.png" id="9"]
 
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_select_info"]
@@ -48,63 +49,66 @@ visible = false
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
-[node name="Frame" type="PanelContainer" parent="CanvasLayer"]
-offset_left = 24.0
-offset_top = 20.0
-offset_right = 470.0
-offset_bottom = 694.0
+[node name="Frame" type="Control" parent="CanvasLayer"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/Frame"]
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 20
+[node name="JournalBg" type="TextureRect" parent="CanvasLayer/Frame"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+texture = ExtResource("9")
+expand_mode = 1
+stretch_mode = 5
 
-[node name="VBox" type="VBoxContainer" parent="CanvasLayer/Frame/Margin"]
-theme_override_constants/separation = 18
+[node name="LeftPage" type="VBoxContainer" parent="CanvasLayer/Frame"]
+layout_mode = 0
+offset_left = 250.0
+offset_top = 40.0
+offset_right = 635.0
+offset_bottom = 660.0
+theme_override_constants/separation = 16
 
-[node name="Header" type="VBoxContainer" parent="CanvasLayer/Frame/Margin/VBox"]
-theme_override_constants/separation = 6
+[node name="ScreenTitle" type="Label" parent="CanvasLayer/Frame/LeftPage"]
+theme_override_colors/font_color = Color(0.16, 0.12, 0.09, 1)
+theme_override_font_sizes/font_size = 28
+text = "リザルト"
 
-[node name="ScreenTitle" type="Label" parent="CanvasLayer/Frame/Margin/VBox/Header"]
-theme_override_font_sizes/font_size = 30
-text = "スライム選択"
+[node name="ScreenSubtitle" type="Label" parent="CanvasLayer/Frame/LeftPage"]
+theme_override_colors/font_color = Color(0.32, 0.26, 0.2, 0.92)
+theme_override_font_sizes/font_size = 14
+text = "今日の成果を確認してキャラ選択へ戻ろう。"
 
-[node name="ScreenSubtitle" type="Label" parent="CanvasLayer/Frame/Margin/VBox/Header"]
-theme_override_font_sizes/font_size = 15
-modulate = Color(0.8, 0.84, 0.9, 0.92)
-text = "今日お手入れするスライムの種を選ぼう。"
-
-[node name="ResultScreen" type="VBoxContainer" parent="CanvasLayer/Frame/Margin/VBox"]
+[node name="ResultScreen" type="VBoxContainer" parent="CanvasLayer/Frame/LeftPage"]
 visible = false
 theme_override_constants/separation = 16
 
-[node name="ResultPanel" type="PanelContainer" parent="CanvasLayer/Frame/Margin/VBox/ResultScreen"]
-custom_minimum_size = Vector2(0, 480)
-
-[node name="Margin" type="MarginContainer" parent="CanvasLayer/Frame/Margin/VBox/ResultScreen/ResultPanel"]
-theme_override_constants/margin_left = 16
-theme_override_constants/margin_top = 16
-theme_override_constants/margin_right = 16
-theme_override_constants/margin_bottom = 16
-
-[node name="ResultBody" type="RichTextLabel" parent="CanvasLayer/Frame/Margin/VBox/ResultScreen/ResultPanel/Margin"]
+[node name="ResultBody" type="RichTextLabel" parent="CanvasLayer/Frame/LeftPage/ResultScreen"]
 bbcode_enabled = true
 fit_content = true
 scroll_active = false
+theme_override_colors/default_color = Color(0.16, 0.12, 0.09, 1)
 
-[node name="Actions" type="HBoxContainer" parent="CanvasLayer/Frame/Margin/VBox/ResultScreen"]
+[node name="Actions" type="HBoxContainer" parent="CanvasLayer/Frame/LeftPage/ResultScreen"]
 theme_override_constants/separation = 12
 
-[node name="ReturnButton" type="Button" parent="CanvasLayer/Frame/Margin/VBox/ResultScreen/Actions"]
+[node name="ReturnButton" type="Button" parent="CanvasLayer/Frame/LeftPage/ResultScreen/Actions"]
 text = "選択画面へ戻る"
 
-[node name="ResultCharaImage" type="TextureRect" parent="CanvasLayer"]
+[node name="ResultCharaImage" type="TextureRect" parent="CanvasLayer/Frame"]
 visible = false
-offset_left = 630.0
-offset_top = 20.0
-offset_right = 1125.0
-offset_bottom = 680.0
+layout_mode = 0
+offset_left = 665.0
+offset_top = 40.0
+offset_right = 1050.0
+offset_bottom = 660.0
 expand_mode = 1
 stretch_mode = 5
 
