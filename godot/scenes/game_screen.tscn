@@ -4,6 +4,8 @@
 [ext_resource type="PackedScene" path="res://scenes/named_gauge.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/slime_target.tscn" id="3"]
 [ext_resource type="PackedScene" path="res://scenes/brush.tscn" id="5"]
+[ext_resource type="Texture2D" path="res://assets/hud/finish_heart_fill.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/hud/finish_heart_bg.png" id="7"]
 
 [node name="GameScreen" type="Control" unique_id=900794395]
 layout_mode = 3
@@ -264,13 +266,15 @@ offset_bottom = 670.0
 gauge_id = "pain-R"
 caption = "痛み R"
 
-[node name="FinishProgress" type="ProgressBar" parent="Hud" unique_id=1323510636]
+[node name="FinishProgress" type="TextureProgressBar" parent="Hud" unique_id=1323510636]
 layout_mode = 0
-offset_left = 89.0
-offset_top = 700.0
-offset_right = 1205.0
-offset_bottom = 718.0
-show_percentage = false
+offset_left = 75.0
+offset_top = 300.0
+offset_right = 215.0
+offset_bottom = 620.0
+texture_under = ExtResource("7")
+texture_progress = ExtResource("6")
+fill_mode = 3
 
 [node name="FinishLabel" type="Label" parent="Hud"]
 visible = false
@@ -290,9 +294,9 @@ text = "FINISH!"
 [node name="DayStats" type="PanelContainer" parent="Hud" unique_id=936402762]
 layout_mode = 0
 offset_left = 26.0
-offset_top = 380.0
+offset_top = 243.0
 offset_right = 270.0
-offset_bottom = 434.0
+offset_bottom = 297.0
 
 [node name="Margin" type="MarginContainer" parent="Hud/DayStats" unique_id=1184699040]
 layout_mode = 2
@@ -330,18 +334,18 @@ text = "キャラ名"
 [node name="LevelLabel" type="Label" parent="Hud" unique_id=1176691606]
 layout_mode = 0
 offset_left = 23.0
-offset_top = 131.0
+offset_top = 63.0
 offset_right = 188.0
-offset_bottom = 181.0
+offset_bottom = 113.0
 theme_override_font_sizes/font_size = 29
 text = "LV 1"
 
 [node name="DialogueLabel" type="RichTextLabel" parent="Hud" unique_id=1310823897]
 layout_mode = 0
 offset_left = 26.0
-offset_top = 197.0
+offset_top = 113.0
 offset_right = 270.0
-offset_bottom = 367.0
+offset_bottom = 233.0
 bbcode_enabled = true
 fit_content = true
 scroll_active = false
