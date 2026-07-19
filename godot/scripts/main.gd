@@ -124,7 +124,7 @@ func _on_fade_finished() -> void:
 
 ## 一日を終える時だけの画面切り替え。日次導入のカーテン開き（opening_screen.gd の
 ## _render_curtain）の逆再生: 左右から幕を閉じて画面を覆い隠し、覆われている間に
-## switcher でリザルト画面へ切り替えてから幕を消す（開き直しはしない）。
+## switcher でリザルト画面へ切り替えてから幕を消す。
 func _transition_with_curtain_close(switcher: Callable) -> void:
 	if DisplayServer.get_name() == "headless":
 		switcher.call()
