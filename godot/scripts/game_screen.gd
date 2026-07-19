@@ -207,6 +207,7 @@ func _process(delta: float) -> void:
 			_mouth_position(), _mouth_radius(), _slime_state, _current_level(), delta)
 	if not _fx.fail_active:
 		_apply_pain_recovery(touch_info["touched_sides"], delta)
+		_apply_polish_decay(touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
 	_brushes.resolve_collisions(_slimes, _tool_actions.pinch_brush)
 	_update_brush_facing(delta)
@@ -393,6 +394,15 @@ func _apply_pain_recovery(touched_sides: Dictionary, delta: float) -> void:
 			continue
 		var state: Dictionary = _slime_state[side]
 		state["pain"] = maxf(0.0, float(state["pain"]) - GameRules.PAIN_RECOVERY_PER_SEC * delta)
+		_slime_state[side] = state
+
+## アクティブなブラシが触れていない部位は快感が自然に減衰する。
+func _apply_polish_decay(touched_sides: Dictionary, delta: float) -> void:
+	for side in ["left", "right"]:
+		if bool(touched_sides.get(side, false)):
+			continue
+		var state: Dictionary = _slime_state[side]
+		state["polish"] = maxf(0.0, float(state["polish"]) - GameRules.POLISH_DECAY_PER_SEC * delta)
 		_slime_state[side] = state
 
 func _brush_effect_rates(brush: Brush, level: int) -> Dictionary:

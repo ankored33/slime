@@ -19,6 +19,9 @@ const PAIN_CAP := 1100.0
 ## アクティブなブラシが触れていない部位の痛み自然回復量（毎秒）。
 const PAIN_RECOVERY_PER_SEC := 20.0
 
+## アクティブなブラシが触れていない部位の快感自然減衰量（毎秒）。
+const POLISH_DECAY_PER_SEC := 10.0
+
 ## ろうそく固有アクション。右クリックで落としたろうが命中した時の一回分の刺激。
 const WAX_POLISH_IMPACT := 120.0
 const WAX_PAIN_IMPACT := 80.0
