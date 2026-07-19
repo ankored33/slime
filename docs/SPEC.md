@@ -27,7 +27,7 @@ ESCメニュー（タイトル画面以外の全画面で開く）は `main.gd` 
 | `scripts/main.gd` | 画面フロー（可視切替・フェード）と各画面間の橋渡し |
 | `scripts/select_screen.gd` | キャラ選択画面（カード表示・確認ダイアログ・元の経歴を見る） |
 | `scripts/opening_screen.gd` | オープニングのページ送り・split/blackout 表示 |
-| `scripts/options_screen.gd` | オプション画面（音量スライダー）。常にオーバーレイ表示 |
+| `scripts/options_screen.gd` | オプション画面（音量・ハート演出の透明度スライダー）。常にオーバーレイ表示 |
 | `scripts/pause_menu.gd` | ESCメニュー（オプション/タイトルに戻る/ゲーム終了、確認ダイアログ込み） |
 | `scripts/progress_store.gd` | セーブの書き出し・読み込み |
 | `scripts/characters.gd` | キャラ定義データ（テキスト・座標・パス）。推敲はここだけ |
@@ -40,6 +40,7 @@ ESCメニュー（タイトル画面以外の全画面で開く）は `main.gd` 
 | `scripts/slime_target.gd` | 磨きターゲット（当たり判定・押し込み/引っ張りバネ） |
 | `scripts/expression_rules.gd` | 状態→表情id・接触ループSEの対応 |
 | `scripts/game_audio.gd` | BGM/SE/ボイス再生（ファイルを置くだけで鳴る。冒頭コメント参照） |
+| `scripts/game_settings.gd` | 音声以外の表示設定（ハート演出の透明度など） |
 | `scripts/named_gauge.gd` ほか | UI部品（`named_gauges` 等のグループ経由で収集） |
 | `scripts/debug_panel.gd` | 開発用チートパネル（磨き画面でF1。デバッグビルドのみ生成） |
 
@@ -51,6 +52,7 @@ ESCメニュー（タイトル画面以外の全画面で開く）は `main.gd` 
 `user://slime_save_v2.json`。キャラ単位の `level` / `finish_total` / `pain_fail_total` /
 `opening_seen` のみ保存。詳細は `scripts/progress_store.gd`。
 音量設定は別ファイル `user://audio_settings.json`（`game_audio.gd` が管理）。
+表示設定（ハート透明度）はさらに別ファイル `user://fx_settings.json`（`game_settings.gd` が管理）。
 
 ## テスト
 
