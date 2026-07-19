@@ -31,9 +31,10 @@ func setup(root: Control, playfield: Control, brush_rack: Control, end_day_butto
 	_create_tool_buttons()
 	_configure_mouse_filters(root)
 
-## ボタンの見た目で道具の状態を示す。保持中=アンバー枠、配置中=減光、収納中=通常。
+## ボタンの見た目で道具の状態を示す。保持中=アンバー枠、配置中=減光、収納中=通常、未解禁=暗くdisabled。
 const TOOL_HELD_BORDER := Color(1.0, 0.85, 0.55)
 const TOOL_DEPLOYED_TINT := Color(0.55, 0.6, 0.65)
+const TOOL_LOCKED_TINT := Color(0.4, 0.4, 0.42, 0.55)
 
 var _held_stylebox: StyleBoxFlat
 
@@ -255,7 +256,10 @@ func apply_unlocks(level: int) -> void:
 		_unlocked[brush.brush_id] = unlocked
 		var button: Button = _tool_buttons.get(brush.brush_id)
 		if button != null:
-			button.visible = unlocked
+			# 未解禁も枠は常に表示し続け、パネルの大きさが解禁数で変動しないようにする。
+			button.disabled = not unlocked
+			button.text = _display_name(brush) if unlocked else "%s\n未解禁(Lv%d)" % [
+				_display_name(brush), GameRules.brush_unlock_level(brush.brush_id)]
 		if not unlocked:
 			if held_brush == brush:
 				_set_held_brush(null)
@@ -310,7 +314,11 @@ func _update_tool_button_states() -> void:
 	for brush_id: String in _tool_buttons:
 		var brush: Brush = brush_map[brush_id]
 		var button: Button = _tool_buttons[brush_id]
-		if brush == held_brush:
+		if not bool(_unlocked.get(brush_id, false)):
+			button.modulate = TOOL_LOCKED_TINT
+			for state in ["normal", "hover", "pressed"]:
+				button.remove_theme_stylebox_override(state)
+		elif brush == held_brush:
 			button.modulate = Color.WHITE
 			for state in ["normal", "hover", "pressed"]:
 				button.add_theme_stylebox_override(state, _get_held_stylebox())
