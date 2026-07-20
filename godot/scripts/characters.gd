@@ -154,6 +154,42 @@ static func create() -> Array[Dictionary]:
 			"pain_fail_total": 0,
 			"opening_seen": false,
 			"opening_pages": OpeningLoader.load_pages("admiral")
+		},
+		{
+			"id": "mage",
+			"name": "エルネスカ",
+			"epithet": "《詠唱なき厄災》",
+			"name_after_opening": "虜囚番号M77201",
+			"epithet_after_opening": "帝国の一般虜囚",
+			"portrait": "res://assets/chara/mage/portrait.png",
+			"portrait_after_opening": "res://assets/chara/mage/portrait_after_opening.png",
+			"result": "res://assets/chara/mage/result.png",
+			"game_background": "res://assets/chara/mage/game_background.png",
+			"expressions": {},
+			"dialogue": DialogueLoader.load_dialogue("mage"),
+			"profile": "エトリア魔導皇国 大賢者／宮廷魔術師団長\n\n能力評価：\n膂力　E\n技巧　A\n魔力　SSS\n策略　A\n戦略　B",
+			"profile_after_opening": "種族：魔女\n性別：女\n年齢：308（外見二十代）\n捕縛日：帝国暦2025年10月\n収監場所：帝国矯罰院",
+			"color": Color(0.72, 0.55, 0.95, 0.92),
+			# 仮座標。立ち絵素材が入ったら要再計測。
+			"left": {
+				"position": Vector2(413.2, 503.1),
+				"radius": 40.0,
+				"image": ""
+			},
+			"right": {
+				"position": Vector2(679.6, 350.1),
+				"radius": 40.0,
+				"image": ""
+			},
+			"mouth": {
+				"position": Vector2(600.0, 160.0),
+				"radius": 40.0
+			},
+			"level": 1,
+			"finish_total": 0,
+			"pain_fail_total": 0,
+			"opening_seen": false,
+			"opening_pages": OpeningLoader.load_pages("mage")
 		}
 	]
 	for chara in characters:

@@ -250,7 +250,7 @@ func _test_dialogue_loader() -> void:
 	var missing := DialogueLoader.load_dialogue("no_such_character")
 	_check(missing.is_empty(), "dialogue: unknown character id yields an empty dict")
 
-	for character_id in ["general", "admiral"]:
+	for character_id in ["general", "admiral", "mage"]:
 		var lines := DialogueLoader.load_dialogue(character_id)
 		for expression_id in ExpressionRules.ALL_IDS:
 			var candidates: Array = lines.get(expression_id, [])
@@ -264,7 +264,7 @@ func _test_opening_loader() -> void:
 	var missing := OpeningLoader.load_pages("no_such_character")
 	_check(missing.is_empty(), "opening: unknown character id yields an empty array")
 
-	for character_id in ["general", "admiral"]:
+	for character_id in ["general", "admiral", "mage"]:
 		var pages := OpeningLoader.load_pages(character_id)
 		_check(pages.size() >= 2, "opening: %s has multiple pages" % character_id)
 		var has_blackout := false
