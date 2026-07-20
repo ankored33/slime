@@ -25,6 +25,7 @@ ESCメニュー（タイトル画面以外の全画面で開く）は `main.gd` 
 | ファイル | 担当 |
 |---|---|
 | `scripts/main.gd` | 画面フロー（可視切替・フェード）と各画面間の橋渡し |
+| `scripts/result_screen.gd` | リザルト画面の描画・タイプライター演出 |
 | `scripts/select_screen.gd` | キャラ選択画面（カード表示・確認ダイアログ・元の経歴を見る） |
 | `scripts/opening_screen.gd` | オープニングのページ送り・split/blackout 表示 |
 | `scripts/options_screen.gd` | オプション画面（音量・ハート演出の透明度スライダー）。常にオーバーレイ表示 |

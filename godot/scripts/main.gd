@@ -2,11 +2,13 @@ extends Control
 
 const GameAudio = preload("res://scripts/game_audio.gd")
 const ProgressStoreScript = preload("res://scripts/progress_store.gd")
+const ResultScreenScript = preload("res://scripts/result_screen.gd")
 
 # キャラ定義データは characters.gd（CharacterDefs）に分離。テキスト推敲はそちらで。
 # ここでは初期値として読み込み、セーブデータ（level 等）で上書きしていく。
 var _characters: Array[Dictionary] = CharacterDefs.create()
 var _progress_store := ProgressStoreScript.new()
+var _result_screen_ctrl := ResultScreenScript.new()
 
 const SCREEN_FADE_DURATION := 0.25
 ## 一日を終える時だけの幕閉じ演出（日次導入のカーテン開き=opening_screen.gd の
@@ -14,18 +16,11 @@ const SCREEN_FADE_DURATION := 0.25
 const DAY_END_CURTAIN_DURATION := 1.0
 ## 幕が閉じ切ったあと、覆われた状態からリザルト画面へフェードインする長さ。
 const DAY_END_RESULT_FADE_DURATION := 0.4
-## リザルト本文のタイプライター演出の速度（1秒あたりの文字数）。
-const RESULT_TYPE_CHARS_PER_SEC := 25.0
-## タイプ演出後にキャラ画像をフェードインする長さ。
-const RESULT_IMAGE_FADE_DURATION := 0.3
-## リザルト画面に入ってからタイプ演出が始まるまでの間。
-const RESULT_TYPE_START_DELAY := 1.0
 
 var _selected_index := 0
 var _last_result: Dictionary = {}
 var _fade_tween: Tween
 var _day_end_curtain_tween: Tween
-var _result_type_tween: Tween
 ## _show_day_intro() 中かどうか。同じ OpeningScreen.finished を、初回オープニング
 ## 終了時（_on_opening_finished 本来の処理）と区別するためのフラグ。
 var _showing_day_intro := false
@@ -54,7 +49,7 @@ var _showing_day_intro := false
 
 func _ready() -> void:
 	_return_button.pressed.connect(_on_return_pressed)
-	_result_body.gui_input.connect(_on_result_body_gui_input)
+	_result_screen_ctrl.setup(_result_screen, _date_label, _result_body, _result_chara_image, _return_button)
 	_tutorial_body.text = TutorialText.BODY
 	_tutorial_button.pressed.connect(_on_tutorial_acknowledged)
 	_title_start_button.pressed.connect(_on_title_start_pressed)
@@ -82,8 +77,8 @@ func _ready() -> void:
 
 ## ESCメニュー: タイトル画面では出さない。オプションが開いていれば先にそれを閉じる。
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and _is_result_typing():
-		_complete_result_typing()
+	if event is InputEventMouseButton and event.pressed and _result_screen_ctrl.is_typing():
+		_result_screen_ctrl.complete_typing()
 		get_viewport().set_input_as_handled()
 		return
 	if not event.is_action_pressed("ui_cancel"):
@@ -238,7 +233,7 @@ func _show_result_screen() -> void:
 	_hide_all_screens()
 	_frame.visible = true
 	_result_screen.visible = true
-	_render_result()
+	_result_screen_ctrl.render(_characters[_selected_index], _last_result)
 	GameAudio.play_bgm("select")
 
 func _on_title_start_pressed() -> void:
@@ -313,101 +308,6 @@ func _on_day_finished(result: Dictionary) -> void:
 	_characters[_selected_index] = chara
 	_save_progress()
 	_transition_with_curtain_close(_show_result_screen)
-
-func _render_result() -> void:
-	var chara: Dictionary = _characters[_selected_index]
-	_update_result_chara_image(str(chara["result"]))
-	var today := Time.get_date_dict_from_system()
-	_date_label.text = "帝国暦%d年%d月%d日" % [int(today["year"]), int(today["month"]), int(today["day"])]
-	var level_after := int(chara["level"])
-	var level_before := int(_last_result.get("level_before", level_after))
-	var level_line := "矯正進度: %d / 100" % level_after
-	if level_after > level_before:
-		GameAudio.play_se("levelup")
-		level_line = "矯正進度: %d → [b][bgcolor=#ffd75e][color=#3a1208] %d [/color][/bgcolor][/b] / 100　[bgcolor=#ffd75e][color=#3a1208][b] LEVEL UP! +%d [/b][/color][/bgcolor]" % [
-			level_before, level_after, level_after - level_before]
-	var failed := bool(_last_result.get("failed_by_pain", false))
-	var status_line := "痛みが限界に達した。今日の成果は半減となった。\n" if failed else ""
-	var tool_lines := _format_finish_by_tool(_last_result.get("finish_count_by_tool", {}))
-	_result_body.text = (
-		"[b]%s[/b]\n"
-		+ "%s\n"
-		+ "%s\n"
-		+ "本日の絶頂回数: %s\n"
-		+ "%s"
-		+ "累計絶頂回数: %s\n"
-		+ "苦痛超過による矯正中断回数: %d"
-	) % [
-		str(_last_result.get("species_name", "？？？")),
-		level_line,
-		status_line,
-		NumberFormat.group(int(_last_result.get("day_finish_count", 0))),
-		tool_lines,
-		NumberFormat.group(int(chara["finish_total"])),
-		int(chara["pain_fail_total"])
-	]
-	_start_result_typing()
-
-## リザルト画面の登場演出。日付→本文の順に1文字ずつタイプし、終わったら
-## キャラ画像を短くフェードインして、最後に戻るボタンを出す。クリックで全表示に飛ばせる。
-func _start_result_typing() -> void:
-	if _result_type_tween:
-		_result_type_tween.kill()
-	_return_button.visible = false
-	_result_chara_image.modulate.a = 0.0
-	if DisplayServer.get_name() == "headless":
-		_complete_result_typing()
-		return
-	_date_label.visible_characters = 0
-	_result_body.visible_characters = 0
-	var date_total := _date_label.get_total_character_count()
-	var body_total := _result_body.get_total_character_count()
-	_result_type_tween = create_tween()
-	_result_type_tween.tween_interval(RESULT_TYPE_START_DELAY)
-	_result_type_tween.tween_property(
-		_date_label, "visible_characters", date_total, date_total / RESULT_TYPE_CHARS_PER_SEC)
-	_result_type_tween.tween_property(
-		_result_body, "visible_characters", body_total, body_total / RESULT_TYPE_CHARS_PER_SEC)
-	_result_type_tween.tween_property(
-		_result_chara_image, "modulate:a", 1.0, RESULT_IMAGE_FADE_DURATION)
-	_result_type_tween.tween_callback(func() -> void: _return_button.visible = true)
-
-func _is_result_typing() -> bool:
-	return _result_screen.visible and _result_type_tween != null and _result_type_tween.is_running()
-
-func _complete_result_typing() -> void:
-	if _result_type_tween:
-		_result_type_tween.kill()
-	_date_label.visible_characters = -1
-	_result_body.visible_characters = -1
-	_result_chara_image.modulate.a = 1.0
-	_return_button.visible = true
-
-func _on_result_body_gui_input(event: InputEvent) -> void:
-	if event is InputEventMouseButton and event.pressed and _is_result_typing():
-		_complete_result_typing()
-		get_viewport().set_input_as_handled()
-
-## { ツール表示名: FINISH数 } を件数の多い順に "- 指: 12\n" 形式へ整形する。空なら空文字。
-func _format_finish_by_tool(by_tool: Dictionary) -> String:
-	if by_tool.is_empty():
-		return ""
-	var tool_names := by_tool.keys()
-	tool_names.sort_custom(func(a, b): return int(by_tool[a]) > int(by_tool[b]))
-	var lines := "内訳:\n"
-	for tool_name in tool_names:
-		lines += "- %s: %s\n" % [tool_name, NumberFormat.group(int(by_tool[tool_name]))]
-	return lines + "\n"
-
-## キャラ定義の result 画像があればリザルト画面右に表示する。無ければ隠す。
-func _update_result_chara_image(path: String) -> void:
-	if ResourceLoader.exists(path):
-		var texture := load(path)
-		if texture is Texture2D:
-			_result_chara_image.texture = texture
-			_result_chara_image.visible = true
-			return
-	_result_chara_image.visible = false
 
 func _save_progress() -> void:
 	_progress_store.save(_characters)
