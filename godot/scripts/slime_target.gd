@@ -113,13 +113,13 @@ func _setup_heart_particles() -> void:
 		_heart_burst.append(b)
 
 func set_hearts_active(on: bool) -> void:
-	var opacity := GameSettings.get_heart_opacity()
+	var opacity := GameSettings.get_fx_opacity()
 	for p in _hearts:
 		p.modulate.a = opacity
 		p.emitting = on
 
 func burst_hearts() -> void:
-	var opacity := GameSettings.get_heart_opacity()
+	var opacity := GameSettings.get_fx_opacity()
 	for b in _heart_burst:
 		b.modulate.a = opacity
 		b.restart()

@@ -14,19 +14,24 @@ const SCREEN_FADE_DURATION := 0.25
 const DAY_END_CURTAIN_DURATION := 1.0
 ## 幕が閉じ切ったあと、覆われた状態からリザルト画面へフェードインする長さ。
 const DAY_END_RESULT_FADE_DURATION := 0.4
+## リザルト本文のタイプライター演出の速度（1秒あたりの文字数）。
+const RESULT_TYPE_CHARS_PER_SEC := 25.0
+## タイプ演出後にキャラ画像をフェードインする長さ。
+const RESULT_IMAGE_FADE_DURATION := 0.3
+## リザルト画面に入ってからタイプ演出が始まるまでの間。
+const RESULT_TYPE_START_DELAY := 1.0
 
 var _selected_index := 0
 var _last_result: Dictionary = {}
 var _fade_tween: Tween
 var _day_end_curtain_tween: Tween
+var _result_type_tween: Tween
 ## _show_day_intro() 中かどうか。同じ OpeningScreen.finished を、初回オープニング
 ## 終了時（_on_opening_finished 本来の処理）と区別するためのフラグ。
 var _showing_day_intro := false
 
 @onready var _frame: Control = $CanvasLayer/Frame
 @onready var _date_label: Label = $CanvasLayer/Frame/LeftPage/DateLabel
-@onready var _screen_title: Label = $CanvasLayer/Frame/LeftPage/ScreenTitle
-@onready var _screen_subtitle: Label = $CanvasLayer/Frame/LeftPage/ScreenSubtitle
 @onready var _select_screen: SelectScreen = $CanvasLayer/SelectScreen
 @onready var _game_screen: Control = $GameScreen
 @onready var _result_screen: Control = $CanvasLayer/Frame/LeftPage/ResultScreen
@@ -46,6 +51,7 @@ var _showing_day_intro := false
 
 func _ready() -> void:
 	_return_button.pressed.connect(_on_return_pressed)
+	_result_body.gui_input.connect(_on_result_body_gui_input)
 	_title_start_button.pressed.connect(_on_title_start_pressed)
 	_title_options_button.pressed.connect(_on_title_options_pressed)
 	_options_screen.back_requested.connect(_on_options_back_requested)
@@ -71,6 +77,10 @@ func _ready() -> void:
 
 ## ESCメニュー: タイトル画面では出さない。オプションが開いていれば先にそれを閉じる。
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and _is_result_typing():
+		_complete_result_typing()
+		get_viewport().set_input_as_handled()
+		return
 	if not event.is_action_pressed("ui_cancel"):
 		return
 	if _options_screen.visible:
@@ -203,8 +213,6 @@ func _show_game_screen() -> void:
 
 func _show_result_screen() -> void:
 	_hide_all_screens()
-	_screen_title.text = "リザルト"
-	_screen_subtitle.text = "今日の成果を確認してキャラ選択へ戻ろう。"
 	_frame.visible = true
 	_result_screen.visible = true
 	_render_result()
@@ -293,27 +301,66 @@ func _render_result() -> void:
 		level_line = "レベル: %d → [b][color=#ffd75e]%d[/color][/b] / %d　[color=#ffd75e]LEVEL UP! +%d[/color]" % [
 			level_before, level_after, GameRules.MAX_LEVEL, level_after - level_before]
 	var failed := bool(_last_result.get("failed_by_pain", false))
-	var status_text := "痛みが限界に達した。今日の成果は半減となった。" if failed else "任意終了。成果をすべて持ち帰った。"
+	var status_line := "痛みが限界に達した。今日の成果は半減となった。\n" if failed else ""
 	var tool_lines := _format_finish_by_tool(_last_result.get("finish_count_by_tool", {}))
 	_result_body.text = (
 		"[b]%s[/b]\n"
-		+ "%s\n\n"
-		+ "本日のFINISH: %s\n"
-		+ "持ち帰りFINISH: %s\n"
 		+ "%s\n"
+		+ "%s\n"
+		+ "本日の絶頂回数: %s\n"
 		+ "%s"
-		+ "累計FINISH: %s\n"
+		+ "累計絶頂回数: %s\n"
 		+ "痛み失敗: %d"
 	) % [
 		str(_last_result.get("species_name", "？？？")),
-		status_text,
-		NumberFormat.group(int(_last_result.get("day_finish_count", 0))),
-		NumberFormat.group(int(_last_result.get("banked_finish_count", 0))),
 		level_line,
+		status_line,
+		NumberFormat.group(int(_last_result.get("day_finish_count", 0))),
 		tool_lines,
 		NumberFormat.group(int(chara["finish_total"])),
 		int(chara["pain_fail_total"])
 	]
+	_start_result_typing()
+
+## リザルト画面の登場演出。日付→本文の順に1文字ずつタイプし、終わったら
+## キャラ画像を短くフェードインして、最後に戻るボタンを出す。クリックで全表示に飛ばせる。
+func _start_result_typing() -> void:
+	if _result_type_tween:
+		_result_type_tween.kill()
+	_return_button.visible = false
+	_result_chara_image.modulate.a = 0.0
+	if DisplayServer.get_name() == "headless":
+		_complete_result_typing()
+		return
+	_date_label.visible_characters = 0
+	_result_body.visible_characters = 0
+	var date_total := _date_label.get_total_character_count()
+	var body_total := _result_body.get_total_character_count()
+	_result_type_tween = create_tween()
+	_result_type_tween.tween_interval(RESULT_TYPE_START_DELAY)
+	_result_type_tween.tween_property(
+		_date_label, "visible_characters", date_total, date_total / RESULT_TYPE_CHARS_PER_SEC)
+	_result_type_tween.tween_property(
+		_result_body, "visible_characters", body_total, body_total / RESULT_TYPE_CHARS_PER_SEC)
+	_result_type_tween.tween_property(
+		_result_chara_image, "modulate:a", 1.0, RESULT_IMAGE_FADE_DURATION)
+	_result_type_tween.tween_callback(func() -> void: _return_button.visible = true)
+
+func _is_result_typing() -> bool:
+	return _result_screen.visible and _result_type_tween != null and _result_type_tween.is_running()
+
+func _complete_result_typing() -> void:
+	if _result_type_tween:
+		_result_type_tween.kill()
+	_date_label.visible_characters = -1
+	_result_body.visible_characters = -1
+	_result_chara_image.modulate.a = 1.0
+	_return_button.visible = true
+
+func _on_result_body_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.pressed and _is_result_typing():
+		_complete_result_typing()
+		get_viewport().set_input_as_handled()
 
 ## { ツール表示名: FINISH数 } を件数の多い順に "- 指: 12\n" 形式へ整形する。空なら空文字。
 func _format_finish_by_tool(by_tool: Dictionary) -> String:
@@ -321,7 +368,7 @@ func _format_finish_by_tool(by_tool: Dictionary) -> String:
 		return ""
 	var tool_names := by_tool.keys()
 	tool_names.sort_custom(func(a, b): return int(by_tool[a]) > int(by_tool[b]))
-	var lines := "ツール別FINISH:\n"
+	var lines := "内訳:\n"
 	for tool_name in tool_names:
 		lines += "- %s: %s\n" % [tool_name, NumberFormat.group(int(by_tool[tool_name]))]
 	return lines + "\n"

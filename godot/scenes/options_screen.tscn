@@ -54,7 +54,7 @@ theme_override_constants/separation = 14
 
 [node name="BgmLabel" type="Label" parent="Center/Panel/Margin/VBox/BgmRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(150, 0)
 vertical_alignment = 1
 text = "BGM"
 
@@ -78,7 +78,7 @@ theme_override_constants/separation = 14
 
 [node name="SeLabel" type="Label" parent="Center/Panel/Margin/VBox/SeRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(150, 0)
 vertical_alignment = 1
 text = "効果音"
 
@@ -102,7 +102,7 @@ theme_override_constants/separation = 14
 
 [node name="VoiceLabel" type="Label" parent="Center/Panel/Margin/VBox/VoiceRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(150, 0)
 vertical_alignment = 1
 text = "ボイス"
 
@@ -120,24 +120,24 @@ vertical_alignment = 1
 horizontal_alignment = 2
 text = "100%"
 
-[node name="HeartsRow" type="HBoxContainer" parent="Center/Panel/Margin/VBox"]
+[node name="FxRow" type="HBoxContainer" parent="Center/Panel/Margin/VBox"]
 layout_mode = 2
 theme_override_constants/separation = 14
 
-[node name="HeartsLabel" type="Label" parent="Center/Panel/Margin/VBox/HeartsRow"]
+[node name="FxLabel" type="Label" parent="Center/Panel/Margin/VBox/FxRow"]
 layout_mode = 2
-custom_minimum_size = Vector2(90, 0)
+custom_minimum_size = Vector2(150, 0)
 vertical_alignment = 1
-text = "透明度"
+text = "エフェクト不透明度"
 
-[node name="HeartsSlider" type="HSlider" parent="Center/Panel/Margin/VBox/HeartsRow"]
+[node name="FxSlider" type="HSlider" parent="Center/Panel/Margin/VBox/FxRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(320, 24)
 size_flags_vertical = 4
 max_value = 1.0
 step = 0.05
 
-[node name="HeartsValue" type="Label" parent="Center/Panel/Margin/VBox/HeartsRow"]
+[node name="FxValue" type="Label" parent="Center/Panel/Margin/VBox/FxRow"]
 layout_mode = 2
 custom_minimum_size = Vector2(60, 0)
 vertical_alignment = 1

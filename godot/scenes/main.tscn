@@ -70,26 +70,21 @@ stretch_mode = 5
 
 [node name="LeftPage" type="VBoxContainer" parent="CanvasLayer/Frame"]
 layout_mode = 0
-offset_left = 250.0
-offset_top = 40.0
+offset_left = 280.0
+offset_top = 120.0
 offset_right = 635.0
 offset_bottom = 660.0
 theme_override_constants/separation = 16
 
-[node name="DateLabel" type="Label" parent="CanvasLayer/Frame/LeftPage"]
-theme_override_colors/font_color = Color(0.32, 0.26, 0.2, 0.92)
-theme_override_font_sizes/font_size = 15
-text = "帝国暦2026年1月1日"
-
-[node name="ScreenTitle" type="Label" parent="CanvasLayer/Frame/LeftPage"]
+[node name="JournalTitle" type="Label" parent="CanvasLayer/Frame/LeftPage"]
 theme_override_colors/font_color = Color(0.16, 0.12, 0.09, 1)
 theme_override_font_sizes/font_size = 28
-text = "リザルト"
+text = "矯導日誌"
 
-[node name="ScreenSubtitle" type="Label" parent="CanvasLayer/Frame/LeftPage"]
+[node name="DateLabel" type="Label" parent="CanvasLayer/Frame/LeftPage"]
 theme_override_colors/font_color = Color(0.32, 0.26, 0.2, 0.92)
-theme_override_font_sizes/font_size = 14
-text = "今日の成果を確認してキャラ選択へ戻ろう。"
+theme_override_font_sizes/font_size = 20
+text = "帝国暦2026年1月1日"
 
 [node name="ResultScreen" type="VBoxContainer" parent="CanvasLayer/Frame/LeftPage"]
 visible = false
@@ -100,6 +95,9 @@ bbcode_enabled = true
 fit_content = true
 scroll_active = false
 theme_override_colors/default_color = Color(0.16, 0.12, 0.09, 1)
+theme_override_constants/line_separation = 6
+theme_override_font_sizes/normal_font_size = 20
+theme_override_font_sizes/bold_font_size = 20
 
 [node name="Actions" type="HBoxContainer" parent="CanvasLayer/Frame/LeftPage/ResultScreen"]
 theme_override_constants/separation = 12
@@ -110,10 +108,10 @@ text = "選択画面へ戻る"
 [node name="ResultCharaImage" type="TextureRect" parent="CanvasLayer/Frame"]
 visible = false
 layout_mode = 0
-offset_left = 665.0
-offset_top = 40.0
-offset_right = 1050.0
-offset_bottom = 660.0
+offset_left = 684.0
+offset_top = 70.0
+offset_right = 1031.0
+offset_bottom = 628.0
 expand_mode = 1
 stretch_mode = 5
 

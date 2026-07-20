@@ -1,22 +1,22 @@
 class_name GameSettings
 extends RefCounted
 
-## 音声以外の表示設定（今のところハート演出の透明度のみ）。
+## 音声以外の表示設定（今のところエフェクトの不透明度のみ）。
 ## GameAudio の音量設定と同じ仕組みだが、音声を扱わない GameAudio とは
 ## 別ファイル・別クラスに分けている。user://fx_settings.json に永続化。
 
 const SETTINGS_PATH := "user://fx_settings.json"
 
-static var _heart_opacity := 1.0
+static var _fx_opacity := 1.0
 static var _loaded := false
 
-static func get_heart_opacity() -> float:
+static func get_fx_opacity() -> float:
 	_ensure_loaded()
-	return _heart_opacity
+	return _fx_opacity
 
-static func set_heart_opacity(value: float) -> void:
+static func set_fx_opacity(value: float) -> void:
 	_ensure_loaded()
-	_heart_opacity = clampf(value, 0.0, 1.0)
+	_fx_opacity = clampf(value, 0.0, 1.0)
 	_save()
 
 static func _ensure_loaded() -> void:
@@ -29,12 +29,12 @@ static func _ensure_loaded() -> void:
 	if file == null:
 		return
 	var data: Variant = JSON.parse_string(file.get_as_text())
-	if data is Dictionary and data.has("heart_opacity"):
-		_heart_opacity = clampf(float(data["heart_opacity"]), 0.0, 1.0)
+	if data is Dictionary and data.has("fx_opacity"):
+		_fx_opacity = clampf(float(data["fx_opacity"]), 0.0, 1.0)
 
 static func _save() -> void:
 	var file := FileAccess.open(SETTINGS_PATH, FileAccess.WRITE)
 	if file == null:
 		push_warning("エフェクト設定を保存できませんでした: %s" % SETTINGS_PATH)
 		return
-	file.store_string(JSON.stringify({"heart_opacity": _heart_opacity}))
+	file.store_string(JSON.stringify({"fx_opacity": _fx_opacity}))

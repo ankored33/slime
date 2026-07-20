@@ -16,15 +16,15 @@ signal back_requested
 	"se": $Center/Panel/Margin/VBox/SeRow/SeValue,
 	"voice": $Center/Panel/Margin/VBox/VoiceRow/VoiceValue
 }
-@onready var _hearts_slider: HSlider = $Center/Panel/Margin/VBox/HeartsRow/HeartsSlider
-@onready var _hearts_value_label: Label = $Center/Panel/Margin/VBox/HeartsRow/HeartsValue
+@onready var _fx_slider: HSlider = $Center/Panel/Margin/VBox/FxRow/FxSlider
+@onready var _fx_value_label: Label = $Center/Panel/Margin/VBox/FxRow/FxValue
 
 func _ready() -> void:
 	_back_button.pressed.connect(_on_back_pressed)
 	for category: String in _volume_sliders.keys():
 		var slider: HSlider = _volume_sliders[category]
 		slider.value_changed.connect(_on_volume_changed.bind(category))
-	_hearts_slider.value_changed.connect(_on_hearts_opacity_changed)
+	_fx_slider.value_changed.connect(_on_fx_opacity_changed)
 
 func show_options() -> void:
 	visible = true
@@ -32,9 +32,9 @@ func show_options() -> void:
 		var volume := GameAudio.get_volume(category)
 		(_volume_sliders[category] as HSlider).set_value_no_signal(volume)
 		_update_volume_value_label(category, volume)
-	var opacity := GameSettings.get_heart_opacity()
-	_hearts_slider.set_value_no_signal(opacity)
-	_hearts_value_label.text = "%d%%" % int(round(opacity * 100.0))
+	var opacity := GameSettings.get_fx_opacity()
+	_fx_slider.set_value_no_signal(opacity)
+	_fx_value_label.text = "%d%%" % int(round(opacity * 100.0))
 
 func _on_back_pressed() -> void:
 	back_requested.emit()
@@ -46,6 +46,6 @@ func _on_volume_changed(value: float, category: String) -> void:
 func _update_volume_value_label(category: String, volume: float) -> void:
 	(_volume_value_labels[category] as Label).text = "%d%%" % int(round(volume * 100.0))
 
-func _on_hearts_opacity_changed(value: float) -> void:
-	GameSettings.set_heart_opacity(value)
-	_hearts_value_label.text = "%d%%" % int(round(value * 100.0))
+func _on_fx_opacity_changed(value: float) -> void:
+	GameSettings.set_fx_opacity(value)
+	_fx_value_label.text = "%d%%" % int(round(value * 100.0))
