@@ -30,7 +30,8 @@ class_name CharacterDefs
 ##   （列: expression_id, line。同じ表情idを複数行書くと候補が増える）。
 ##   Excel/スプレッドシートで直接編集できる。読み込みは dialogue_loader.gd。
 ## - opening_pages: style = "split"（左に立ち絵・右にテキスト）| "blackout"（暗転＋中央テキスト）。
-##   split の portrait にはキャラ定義のキー名（portrait / portrait_after_opening）を書く。
+##   split の portrait にはキャラ定義のポートレート系キー名を書く
+##   （portrait / portrait_after_opening / portrait_captured 等、定義にあるキーなら可）。
 ##   表示は「。」および既存の改行ごとに1行としてフェードインする（opening_screen.gd）。
 ##   実体はコードに書かず `godot/data/opening/<キャラid>.csv` に置く
 ##   （列: style, portrait, text。行の並び順がページの並び順。textはセル内改行可）。
@@ -89,6 +90,10 @@ static func create() -> Array[Dictionary]:
 			"epithet_after_opening": "帝国の一般虜囚",
 			"portrait": "res://assets/chara/general/portrait.png",
 			"portrait_after_opening": "res://assets/chara/general/portrait_after_opening.png",
+			# オープニング専用CG（捕縛シーン）。opening CSV の portrait 列から参照される
+			"portrait_captured": "res://assets/chara/general/portrait_captured.png",
+			# 日次導入の幕開き演出用（無いキャラは result の画像で代用される。main.gd 参照）
+			"portrait_day_intro": "res://assets/chara/general/portrait_day_intro.png",
 			"result": "res://assets/chara/general/result.png",
 			"game_background": "res://assets/chara/general/game_background.png",
 			"expressions": {
@@ -108,7 +113,7 @@ static func create() -> Array[Dictionary]:
 				"image": "res://assets/chara/general/nipple_left.png",
 				"image_native_size": true,
 				"breast": "res://assets/chara/general/breast_left.png",
-				"breast_root": Vector2(325.0, 490.0)
+				"breast_root": Vector2(330.0, 660.0)
 			},
 			"right": {
 				"position": Vector2(753.6, 428.9),
@@ -116,7 +121,7 @@ static func create() -> Array[Dictionary]:
 				"image": "res://assets/chara/general/nipple_right.png",
 				"image_native_size": true,
 				"breast": "res://assets/chara/general/breast_right.png",
-				"breast_root": Vector2(350.0, 465.0)
+				"breast_root": Vector2(461.0, 575.0)
 			},
 			"mouth": {
 				"position": Vector2(661.3, 307.3),

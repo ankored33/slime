@@ -265,10 +265,13 @@ func _show_day_intro() -> void:
 	_showing_day_intro = true
 	var chara: Dictionary = _characters[_selected_index]
 	var prisoner_number := str(chara["name_after_opening"])
+	# 幕開きで見せる立ち絵は portrait_day_intro 優先、無いキャラは result で代用。
+	var intro_portrait_key := "portrait_day_intro" \
+		if str(chara.get("portrait_day_intro", "")) != "" else "result"
 	_opening_screen.start_with_pages(chara, [
 		{
 			"style": "curtain",
-			"portrait": "result",
+			"portrait": intro_portrait_key,
 			"text": "",
 			"confirm_text": "%sを矯導しますか？" % prisoner_number
 		},
