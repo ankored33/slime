@@ -30,7 +30,8 @@ ESCメニュー（タイトル画面以外の全画面で開く）は `main.gd` 
 | `scripts/options_screen.gd` | オプション画面（音量・ハート演出の透明度スライダー）。常にオーバーレイ表示 |
 | `scripts/pause_menu.gd` | ESCメニュー（オプション/タイトルに戻る/ゲーム終了、確認ダイアログ込み） |
 | `scripts/progress_store.gd` | セーブの書き出し・読み込み |
-| `scripts/characters.gd` | キャラ定義データ（テキスト・座標・パス）。推敲はここだけ |
+| `data/characters/*.tres` | キャラ定義データ（テキスト・座標・パス）。Godotエディタで編集可能 |
+| `scripts/character_definition.gd` / `scripts/characters.gd` | キャラResourceの形式と、Resource→実行時データへの変換・検証 |
 | `scripts/game_rules.gd` | 純粋なルール計算・バランス定数（Node非依存・テスト対象） |
 | `scripts/game_day_state.gd` | 1日分の左右ゲージ状態（快感・痛み）の保持・初期化 |
 | `scripts/game_day_gameplay.gd` | Node非依存の日次進行計算（接触・ゲージ変化・FINISH/失敗判定） |
@@ -38,6 +39,7 @@ ESCメニュー（タイトル画面以外の全画面で開く）は `main.gd` 
 | `scripts/game_screen_brushes.gd` | ブラシの収集・入力・保持/ドラッグ・解禁・衝突補正 |
 | `scripts/game_screen_fx.gd` | FINISH/失敗/憔悴の演出（フラッシュ・シェイク） |
 | `scripts/game_screen_tool_actions.gd` | 道具の固有アクション（ろう滴・噛む・挟んで引っ張る） |
+| `scripts/tool_action_registry.gd` | 道具id→右クリック固有アクション要求の登録 |
 | `scripts/brush.gd` | ブラシ1本の性能値・こすり判定・描画 |
 | `scripts/slime_target.gd` | 磨きターゲット（当たり判定・押し込み/引っ張りバネ） |
 | `scripts/expression_rules.gd` | 状態→表情id・接触ループSEの対応 |

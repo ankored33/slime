@@ -4,6 +4,7 @@ extends RefCounted
 ## Brush-side runtime for GameScreen: discovery, input, controls, unlocks and collision correction.
 
 const GameRules = preload("res://scripts/game_rules.gd")
+const ToolActionRegistryScript = preload("res://scripts/tool_action_registry.gd")
 
 ## ツールボックスのボタン表示順。HUDで未選択時に表示する順序も兼ねる。
 const BRUSH_DISPLAY_ORDER: Array[String] = [
@@ -21,6 +22,7 @@ var _end_day_button: Button
 var _extra_interactive: Array[Control] = []
 var _tool_buttons: Dictionary = {}
 var _unlocked: Dictionary = {}
+var _tool_action_registry := ToolActionRegistryScript.new()
 
 ## playfield にはブラシ・本体が属する座標空間のルート（ズーム対象の ZoomRoot）を渡す。
 func setup(root: Control, playfield: Control, brush_rack: Control, end_day_button: Button) -> void:
@@ -168,17 +170,7 @@ func handle_input(event: InputEvent) -> Dictionary:
 	if _is_over_interactive_ui(event.position):
 		return {}
 	if event.button_index == MOUSE_BUTTON_RIGHT:
-		if held_brush == null:
-			return {}
-		if held_brush.brush_id == "candle":
-			return {"wax_origin": held_brush.position + Vector2(0.0, held_brush.hit_radius * 0.7)}
-		if held_brush.brush_id == "teeth":
-			return {"bite_requested": true}
-		if held_brush.brush_id == "finger" or held_brush.brush_id == "clip":
-			return {"pinch_requested": true}
-		if held_brush.brush_id == "tongue":
-			return {"kiss_requested": true}
-		return {}
+		return _tool_action_registry.request_for(held_brush)
 	if event.button_index == MOUSE_BUTTON_LEFT:
 		_toggle_held_brush(_pick_brush(event.position))
 	return {}

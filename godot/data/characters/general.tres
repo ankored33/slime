@@ -1,0 +1,24 @@
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/character_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "general"
+character_name = "アリスティア"
+epithet = "《眩耀たる漆黒》"
+name_after_opening = "虜囚番号N10564"
+epithet_after_opening = "帝国の一般虜囚"
+portrait = "res://assets/chara/general/portrait.png"
+portrait_after_opening = "res://assets/chara/general/portrait_after_opening.png"
+portrait_captured = "res://assets/chara/general/portrait_captured.png"
+portrait_day_intro = "res://assets/chara/general/portrait_day_intro.png"
+result = "res://assets/chara/general/result.png"
+game_background = "res://assets/chara/general/game_background.png"
+expressions = {"climax": ["res://assets/chara/general/climax.png", "res://assets/chara/general/climax_2.png"]}
+profile = "ネブラレア王国将軍／同国軍総司令官\n\n能力評価：\n膂力　S\n技巧　SS\n魔力　S\n策略　B\n戦略　A\n\n脅威度：SSS"
+profile_after_opening = "種族：人間\n性別：女\n年齢：21\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院"
+color = Color(1, 0.71, 0.78, 0.92)
+left = {"position": Vector2(415.9, 552.7), "radius": 40.0, "image": "res://assets/chara/general/nipple_left.png", "image_native_size": true, "breast": "res://assets/chara/general/breast_left.png", "breast_root": Vector2(330, 660)}
+right = {"position": Vector2(753.6, 428.9), "radius": 40.0, "image": "res://assets/chara/general/nipple_right.png", "image_native_size": true, "breast": "res://assets/chara/general/breast_right.png", "breast_root": Vector2(461, 575)}
+mouth = {"position": Vector2(661.3, 307.3), "radius": 40.0}

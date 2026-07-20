@@ -7,6 +7,8 @@ const GameRules = preload("res://scripts/game_rules.gd")
 const ExpressionRules = preload("res://scripts/expression_rules.gd")
 const BrushScript = preload("res://scripts/brush.gd")
 const NumberFormat = preload("res://scripts/number_format.gd")
+const ToolActionRegistryScript = preload("res://scripts/tool_action_registry.gd")
+const CharacterDefsScript = preload("res://scripts/characters.gd")
 
 var _failures := 0
 var _passes := 0
@@ -25,6 +27,8 @@ func _init() -> void:
 	_test_expression_pick()
 	_test_rub_multiplier()
 	_test_brush_action()
+	_test_tool_action_registry()
+	_test_character_definitions()
 	_test_dialogue_loader()
 	_test_opening_loader()
 	_test_opening_sentence_split()
@@ -245,6 +249,41 @@ func _test_brush_action() -> void:
 	brush.brush_id = "teeth"
 	_check_near(brush.get_action_multiplier(), 0.0, "brush: teeth have no rubbing effect")
 	brush.free()
+
+func _test_tool_action_registry() -> void:
+	var registry = ToolActionRegistryScript.new()
+	var brush = BrushScript.new()
+	brush.position = Vector2(100.0, 200.0)
+	brush.hit_radius = 20.0
+	brush.brush_id = "candle"
+	var wax := registry.request_for(brush)
+	_check_eq(wax.get("wax_origin"), Vector2(100.0, 214.0),
+		"tool action: candle requests wax from its tip")
+	brush.brush_id = "teeth"
+	_check(bool(registry.request_for(brush).get("bite_requested", false)),
+		"tool action: teeth requests a bite")
+	brush.brush_id = "finger"
+	_check(bool(registry.request_for(brush).get("pinch_requested", false)),
+		"tool action: finger requests a pinch")
+	brush.brush_id = "tongue"
+	_check(bool(registry.request_for(brush).get("kiss_requested", false)),
+		"tool action: tongue requests a kiss")
+	brush.brush_id = "feather"
+	_check(registry.request_for(brush).is_empty(), "tool action: regular brush has no secondary action")
+	brush.free()
+
+func _test_character_definitions() -> void:
+	var characters := CharacterDefsScript.create()
+	_check_eq(characters.size(), 3, "characters: all external character resources load")
+	var ids: Array[String] = []
+	for chara in characters:
+		ids.append(str(chara["id"]))
+		_check(not str(chara["name"]).is_empty(), "characters: resource has a name")
+		_check(chara["left"].has("position") and chara["right"].has("position"),
+			"characters: resource has both target positions")
+		_check(not (chara["opening_pages"] as Array).is_empty(),
+			"characters: runtime adapter loads opening pages")
+	_check_eq(ids, ["general", "admiral", "mage"], "characters: resource order is stable")
 
 func _test_dialogue_loader() -> void:
 	var missing := DialogueLoader.load_dialogue("no_such_character")

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CharacterDefinition" load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/character_definition.gd" id="1"]
+
+[resource]
+script = ExtResource("1")
+id = "admiral"
+character_name = "チチカ・エルマ"
+epithet = "《緋色の方程式》"
+name_after_opening = "虜囚番号C39312"
+epithet_after_opening = "帝国の一般虜囚"
+portrait = "res://assets/chara/admiral/portrait.png"
+portrait_after_opening = "res://assets/chara/admiral/portrait_after_opening.png"
+result = "res://assets/chara/admiral/result.png"
+game_background = "res://assets/chara/admiral/game_background.png"
+profile = "ザコチック条約機構 軍事委員会議長\n\n能力評価：\n膂力　C\n技巧　C\n魔力　B\n策略　S\n戦略　SSS\n\n脅威度：SSS"
+profile_after_opening = "種族：ハイエルフ\n性別：女\n年齢：455\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院"
+color = Color(0.47, 0.9, 0.78, 0.92)
+left = {"position": Vector2(372.7, 390.2), "radius": 40.0, "image": "res://assets/chara/admiral/nipple_left.png", "image_native_size": true, "breast": "res://assets/chara/admiral/breast_left.png", "breast_root": Vector2(461, 765)}
+right = {"position": Vector2(921.7, 285.3), "radius": 40.0, "image": ""}
+mouth = {"position": Vector2(600, 160), "radius": 40.0}
