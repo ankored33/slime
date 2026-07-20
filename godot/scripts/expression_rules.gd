@@ -5,7 +5,11 @@ extends RefCounted
 ## Node/シーン非依存で単体テスト可能に保つ。
 
 # ブラシ無し（快感ゲージ比率で段階変化）
-const IDLE_A := "idle_a"        # 怒り・軽蔑
+const IDLE_A := "idle_a"        # 怒り・軽蔑（＝立ち絵ベースそのまま。差分画像は作らない）
+
+## ベース立ち絵をそのまま正式な表情とするid。差分画像が無くても
+## プレースホルダ表示（表情名ラベル）を出さない。置けば通常どおり上書きされる。
+const BASE_EXPRESSION := IDLE_A
 const IDLE_B := "idle_b"        # 恥じらい・耐え
 const IDLE_C := "idle_c"        # 大快感耐え
 const IDLE_D := "idle_d"        # 媚び

@@ -493,7 +493,8 @@ func _apply_expression(expression_id: String) -> void:
 	var texture := _resolve_face_texture(expression_id)
 	_face_image.texture = texture
 	_face_image.visible = texture != null
-	_expression_label.visible = texture == null
+	_expression_label.visible = texture == null \
+		and expression_id != ExpressionRules.BASE_EXPRESSION
 	_expression_label.text = "顔差分：%s" % ExpressionRules.display_name(expression_id)
 	_update_dialogue(expression_id)
 	# 表情が変わった瞬間だけボイス再生を試みる（素材が無ければ無音、連射は抑制済み）。
