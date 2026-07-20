@@ -509,11 +509,14 @@ func _update_dialogue(expression_id: String) -> void:
 	_dialogue_label.text = "「%s」" % line if line != "" else ""
 
 ## キャラ定義の expressions 辞書を優先し、次に既定の表情パスを探す。
+## 辞書の値がパス配列なら、その表情に入るたびランダムに1つ選ぶ。
 ## 立ち絵ベース（game_background、setup_species で一度だけ設定）の上に重ねる
 ## 顔だけの差分（背景・体は透過）を返す。無ければ null（ベースがそのまま見える）。
 func _resolve_face_texture(expression_id: String) -> Texture2D:
 	var expressions: Dictionary = _species["expressions"]
-	var path := str(expressions.get(expression_id, ""))
+	var entry: Variant = expressions.get(expression_id, "")
+	var path := str((entry as Array).pick_random()) if entry is Array \
+		and not (entry as Array).is_empty() else str(entry)
 	if path == "":
 		path = ExpressionRules.default_image_path(str(_species["id"]), expression_id)
 	return _load_texture(path)

@@ -464,6 +464,8 @@ func _test_pause_title_return_and_save_persistence() -> void:
 	game.setup_species(main._characters[1])
 	_check(live_breast_layers.call().size() == 1, "breast layer: created for admiral left side")
 	game.setup_species(main._characters[0])
+	_check(live_breast_layers.call().size() == 2, "breast layer: created for general both sides")
+	game.setup_species(main._characters[2])
 	_check(live_breast_layers.call().is_empty(), "breast layer: absent for characters without breast assets")
 
 func _restore_save() -> void:

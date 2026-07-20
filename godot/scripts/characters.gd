@@ -16,7 +16,8 @@ class_name CharacterDefs
 ##   （left/right と違い画像・胸レイヤーは持たない）。座標換算は left/right と同じ規則。
 ## - game_background は磨き画面の立ち絵ベース（常時表示・表情では差し替わらない）。
 ## - expressions は表情id → 顔だけの差分画像パス（背景・体は透過、game_background の上に
-##   重ねる）。空のままなら既定パス res://assets/chara/<id>/<表情id>.png を探し、
+##   重ねる）。パス配列にすると、その表情に入るたびランダムに1つ選ばれる。
+##   空のままなら既定パス res://assets/chara/<id>/<表情id>.png を探し、
 ##   それも無ければ何も重ねず game_background のまま・表情名ラベルで代替表示する
 ##   （game_screen.gd の _resolve_face_texture 参照）。
 ##   表情id一覧: idle_a〜idle_d（ブラシ無し）, touch_a〜touch_d（ブラシ当て）,
@@ -90,24 +91,35 @@ static func create() -> Array[Dictionary]:
 			"portrait_after_opening": "res://assets/chara/general/portrait_after_opening.png",
 			"result": "res://assets/chara/general/result.png",
 			"game_background": "res://assets/chara/general/game_background.png",
-			"expressions": {},
+			"expressions": {
+				# 配列は表情に入るたびランダムに1つ選ばれる
+				"climax": [
+					"res://assets/chara/general/climax.png",
+					"res://assets/chara/general/climax_2.png",
+				],
+			},
 			"dialogue": DialogueLoader.load_dialogue("general"),
 			"profile": "ネブラレア王国将軍／同国軍総司令官\n\n能力評価：\n膂力　S\n技巧　SS\n魔力　S\n策略　B\n戦略　A\n\n脅威度：SSS",
 			"profile_after_opening": "種族：人間\n性別：女\n年齢：21\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(1.0, 0.71, 0.78, 0.92),
 			"left": {
-				"position": Vector2(413.2, 503.1),
+				"position": Vector2(415.9, 552.7),
 				"radius": 40.0,
-				"image": ""
+				"image": "res://assets/chara/general/nipple_left.png",
+				"image_native_size": true,
+				"breast": "res://assets/chara/general/breast_left.png",
+				"breast_root": Vector2(325.0, 490.0)
 			},
 			"right": {
-				"position": Vector2(679.6, 350.1),
+				"position": Vector2(753.6, 428.9),
 				"radius": 40.0,
-				"image": ""
+				"image": "res://assets/chara/general/nipple_right.png",
+				"image_native_size": true,
+				"breast": "res://assets/chara/general/breast_right.png",
+				"breast_root": Vector2(350.0, 465.0)
 			},
-			# 仮座標。顔まわりの実際の立ち絵に合わせて要再計測。
 			"mouth": {
-				"position": Vector2(600.0, 160.0),
+				"position": Vector2(661.3, 307.3),
 				"radius": 40.0
 			},
 			"level": 1,
