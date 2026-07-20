@@ -3,9 +3,13 @@ extends RefCounted
 
 const SAVE_PATH := "user://slime_save_v2.json"
 
+## 初回チュートリアルの既読フラグ（キャラ横断のグローバル状態）。
+var tutorial_seen := false
+
 func save(characters: Array[Dictionary]) -> void:
 	var payload := {
 		"version": 2,
+		"tutorial_seen": tutorial_seen,
 		"characters": []
 	}
 	for chara in characters:
@@ -36,6 +40,7 @@ func load_into(characters: Array[Dictionary]) -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
 		push_warning("Save format is invalid; ignoring save file.")
 		return
+	tutorial_seen = bool(parsed.get("tutorial_seen", false))
 	var loaded: Array = parsed.get("characters", [])
 	var by_id: Dictionary = {}
 	for entry in loaded:

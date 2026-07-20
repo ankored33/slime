@@ -48,10 +48,15 @@ var _showing_day_intro := false
 @onready var _title_options_button: Button = $CanvasLayer/TitleScreen/Center/VBox/TitleOptionsButton
 @onready var _options_screen: OptionsScreen = $CanvasLayer/OptionsScreen
 @onready var _pause_menu: PauseMenu = $CanvasLayer/PauseMenu
+@onready var _tutorial_overlay: Control = $CanvasLayer/TutorialOverlay
+@onready var _tutorial_body: Label = $CanvasLayer/TutorialOverlay/Center/VBox/Body
+@onready var _tutorial_button: Button = $CanvasLayer/TutorialOverlay/Center/VBox/ButtonRow/AcknowledgeButton
 
 func _ready() -> void:
 	_return_button.pressed.connect(_on_return_pressed)
 	_result_body.gui_input.connect(_on_result_body_gui_input)
+	_tutorial_body.text = TutorialText.BODY
+	_tutorial_button.pressed.connect(_on_tutorial_acknowledged)
 	_title_start_button.pressed.connect(_on_title_start_pressed)
 	_title_options_button.pressed.connect(_on_title_options_pressed)
 	_options_screen.back_requested.connect(_on_options_back_requested)
@@ -82,6 +87,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 		return
 	if not event.is_action_pressed("ui_cancel"):
+		return
+	if _tutorial_overlay.visible:
 		return
 	if _options_screen.visible:
 		_on_options_back_requested()
@@ -176,6 +183,7 @@ func _hide_all_screens() -> void:
 	_opening_screen.visible = false
 	_options_screen.visible = false
 	_pause_menu.visible = false
+	_tutorial_overlay.visible = false
 
 func _show_title_screen() -> void:
 	_hide_all_screens()
@@ -210,6 +218,21 @@ func _show_game_screen() -> void:
 	_game_screen.visible = true
 	# 磨き画面のBGMは3曲からランダム。
 	GameAudio.play_bgm("game_%s" % (["a", "b", "c"] as Array[String]).pick_random())
+	_maybe_show_tutorial()
+
+## 初回だけ、磨き画面の上にチュートリアル訓示を被せる。閉じるまでゲームは停止。
+func _maybe_show_tutorial() -> void:
+	if _progress_store.tutorial_seen or DisplayServer.get_name() == "headless":
+		return
+	_tutorial_overlay.visible = true
+	_game_screen.pause_for_menu()
+
+func _on_tutorial_acknowledged() -> void:
+	GameAudio.play_se("ui_click")
+	_tutorial_overlay.visible = false
+	_game_screen.resume_from_menu()
+	_progress_store.tutorial_seen = true
+	_save_progress()
 
 func _show_result_screen() -> void:
 	_hide_all_screens()

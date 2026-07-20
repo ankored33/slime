@@ -254,6 +254,50 @@ value = 1.0
 allow_greater = false
 allow_lesser = false
 
+[node name="TutorialOverlay" type="Control" parent="CanvasLayer"]
+visible = false
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Bg" type="ColorRect" parent="CanvasLayer/TutorialOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.01, 0.012, 0.02, 0.88)
+
+[node name="Center" type="CenterContainer" parent="CanvasLayer/TutorialOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBox" type="VBoxContainer" parent="CanvasLayer/TutorialOverlay/Center"]
+layout_mode = 2
+theme_override_constants/separation = 24
+
+[node name="Body" type="Label" parent="CanvasLayer/TutorialOverlay/Center/VBox"]
+layout_mode = 2
+custom_minimum_size = Vector2(820, 0)
+theme_override_font_sizes/font_size = 19
+autowrap_mode = 3
+
+[node name="ButtonRow" type="CenterContainer" parent="CanvasLayer/TutorialOverlay/Center/VBox"]
+layout_mode = 2
+
+[node name="AcknowledgeButton" type="Button" parent="CanvasLayer/TutorialOverlay/Center/VBox/ButtonRow"]
+layout_mode = 2
+custom_minimum_size = Vector2(220, 48)
+theme_override_font_sizes/font_size = 18
+text = "承知した"
+
 [node name="PauseMenu" parent="CanvasLayer" instance=ExtResource("8")]
 visible = false
 
