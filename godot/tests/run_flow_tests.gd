@@ -249,7 +249,8 @@ func _test_candle_wax_finish_counting() -> void:
 	_check(float(high_level_wax_state["left"]["polish"]) > GameRules.GAUGE_MAX,
 		"candle: high-level wax stimulus is not capped by the display gauge")
 	var finish_count_before: int = int(game._day_finish_count)
-	game._slime_state = high_level_wax_state
+	game._day_state.targets = high_level_wax_state
+	game._slime_state = game._day_state.targets
 	game._check_finish()
 	_check(game._day_finish_count - finish_count_before > 1,
 		"candle: one high-level wax impact counts multiple finishes")

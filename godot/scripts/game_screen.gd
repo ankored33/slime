@@ -8,13 +8,12 @@ const GameScreenBrushes = preload("res://scripts/game_screen_brushes.gd")
 const GameScreenFxScript = preload("res://scripts/game_screen_fx.gd")
 const GameScreenToolActionsScript = preload("res://scripts/game_screen_tool_actions.gd")
 const DebugPanelScript = preload("res://scripts/debug_panel.gd")
+const GameDayStateScript = preload("res://scripts/game_day_state.gd")
+const GameDayGameplayScript = preload("res://scripts/game_day_gameplay.gd")
 
 @export var follow_speed := 16.0
 @export var finish_fx_duration := 5.0
 @export var fail_fx_duration := 2.5
-
-# 痛み上昇の全体係数（快感とのバランス調整用）。
-const PAIN_GAIN_SCALE := 0.35
 
 # 前回FINISHからこの秒数以上空いた単発FINISHは5秒のフル演出（儀式期）。
 # それ未満で連続する場合は進行を止めない軽量パルスに切り替え、
@@ -47,11 +46,12 @@ var _gauge_map: Dictionary = {}
 var _brushes := GameScreenBrushes.new()
 var _fx := GameScreenFxScript.new()
 var _tool_actions := GameScreenToolActionsScript.new()
+var _day_state := GameDayStateScript.new()
+var _gameplay := GameDayGameplayScript.new()
 var _slimes: Array[SlimeTarget] = []
-var _slime_state := {
-	"left": {"polish": 0.0, "pain": 0.0},
-	"right": {"polish": 0.0, "pain": 0.0}
-}
+# Compatibility view for tool actions and debug/flow tests. New gameplay code
+# should use _day_state so ownership of the mutable day state stays explicit.
+var _slime_state: Dictionary = _day_state.targets
 var _species: Dictionary = {}
 var _breast_layers: Array[BreastLayer] = []
 var _day_finish_count := 0
@@ -133,7 +133,7 @@ func _input(event: InputEvent) -> void:
 	if action.has("wax_origin"):
 		_tool_actions.spawn_wax_drop(action["wax_origin"], blocked)
 	elif action.has("bite_requested"):
-		_tool_actions.apply_teeth_bite(_slime_state, _current_level(), blocked)
+		_tool_actions.apply_teeth_bite(_day_state.targets, _current_level(), blocked)
 	elif action.has("pinch_requested"):
 		_tool_actions.toggle_pinch(blocked)
 	elif action.has("kiss_requested"):
@@ -199,7 +199,7 @@ func _process(delta: float) -> void:
 	_tool_actions.update_pinch(
 		get_global_mouse_position(), delta, _fx.finish_active or _fx.fail_active)
 	_tool_actions.apply_clip_effects(
-		_slime_state, _current_level(), delta, _fx.finish_active or _fx.fail_active)
+		_day_state.targets, _current_level(), delta, _fx.finish_active or _fx.fail_active)
 	_fx.update(delta)
 	var touch_info := _compute_touch_info()
 	if _tool_actions.pinch_brush != null and _tool_actions.pinch_brush.brush_id == "clip":
@@ -210,18 +210,17 @@ func _process(delta: float) -> void:
 		for brush in _brushes.brush_map.values():
 			if brush.is_effective():
 				_apply_brush_effects(brush, delta)
-		var wax_polish := _tool_actions.update_wax_drops(delta, _slime_state, _current_level())
+		var wax_polish := _tool_actions.update_wax_drops(delta, _day_state.targets, _current_level())
 		if wax_polish > 0.0:
 			_polish_this_tick_by_tool["candle"] = \
 				float(_polish_this_tick_by_tool.get("candle", 0.0)) + wax_polish
 		var kiss_polish := _tool_actions.update_kiss(
-			_mouth_position(), _mouth_radius(), _slime_state, _current_level(), delta)
+			_mouth_position(), _mouth_radius(), _day_state.targets, _current_level(), delta)
 		if kiss_polish > 0.0:
 			_polish_this_tick_by_tool["tongue"] = \
 				float(_polish_this_tick_by_tool.get("tongue", 0.0)) + kiss_polish
 	if not _fx.fail_active:
-		_apply_pain_recovery(touch_info["touched_sides"], delta)
-		_apply_polish_decay(touch_info["touched_sides"], delta)
+		_gameplay.apply_passive_changes(_day_state, touch_info["touched_sides"], delta)
 	_update_slime_squish(delta)
 	_brushes.resolve_collisions(_slimes, _tool_actions.pinch_brush)
 	_update_brush_facing(delta)
@@ -326,10 +325,8 @@ func reset_day() -> void:
 	_current_expression = ""
 	_fx.reset()
 	_tool_actions.clear()
-	_slime_state = {
-		"left": {"polish": 0.0, "pain": 0.0},
-		"right": {"polish": 0.0, "pain": 0.0}
-	}
+	_day_state.reset()
+	_slime_state = _day_state.targets
 	_brushes.reset()
 	_zoom_root.scale = Vector2.ONE
 	_zoom_root.position = Vector2.ZERO
@@ -389,81 +386,21 @@ func _update_brush_facing(delta: float) -> void:
 		brush.update_contact_facing(nearest_pos, delta)
 
 func _apply_brush_effects(brush: Brush, delta: float) -> void:
-	var rates := _brush_effect_rates(brush, _current_level())
-	for slime in _slimes:
-		if _is_brush_touching_slime(brush, slime):
-			var side := String(slime.side)
-			var state: Dictionary = _slime_state.get(side, {})
-			# 快感には上限を設けない（高感度帯は1フレームでしきい値の何倍にも達する）。
-			# ゲージ表示側（named_gauge.gd）が GAUGE_MAX でクランプして見せるので、
-			# 表示が壊れることはない。
-			var polish_gain := float(rates["polish"]) * delta
-			state["polish"] = maxf(0.0, float(state.get("polish", 0.0)) + polish_gain)
-			state["pain"] = clamp(float(state.get("pain", 0.0)) + float(rates["pain"]) * delta, 0.0, GameRules.PAIN_CAP)
-			state["pain"] = clamp(float(state["pain"]) - float(rates["soothe"]) * delta, 0.0, GameRules.PAIN_CAP)
-			_slime_state[side] = state
-			if polish_gain > 0.0:
-				_polish_this_tick_by_tool[brush.brush_id] = \
-					float(_polish_this_tick_by_tool.get(brush.brush_id, 0.0)) + polish_gain
-
-## アクティブなブラシが触れていない部位は痛みが自然回復する。
-func _apply_pain_recovery(touched_sides: Dictionary, delta: float) -> void:
-	for side in ["left", "right"]:
-		if bool(touched_sides.get(side, false)):
-			continue
-		var state: Dictionary = _slime_state[side]
-		state["pain"] = maxf(0.0, float(state["pain"]) - GameRules.PAIN_RECOVERY_PER_SEC * delta)
-		_slime_state[side] = state
-
-## アクティブなブラシが触れていない部位は快感が自然に減衰する。
-func _apply_polish_decay(touched_sides: Dictionary, delta: float) -> void:
-	for side in ["left", "right"]:
-		if bool(touched_sides.get(side, false)):
-			continue
-		var state: Dictionary = _slime_state[side]
-		state["polish"] = maxf(0.0, float(state["polish"]) - GameRules.POLISH_DECAY_PER_SEC * delta)
-		_slime_state[side] = state
-
-func _brush_effect_rates(brush: Brush, level: int) -> Dictionary:
-	# 通常ブラシはこすった速度、回転ブラシはON中の自動回転で効く。
-	var rub := brush.get_action_multiplier()
-	return {
-		"polish": brush.get_effective_polish_gain() * GameRules.polish_bonus(level) * rub,
-		"pain": brush.get_effective_pain_gain() * GameRules.pain_resist(level) * rub * PAIN_GAIN_SCALE,
-		"soothe": brush.get_effective_soothe_gain() * rub
-	}
+	var polish_gain := _gameplay.apply_brush_effects(
+		brush, _slimes, _day_state, _current_level(), delta)
+	if polish_gain > 0.0:
+		_polish_this_tick_by_tool[brush.brush_id] = \
+			float(_polish_this_tick_by_tool.get(brush.brush_id, 0.0)) + polish_gain
 
 ## ゲーム効果上の接触判定。効果適用・表情・痛み回復で必ず同じ条件を使う。
 ## 押し込み表現は変形量を求めるため base radius 基準の overlap を別途計算する。
 func _is_brush_touching_slime(brush: Brush, slime: SlimeTarget) -> bool:
-	return brush.position.distance_to(slime.position) \
-		<= brush.get_contact_radius() + slime.get_hit_radius()
+	return _gameplay.is_brush_touching(brush, slime)
 
 ## アクティブなブラシの接触状態と、いま掛かっている上昇量/秒（補正込み）。
 ## touched_sides は side名 → 接触中フラグ（痛み自然回復の判定に使う）。
 func _compute_touch_info() -> Dictionary:
-	var touching := false
-	var touched_sides := {}
-	var polish_rate := 0.0
-	var pain_rate := 0.0
-	var level := int(_species["level"])
-	for brush: Brush in _brushes.brush_map.values():
-		if not brush.visible or not brush.is_effective():
-			continue
-		var rates := _brush_effect_rates(brush, level)
-		for slime in _slimes:
-			if _is_brush_touching_slime(brush, slime):
-				touching = true
-				touched_sides[String(slime.side)] = true
-				# _apply_brush_effects と同じ係数で「ゲージが実際に動く速さ」を比較する。
-				polish_rate += float(rates["polish"])
-				pain_rate += float(rates["pain"]) - float(rates["soothe"])
-	return {
-		"touching": touching,
-		"touched_sides": touched_sides,
-		"polish_rate": polish_rate,
-		"pain_rate": pain_rate
-	}
+	return _gameplay.touch_info(_brushes.brush_map, _slimes, _current_level())
 
 func _update_expression(info: Dictionary = {}) -> void:
 	if info.is_empty():
@@ -574,7 +511,7 @@ func _update_brush_controls() -> void:
 	_brushes.update_controls(_brush_name_label, _brush_spec_label)
 
 func _get_combined_polish() -> float:
-	return float(_slime_state["left"]["polish"]) + float(_slime_state["right"]["polish"])
+	return _day_state.combined_polish()
 
 func _current_level() -> int:
 	return int(_species["level"])
@@ -588,17 +525,12 @@ func _mouth_radius() -> float:
 	return float(mouth.get("radius", 40.0))
 
 func _check_finish() -> void:
-	var count := GameRules.finish_count(
-		float(_slime_state["left"]["polish"]), float(_slime_state["right"]["polish"]), finish_threshold)
+	var count := _gameplay.finish_count(_day_state, finish_threshold)
 	if count <= 0:
 		return
 	_day_finish_count += count
 	_rate_accum += count
 	_credit_finish_to_tool(count)
-	for side in ["left", "right"]:
-		var state: Dictionary = _slime_state[side]
-		state["polish"] = 0.0
-		_slime_state[side] = state
 	if count == 1 and _day_time - _last_finish_at >= FULL_FINISH_FX_MIN_INTERVAL:
 		_start_finish_fx()
 	else:
@@ -630,8 +562,7 @@ func _is_chain_climax() -> bool:
 	return _day_finish_count > 0 and (_day_time - _last_finish_at) < 0.5
 
 func _check_failure() -> void:
-	var peak_pain: float = maxf(float(_slime_state["left"]["pain"]), float(_slime_state["right"]["pain"]))
-	if peak_pain >= GameRules.PAIN_LIMIT:
+	if _gameplay.has_failed(_day_state):
 		_start_fail_fx()
 
 # --- デバッグパネル用フック（debug_panel.gd から呼ばれる。リリースでは未使用） ---
@@ -653,10 +584,8 @@ func debug_add_gauge(side: String, key: String, amount: float) -> void:
 	_slime_state[side] = state
 
 func debug_reset_gauges() -> void:
-	_slime_state = {
-		"left": {"polish": 0.0, "pain": 0.0},
-		"right": {"polish": 0.0, "pain": 0.0}
-	}
+	_day_state.reset()
+	_slime_state = _day_state.targets
 
 func debug_trigger_finish() -> void:
 	if not _is_running or _fx.finish_active or _fx.fail_active:

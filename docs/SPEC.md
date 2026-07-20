@@ -32,7 +32,9 @@ ESCメニュー（タイトル画面以外の全画面で開く）は `main.gd` 
 | `scripts/progress_store.gd` | セーブの書き出し・読み込み |
 | `scripts/characters.gd` | キャラ定義データ（テキスト・座標・パス）。推敲はここだけ |
 | `scripts/game_rules.gd` | 純粋なルール計算・バランス定数（Node非依存・テスト対象） |
-| `scripts/game_screen.gd` | 磨き画面の進行・ゲージ・表情切替 |
+| `scripts/game_day_state.gd` | 1日分の左右ゲージ状態（快感・痛み）の保持・初期化 |
+| `scripts/game_day_gameplay.gd` | Node非依存の日次進行計算（接触・ゲージ変化・FINISH/失敗判定） |
+| `scripts/game_screen.gd` | 磨き画面の進行調整・UI/表情/演出への反映 |
 | `scripts/game_screen_brushes.gd` | ブラシの収集・入力・保持/ドラッグ・解禁・衝突補正 |
 | `scripts/game_screen_fx.gd` | FINISH/失敗/憔悴の演出（フラッシュ・シェイク） |
 | `scripts/game_screen_tool_actions.gd` | 道具の固有アクション（ろう滴・噛む・挟んで引っ張る） |
