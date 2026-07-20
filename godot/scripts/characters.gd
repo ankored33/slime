@@ -92,7 +92,7 @@ static func create() -> Array[Dictionary]:
 			"game_background": "res://assets/chara/general/game_background.png",
 			"expressions": {},
 			"dialogue": DialogueLoader.load_dialogue("general"),
-			"profile": "ネブラレア王国将軍／同国軍総司令官\n\n能力評価：\n膂力　S\n技巧　SS\n魔力　S\n策略　B\n戦略　A",
+			"profile": "ネブラレア王国将軍／同国軍総司令官\n\n能力評価：\n膂力　S\n技巧　SS\n魔力　S\n策略　B\n戦略　A\n\n脅威度：SSS",
 			"profile_after_opening": "種族：人間\n性別：女\n年齢：21\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(1.0, 0.71, 0.78, 0.92),
 			"left": {
@@ -128,7 +128,7 @@ static func create() -> Array[Dictionary]:
 			"game_background": "res://assets/chara/admiral/game_background.png",
 			"expressions": {},
 			"dialogue": DialogueLoader.load_dialogue("admiral"),
-			"profile": "ザコチック条約機構 軍事委員会議長\n\n能力評価：\n膂力　C\n技巧　C\n魔力　B\n策略　S\n戦略　SSS",
+			"profile": "ザコチック条約機構 軍事委員会議長\n\n能力評価：\n膂力　C\n技巧　C\n魔力　B\n策略　S\n戦略　SSS\n\n脅威度：SSS",
 			"profile_after_opening": "種族：ハイエルフ\n性別：女\n年齢：455\n捕縛日：帝国暦2025年8月\n収監場所：帝国矯罰院",
 			"color": Color(0.47, 0.9, 0.78, 0.92),
 			"left": {
@@ -167,7 +167,7 @@ static func create() -> Array[Dictionary]:
 			"game_background": "res://assets/chara/mage/game_background.png",
 			"expressions": {},
 			"dialogue": DialogueLoader.load_dialogue("mage"),
-			"profile": "イジラール魔導皇国 大賢者／宮廷魔術師団長\n\n能力評価：\n膂力　E\n技巧　A\n魔力　SSS\n策略　A\n戦略　B",
+			"profile": "イジラール魔導皇国 大賢者／宮廷魔術師団長\n\n能力評価：\n膂力　E\n技巧　A\n魔力　SSS\n策略　A\n戦略　B\n\n脅威度：SSS",
 			"profile_after_opening": "種族：魔女\n性別：女\n年齢：308（外見二十代）\n捕縛日：帝国暦2025年10月\n収監場所：帝国矯罰院",
 			"color": Color(0.72, 0.55, 0.95, 0.92),
 			# 仮座標。立ち絵素材が入ったら要再計測。
