@@ -135,6 +135,7 @@ const BRUSH_UNLOCK_LEVELS := {
 	"fude": 3,
 	"toothbrush": 6,
 	"rotary": 10,
+	"rotor": 12,
 	"tawashi": 14,
 	"candle": 17,
 	"teeth": 21

@@ -8,7 +8,7 @@ const GameRules = preload("res://scripts/game_rules.gd")
 ## ツールボックスのボタン表示順。HUDで未選択時に表示する順序も兼ねる。
 const BRUSH_DISPLAY_ORDER: Array[String] = [
 	"finger", "tongue", "feather", "fude", "teeth",
-	"toothbrush", "rotary", "tawashi", "candle"
+	"toothbrush", "rotary", "rotor", "tawashi", "candle"
 ]
 
 var brush_map: Dictionary = {}
@@ -160,9 +160,6 @@ func _find_control_descendants(root: Node) -> Array[Control]:
 func handle_input(event: InputEvent) -> Dictionary:
 	if not (event is InputEventMouseButton):
 		return {}
-	if event.button_index == MOUSE_BUTTON_RIGHT and not event.pressed:
-		# 挟んでいる最中はUIの上で離しても必ず解放する。
-		return {"pinch_released": true}
 	if not event.pressed:
 		return {}
 	if _is_over_interactive_ui(event.position):
@@ -231,8 +228,8 @@ func _set_held_brush(brush: Brush) -> void:
 	held_brush = brush
 	if held_brush != null:
 		held_brush.is_held = true
-		# 回転ブラシは保持中も回り続ける（収納時だけ止まる）。
-		if held_brush.is_rotating:
+		# 動力型（回転・振動）は保持中も動き続ける（収納時だけ止まる）。
+		if held_brush.is_motorized():
 			held_brush.is_active = true
 
 func _is_brush_in_rack(brush: Brush) -> bool:
@@ -304,10 +301,12 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 	spec += " / サイズ %d" % int(round(selected_brush.hit_radius))
 	if selected_brush.is_rotating:
 		spec += " / 自動回転"
+	if selected_brush.is_vibrating:
+		spec += " / 自動振動"
 	if selected_brush.brush_id == "finger":
-		spec += " / 右クリック長押し：挟んで引っ張る"
+		spec += " / 右クリック：挟む/離す"
 	if selected_brush.brush_id == "tongue":
-		spec += " / 口に重ねて右クリック長押し：口づけ"
+		spec += " / 口に重ねて右クリック：口づけON/OFF"
 	spec_label.text = spec
 
 func _update_tool_button_states() -> void:

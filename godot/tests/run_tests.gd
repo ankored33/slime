@@ -232,6 +232,13 @@ func _test_brush_action() -> void:
 	brush.is_active = true
 	_check_near(brush.get_action_multiplier(), 1.0, "brush: rotating brush on works while parked")
 	brush.is_rotating = false
+	brush.is_vibrating = true
+	brush.is_active = false
+	_check_near(brush.get_action_multiplier(), 0.0, "brush: vibrating brush off has no effect")
+	brush.is_active = true
+	_check_near(brush.get_action_multiplier(), 1.0, "brush: vibrating brush on works while parked")
+	_check(not brush.uses_rub(), "brush: vibrating brush does not use rub")
+	brush.is_vibrating = false
 	brush.brush_id = "candle"
 	brush._rub_speed = 500.0
 	_check_near(brush.get_action_multiplier(), 0.0, "brush: candle has no rubbing effect")

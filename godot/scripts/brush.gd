@@ -20,6 +20,8 @@ const CONTACT_RATIO := 0.8
 ## 回転ブラシだけがON/OFFでき、静止中も回転によって効果を出す。
 @export var is_rotating := false
 @export var rotation_speed := 4.5
+## ローター等。静止中も振動によって効果を出す（見た目も細かく震える）。
+@export var is_vibrating := false
 @export var fill_color := Color(1, 0.862745, 0.529412, 0.95):
 	set(value):
 		fill_color = value
@@ -83,11 +85,28 @@ func _apply_texture(texture: Texture2D) -> void:
 	_sprite.texture = texture
 	_sync_visuals()
 
+## 振動の見た目。稼働中、画像を小刻みに揺らす。
+const VIBRATE_AMPLITUDE := 2.5
+const VIBRATE_SPEED := 60.0
+var _vibrate_phase := 0.0
+
 func _process(delta: float) -> void:
 	if is_rotating and is_active:
 		rotation += rotation_speed * delta
+	if is_vibrating and not Engine.is_editor_hint():
+		_update_vibration_visual(delta)
 	if not Engine.is_editor_hint():
 		_track_rub_speed(delta)
+
+func _update_vibration_visual(delta: float) -> void:
+	var offset := Vector2.ZERO
+	if is_active:
+		_vibrate_phase += delta * VIBRATE_SPEED
+		offset = Vector2(sin(_vibrate_phase * 1.31), cos(_vibrate_phase)) * VIBRATE_AMPLITUDE
+	if _sprite != null:
+		_sprite.position = offset
+	else:
+		_body.position = offset
 
 func _track_rub_speed(delta: float) -> void:
 	if _prev_position == Vector2.INF:
@@ -102,9 +121,13 @@ func _track_rub_speed(delta: float) -> void:
 func get_contact_radius() -> float:
 	return hit_radius * CONTACT_RATIO
 
-## こすり判定で効果を出すブラシかどうか（回転ブラシ・固有アクション型を除く）。
+## 置いたままでも動力（回転・振動）で効果を出し続ける道具かどうか。
+func is_motorized() -> bool:
+	return is_rotating or is_vibrating
+
+## こすり判定で効果を出すブラシかどうか（動力型・固有アクション型を除く）。
 func uses_rub() -> bool:
-	return not is_rotating and brush_id not in ["candle", "teeth"]
+	return not is_motorized() and brush_id not in ["candle", "teeth"]
 
 ## こすり系ブラシは接触中、画像の上端を本体の中心へ向ける。離れたら直立に戻る。
 const FACING_TURN_SPEED := 12.0
@@ -125,7 +148,7 @@ func get_action_multiplier() -> float:
 	# 固有アクション型の道具は本体をこすっても磨き効果が出ない。
 	if brush_id in ["candle", "teeth"]:
 		return 0.0
-	if is_rotating:
+	if is_motorized():
 		return 1.0 if is_active else 0.0
 	return GameRules.rub_multiplier(_rub_speed)
 

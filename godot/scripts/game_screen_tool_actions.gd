@@ -12,7 +12,7 @@ var pinch_brush: Brush
 var pinch_slime: SlimeTarget
 var _pinch_grab_offset := Vector2.ZERO
 
-## 舌を口に重ねて右クリックを押し続けている間だけ true。
+## 口づけ切り替えがONの間 true。
 var kiss_active := false
 
 var wax_drop_count: int:
@@ -69,7 +69,14 @@ func apply_teeth_bite(slime_state: Dictionary, level: int, blocked: bool = false
 		)
 		slime_state[side] = state
 
-## 右クリック押下で接触中の本体を挟み、解放までマウスで引っ張る。
+## 右クリックで挟む/離すを切り替える。
+func toggle_pinch(blocked: bool = false) -> void:
+	if pinch_brush != null:
+		end_pinch()
+	else:
+		start_pinch(blocked)
+
+## 接触中の本体を挟み、切り替え解除までマウスで引っ張る。
 func start_pinch(blocked: bool = false) -> void:
 	if blocked:
 		return
@@ -104,7 +111,14 @@ func update_pinch(global_mouse_position: Vector2, delta: float, blocked: bool = 
 	# 指は挟んだ位置関係のまま本体に張り付く。
 	pinch_brush.position = pinch_slime.position - _pinch_grab_offset
 
-## 右クリックを押している間だけ有効化を試みる。口に触れていなければ何もしない。
+## 右クリックで口づけの開始/終了を切り替える。開始には口への接触が必要。
+func toggle_kiss(mouth_position: Vector2, mouth_radius: float, blocked: bool = false) -> void:
+	if kiss_active:
+		end_kiss()
+	else:
+		start_kiss(mouth_position, mouth_radius, blocked)
+
+## 口づけ開始を試みる。口に触れていなければ何もしない。
 func start_kiss(mouth_position: Vector2, mouth_radius: float, blocked: bool = false) -> void:
 	if blocked:
 		return
@@ -114,16 +128,20 @@ func start_kiss(mouth_position: Vector2, mouth_radius: float, blocked: bool = fa
 func end_kiss() -> void:
 	kiss_active = false
 
-## 右クリック中、舌が口に触れ続けている間だけ継続的に快感を与え痛みを癒す。
-## 離れる・保持ブラシが変わる・FINISH/失敗演出に入るのいずれかで自動的に終わる。
+## 口づけ切り替えON中、舌が口に触れている間は継続的に快感を与え痛みを癒す
+## （動力型ブラシと同様の常時刺激）。口から離れている間は一時停止し、モードは維持。
+## 舌を手放す・FINISH/失敗演出に入る（clear）で終わる。
 ## 戻り値: このフレームで与えた快感量の合計（ツール貢献表示用）。
 func update_kiss(
 		mouth_position: Vector2, mouth_radius: float,
 		slime_state: Dictionary, level: int, delta: float, blocked: bool = false) -> float:
 	if not kiss_active:
 		return 0.0
-	if blocked or not _tongue_touches_mouth(mouth_position, mouth_radius):
+	var tongue: Brush = _brushes.held_brush
+	if tongue == null or tongue.brush_id != "tongue" or not tongue.visible:
 		end_kiss()
+		return 0.0
+	if blocked or not _tongue_touches_mouth(mouth_position, mouth_radius):
 		return 0.0
 	var polish_added := 0.0
 	for side in ["left", "right"]:

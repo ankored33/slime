@@ -135,12 +135,9 @@ func _input(event: InputEvent) -> void:
 	elif action.has("bite_requested"):
 		_tool_actions.apply_teeth_bite(_slime_state, _current_level(), blocked)
 	elif action.has("pinch_requested"):
-		_tool_actions.start_pinch(blocked)
+		_tool_actions.toggle_pinch(blocked)
 	elif action.has("kiss_requested"):
-		_tool_actions.start_kiss(_mouth_position(), _mouth_radius(), blocked)
-	elif action.has("pinch_released"):
-		_tool_actions.end_pinch()
-		_tool_actions.end_kiss()
+		_tool_actions.toggle_kiss(_mouth_position(), _mouth_radius(), blocked)
 
 ## キャラ画像の上（左右パネルを除く中央部）でのみ反応するホイールズーム。
 ## 上回転: マウス位置を中心に CHARA_ZOOM 倍（1段階のみ）。下回転: 等倍へ戻す。
@@ -360,8 +357,8 @@ func _update_slime_squish(delta: float) -> void:
 				if away.length() <= 0.0001:
 					away = Vector2.DOWN
 				push += away.normalized() * overlap
-				# ON中の回転ブラシに触れられている間は反発方向へ微振動する。
-				if brush.is_rotating and brush.is_effective():
+				# ON中の動力型（回転・振動）に触れられている間は反発方向へ微振動する。
+				if brush.is_motorized() and brush.is_effective():
 					tremble_dir = away.normalized()
 			if brush.is_effective() and overlap > 0.0:
 				touched_by_active = true

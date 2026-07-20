@@ -289,21 +289,31 @@ func _test_deep_kiss() -> void:
 	_check(float(game._slime_state["right"]["pain"]) < 100.0,
 		"kiss: holding it soothes pain on the right target")
 
-	# 口から離れると、押しっぱなしでも自動的に終わる。
+	# 口から離れている間は効果が止まるが、口づけモード自体は維持される。
 	brush_tongue.position = mouth_pos + Vector2(500.0, 500.0)
+	var polish_away: float = float(game._slime_state["left"]["polish"])
 	game._tool_actions.update_kiss(
 		mouth_pos, mouth_radius, game._slime_state, game._current_level(), 1.0)
-	_check(not game._tool_actions.kiss_active, "kiss: moving away from the mouth ends it")
+	_check(game._tool_actions.kiss_active, "kiss: moving away from the mouth keeps the mode on")
+	_check(float(game._slime_state["left"]["polish"]) == polish_away,
+		"kiss: no polish is added while away from the mouth")
 
-	# 右クリックを離すと（game._input を通しても）明示的に終わる。
+	# 口に戻ると再び効き、もう一度右クリック（game._input 経由）で切り替え終了する。
 	brush_tongue.position = mouth_pos
+	game._tool_actions.update_kiss(
+		mouth_pos, mouth_radius, game._slime_state, game._current_level(), 1.0)
+	_check(float(game._slime_state["left"]["polish"]) > polish_away,
+		"kiss: returning to the mouth resumes the effect")
+	game._input(right_click)
+	_check(not game._tool_actions.kiss_active, "kiss: a second right click toggles it off")
+
+	# 舌を手放すと口づけモードも終わる。
 	game._tool_actions.start_kiss(mouth_pos, mouth_radius)
-	_check(game._tool_actions.kiss_active, "kiss: re-touching the mouth restarts it")
-	var right_release := InputEventMouseButton.new()
-	right_release.button_index = MOUSE_BUTTON_RIGHT
-	right_release.pressed = false
-	game._input(right_release)
-	_check(not game._tool_actions.kiss_active, "kiss: releasing right click ends it")
+	_check(game._tool_actions.kiss_active, "kiss: touching the mouth restarts it")
+	game._brushes.toggle_from_toolbox("tongue")
+	game._tool_actions.update_kiss(
+		mouth_pos, mouth_radius, game._slime_state, game._current_level(), 1.0)
+	_check(not game._tool_actions.kiss_active, "kiss: stowing the tongue ends the mode")
 	game.reset_day()
 
 func _test_slime_push_pull_and_finish_fx() -> void:
