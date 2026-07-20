@@ -222,6 +222,15 @@ polish_gain_per_sec = 0.0
 pain_gain_per_sec = 0.0
 fill_color = Color(1, 0.68, 0.3, 0.95)
 
+[node name="BrushClip" parent="Playfield/ZoomRoot" instance=ExtResource("5")]
+position = Vector2(1050, 440)
+brush_id = "clip"
+display_name = "クリップ"
+hit_radius = 64.0
+polish_gain_per_sec = 0.0
+pain_gain_per_sec = 0.0
+fill_color = Color(0.35, 0.55, 0.75, 0.95)
+
 [node name="FlashRect" type="ColorRect" parent="."]
 layout_mode = 1
 anchors_preset = 15

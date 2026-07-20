@@ -37,6 +37,9 @@ var is_held := false:
 		is_held = value
 		_sync_visuals()
 
+## つまみ（挟み）アクション中かどうか。set_pinching で更新される。
+var is_pinching := false
+
 # こすり判定用。フレーム間の移動速度を平滑化して保持する。
 var _prev_position := Vector2.INF
 var _rub_speed := 0.0
@@ -73,6 +76,7 @@ const PINCH_APPROACH := 20.0
 
 ## つまみアクション中の見た目切り替え。専用画像が無いブラシでは何もしない。
 func set_pinching(on: bool) -> void:
+	is_pinching = on
 	if _base_texture == null or _pinch_texture == null:
 		return
 	_apply_texture(_pinch_texture if on else _base_texture)
@@ -127,7 +131,7 @@ func is_motorized() -> bool:
 
 ## こすり判定で効果を出すブラシかどうか（動力型・固有アクション型を除く）。
 func uses_rub() -> bool:
-	return not is_motorized() and brush_id not in ["candle", "teeth"]
+	return not is_motorized() and brush_id not in ["candle", "teeth", "clip"]
 
 ## こすり系ブラシは接触中、画像の上端を本体の中心へ向ける。離れたら直立に戻る。
 const FACING_TURN_SPEED := 12.0
@@ -146,7 +150,7 @@ func update_contact_facing(target_local: Variant, delta: float) -> void:
 
 func get_action_multiplier() -> float:
 	# 固有アクション型の道具は本体をこすっても磨き効果が出ない。
-	if brush_id in ["candle", "teeth"]:
+	if brush_id in ["candle", "teeth", "clip"]:
 		return 0.0
 	if is_motorized():
 		return 1.0 if is_active else 0.0

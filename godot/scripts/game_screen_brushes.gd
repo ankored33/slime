@@ -8,7 +8,7 @@ const GameRules = preload("res://scripts/game_rules.gd")
 ## ツールボックスのボタン表示順。HUDで未選択時に表示する順序も兼ねる。
 const BRUSH_DISPLAY_ORDER: Array[String] = [
 	"finger", "tongue", "feather", "fude", "teeth",
-	"toothbrush", "rotary", "rotor", "tawashi", "candle"
+	"toothbrush", "rotary", "rotor", "tawashi", "candle", "clip"
 ]
 
 var brush_map: Dictionary = {}
@@ -94,7 +94,10 @@ func toggle_from_toolbox(brush_id: String) -> void:
 		return
 	if held_brush == brush:
 		_set_held_brush(null)
-		_stow(brush)
+		# クリップが挟んでいる最中は即座に隠さない。保持を離すだけにして、
+		# 落下演出（update_pinch側）が終わった時に自分で visible=false にする。
+		if not brush.is_pinching:
+			_stow(brush)
 		return
 	if not brush.visible:
 		brush.visible = true
@@ -171,7 +174,7 @@ func handle_input(event: InputEvent) -> Dictionary:
 			return {"wax_origin": held_brush.position + Vector2(0.0, held_brush.hit_radius * 0.7)}
 		if held_brush.brush_id == "teeth":
 			return {"bite_requested": true}
-		if held_brush.brush_id == "finger":
+		if held_brush.brush_id == "finger" or held_brush.brush_id == "clip":
 			return {"pinch_requested": true}
 		if held_brush.brush_id == "tongue":
 			return {"kiss_requested": true}
@@ -291,6 +294,10 @@ func update_controls(name_label: Label, spec_label: Label) -> void:
 		return
 	if selected_brush.brush_id == "teeth":
 		spec_label.text = "磨き効果なし / 接触中に右クリック：噛む（痛み %d）" % int(GameRules.BITE_PAIN_IMPACT)
+		return
+	if selected_brush.brush_id == "clip":
+		spec_label.text = "磨き効果なし / 接触中に右クリック：閉じて固定（挟んでいる間、痛み継続） / " \
+			+ "もう一度右クリックで手を離す：引っ張りながら垂れ下がって静止（痛みスパイク）"
 		return
 	var spec := "快感 %d / 痛み %d" % [
 		int(round(selected_brush.polish_gain_per_sec)),

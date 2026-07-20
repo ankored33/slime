@@ -12,6 +12,15 @@ var pinch_brush: Brush
 var pinch_slime: SlimeTarget
 var _pinch_grab_offset := Vector2.ZERO
 
+## クリップが手を離され、乳首を引っ張って垂れ下がったまま静止している間 true。
+## （再び持ち上げれば通常のドラッグに戻る。end_pinch されるまでは挟んだまま。）
+var clip_falling := false
+var _clip_hang_anchor := Vector2.ZERO
+## 手を離した直後の1フレームだけ立てる。ゲージ操作は apply_clip_effects 側に分離しているため、
+## どちら側に痛みスパイクを与えるかをここで一時的に受け渡す。
+var _clip_just_released := false
+var _clip_release_side := ""
+
 ## 口づけ切り替えがONの間 true。
 var kiss_active := false
 
@@ -69,28 +78,33 @@ func apply_teeth_bite(slime_state: Dictionary, level: int, blocked: bool = false
 		)
 		slime_state[side] = state
 
-## 右クリックで挟む/離すを切り替える。
+## 右クリックで挟む/離すを切り替える（指・クリップ共通）。指は離すとその場で
+## end_pinch（バネで元へ戻る）、クリップは離すと _begin_clip_fall（垂れ下がって静止）になる。
 func toggle_pinch(blocked: bool = false) -> void:
 	if pinch_brush != null:
-		end_pinch()
+		if pinch_brush.brush_id == "clip":
+			_begin_clip_fall()
+		else:
+			end_pinch()
 	else:
 		start_pinch(blocked)
 
-## 接触中の本体を挟み、切り替え解除までマウスで引っ張る。
+## 接触中の本体を挟み、切り替え解除までマウスで引っ張る。指・クリップ共通の機構で、
+## どちらが呼ぶかは呼び出し側（handle_input の分岐）がすでに保持中の道具で判定済み。
 func start_pinch(blocked: bool = false) -> void:
-	if blocked:
+	if blocked or pinch_brush != null:
 		return
-	var finger: Brush = _brushes.held_brush
-	if finger == null or finger.brush_id != "finger":
+	var tool: Brush = _brushes.held_brush
+	if tool == null:
 		return
 	for slime in _slimes:
-		if finger.position.distance_to(slime.position) \
-				> finger.get_contact_radius() + slime.get_hit_radius() + 1.0:
+		if tool.position.distance_to(slime.position) \
+				> tool.get_contact_radius() + slime.get_hit_radius() + 1.0:
 			continue
-		pinch_brush = finger
+		pinch_brush = tool
 		pinch_slime = slime
-		_pinch_grab_offset = slime.position - finger.position
-		finger.set_pinching(true)
+		_pinch_grab_offset = slime.position - tool.position
+		tool.set_pinching(true)
 		return
 
 func end_pinch() -> void:
@@ -98,9 +112,16 @@ func end_pinch() -> void:
 		pinch_brush.set_pinching(false)
 	pinch_brush = null
 	pinch_slime = null
+	clip_falling = false
 
+## 位置・追従の物理だけを扱う（ゲージ操作は apply_clip_effects 側に分離）。
+## クリップが _begin_clip_fall で垂れ下がり状態に入った後は、道具の持ち替え状態に
+## 関わらずそちらを優先する（手を離した後もそのまま静止し続けるのが狙いのため）。
 func update_pinch(global_mouse_position: Vector2, delta: float, blocked: bool = false) -> void:
 	if pinch_slime == null:
+		return
+	if clip_falling:
+		_update_clip_fall(delta)
 		return
 	if _brushes.held_brush != pinch_brush or not pinch_brush.visible or blocked:
 		end_pinch()
@@ -108,8 +129,41 @@ func update_pinch(global_mouse_position: Vector2, delta: float, blocked: bool = 
 	var mouse_local: Vector2 = _playfield.get_global_transform().affine_inverse() \
 			* global_mouse_position
 	pinch_slime.apply_pull(mouse_local + _pinch_grab_offset, delta)
-	# 指は挟んだ位置関係のまま本体に張り付く。
+	# 指・クリップは挟んだ位置関係のまま本体に張り付く。
 	pinch_brush.position = pinch_slime.position - _pinch_grab_offset
+
+func _begin_clip_fall() -> void:
+	clip_falling = true
+	_clip_hang_anchor = pinch_slime.position + Vector2.DOWN * GameRules.CLIP_HANG_DROP
+	_clip_just_released = true
+	_clip_release_side = String(pinch_slime.side)
+
+## 手を離した後、乳首をつまみと同じ apply_pull で下方向へ引っ張り続ける。目標が
+## SlimeTarget の最大変位を大きく超えているため、すぐ可動域いっぱいに頭打ちして
+## そのまま静止する（新しい判定を足さず、既存のクランプだけで実現している）。
+func _update_clip_fall(delta: float) -> void:
+	pinch_slime.apply_pull(_clip_hang_anchor + _pinch_grab_offset, delta)
+	pinch_brush.position = pinch_slime.position - _pinch_grab_offset
+
+## クリップの痛み演出。挟んでいる間（ドラッグ中・垂れ下がり中とも）は継続的に軽い痛みを、
+## 手を離した瞬間はスパイクを与える。update_pinch とは別に、ゲージへ触れる処理だけを分離してある。
+func apply_clip_effects(slime_state: Dictionary, level: int, delta: float, blocked: bool = false) -> void:
+	if not blocked and pinch_brush != null and pinch_brush.brush_id == "clip":
+		var side := String(pinch_slime.side)
+		var state: Dictionary = slime_state[side]
+		state["pain"] = clampf(
+			float(state["pain"]) + GameRules.CLIP_CLAMP_PAIN_PER_SEC * GameRules.pain_resist(level) * delta,
+			0.0, GameRules.PAIN_CAP
+		)
+		slime_state[side] = state
+	if _clip_just_released:
+		_clip_just_released = false
+		var state: Dictionary = slime_state[_clip_release_side]
+		state["pain"] = clampf(
+			float(state["pain"]) + GameRules.CLIP_RELEASE_PAIN_IMPACT * GameRules.pain_resist(level),
+			0.0, GameRules.PAIN_CAP
+		)
+		slime_state[_clip_release_side] = state
 
 ## 右クリックで口づけの開始/終了を切り替える。開始には口への接触が必要。
 func toggle_kiss(mouth_position: Vector2, mouth_radius: float, blocked: bool = false) -> void:
@@ -164,6 +218,7 @@ func _tongue_touches_mouth(mouth_position: Vector2, mouth_radius: float) -> bool
 func clear() -> void:
 	end_pinch()
 	end_kiss()
+	_clip_just_released = false
 	for drop in _wax_drops:
 		if is_instance_valid(drop):
 			drop.queue_free()

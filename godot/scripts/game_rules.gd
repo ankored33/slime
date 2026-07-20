@@ -137,6 +137,7 @@ const BRUSH_UNLOCK_LEVELS := {
 	"rotary": 10,
 	"rotor": 12,
 	"tawashi": 14,
+	"clip": 15,
 	"candle": 17,
 	"teeth": 21
 }
@@ -146,6 +147,16 @@ static func brush_unlock_level(brush_id: String) -> int:
 
 static func is_brush_unlocked(brush_id: String, level: int) -> bool:
 	return level >= brush_unlock_level(brush_id)
+
+## クリップ（洗濯バサミ状の道具）専用パラメータ。こすり効果は brush.gd 側で0固定にし、
+## 代わりに「挟んでいる間の継続的な軽い痛み」と「手を離した瞬間のスパイク」で効かせる。
+## pain_resist は Lv21で0（完全耐性）に届くので、この痛みも終盤に向けて自然に弱まっていく。
+const CLIP_CLAMP_PAIN_PER_SEC := 40.0
+const CLIP_RELEASE_PAIN_IMPACT := 160.0
+## 手を離した後に乳首を引っ張る目標オフセット。SlimeTarget.MAX_PULL_DISTANCE（48px）を
+## 確実に超える値にしておくことで、つまみ機構の頭打ちにそのまま張り付いて静止する
+## （「限界まで引っ張ったらそのまま残る」を、新しい判定を足さず既存の可動域クランプで実現する）。
+const CLIP_HANG_DROP := 300.0
 
 static func banked_finish(day_finish_count: int, failed_by_pain: bool) -> int:
 	if failed_by_pain:

@@ -47,6 +47,7 @@ func _run_tests() -> void:
 	_test_toolbox_and_brush_contact()
 	_test_candle_wax_finish_counting()
 	_test_deep_kiss()
+	_test_clip_clamp_and_fall()
 	_test_slime_push_pull_and_finish_fx()
 	_test_result_to_select_and_debug_level()
 	_test_pause_title_return_and_save_persistence()
@@ -314,6 +315,65 @@ func _test_deep_kiss() -> void:
 	game._tool_actions.update_kiss(
 		mouth_pos, mouth_radius, game._slime_state, game._current_level(), 1.0)
 	_check(not game._tool_actions.kiss_active, "kiss: stowing the tongue ends the mode")
+	game.reset_day()
+
+func _test_clip_clamp_and_fall() -> void:
+	var left_slime: SlimeTarget = main.get_node("GameScreen/Playfield/ZoomRoot/LeftSlime")
+	var brush_clip: Brush = main.get_node("GameScreen/Playfield/ZoomRoot/BrushClip")
+	var slime_home: Vector2 = left_slime.position
+	var right_click := InputEventMouseButton.new()
+	right_click.button_index = MOUSE_BUTTON_RIGHT
+	right_click.pressed = true
+	right_click.position = Vector2(640.0, 360.0)
+
+	# 指と同じく、右クリックが開閉トグル。触れていなければ閉じない。
+	game._brushes.toggle_from_toolbox("clip")
+	brush_clip.position = slime_home + Vector2(500.0, 0.0)
+	var away_action: Dictionary = game._brushes.handle_input(right_click)
+	_check(away_action.has("pinch_requested"), "clip: right click requests the shared pinch toggle")
+	game._tool_actions.toggle_pinch()
+	_check(game._tool_actions.pinch_brush == null,
+		"clip: right click away from a target does not close it")
+
+	# 接触中の右クリックで閉じ、指と同じつまみ機構で固定される。
+	brush_clip.position = left_slime.position \
+		- Vector2(left_slime.get_hit_radius() + brush_clip.get_contact_radius(), 0.0)
+	game._tool_actions.toggle_pinch()
+	_check(brush_clip.is_pinching, "clip: closing switches its visual to the closed state")
+	_check(game._tool_actions.pinch_brush == brush_clip, "clip: closing fixes it like the pinch tool")
+
+	# 挟んでいる間は継続的に軽い痛みが蓄積する。
+	game._slime_state["left"]["pain"] = 0.0
+	game._tool_actions.apply_clip_effects(game._slime_state, game._current_level(), 1.0)
+	_check(float(game._slime_state["left"]["pain"]) > 0.0,
+		"clip: clamping adds continuous pain while closed")
+
+	# もう一度右クリックすると手を離す。指と違ってその場でバネ復帰はせず、
+	# 引っ張りながら垂れ下がって静止する（見た目も消えたりしない）。
+	var pain_before_release: float = float(game._slime_state["left"]["pain"])
+	game._tool_actions.toggle_pinch()
+	_check(game._tool_actions.clip_falling, "clip: a second right click starts the hang-down state")
+	for i in range(30):
+		game._tool_actions.update_pinch(Vector2.ZERO, 1.0 / 60.0)
+		game._tool_actions.apply_clip_effects(game._slime_state, game._current_level(), 1.0 / 60.0)
+	_check(game._tool_actions.pinch_brush == brush_clip,
+		"clip: it stays fixed in place after being let go (no auto-detach)")
+	_check(brush_clip.visible and brush_clip.is_pinching,
+		"clip: it stays visible and closed while hanging")
+	_check(float(game._slime_state["left"]["pain"]) > pain_before_release,
+		"clip: letting go adds a pain spike")
+	_check(absf(left_slime.position.distance_to(slime_home) - left_slime.MAX_PULL_DISTANCE) < 4.0,
+		"clip: the target settles at (and stays at) its max pull distance")
+
+	# 垂れ下がっている間も継続的に痛みが蓄積し続け、可動範囲を超えて動くこともない。
+	var pain_while_hanging: float = float(game._slime_state["left"]["pain"])
+	for i in range(30):
+		game._tool_actions.update_pinch(Vector2.ZERO, 1.0 / 60.0)
+		game._tool_actions.apply_clip_effects(game._slime_state, game._current_level(), 1.0 / 60.0)
+	_check(float(game._slime_state["left"]["pain"]) > pain_while_hanging,
+		"clip: pain keeps accruing while it hangs, unheld")
+	_check(absf(left_slime.position.distance_to(slime_home) - left_slime.MAX_PULL_DISTANCE) < 4.0,
+		"clip: it keeps hanging at the max pull distance instead of springing back")
 	game.reset_day()
 
 func _test_slime_push_pull_and_finish_fx() -> void:

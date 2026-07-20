@@ -198,8 +198,13 @@ func _process(delta: float) -> void:
 	_brushes.update_drag(get_global_mouse_position(), follow_speed, delta)
 	_tool_actions.update_pinch(
 		get_global_mouse_position(), delta, _fx.finish_active or _fx.fail_active)
+	_tool_actions.apply_clip_effects(
+		_slime_state, _current_level(), delta, _fx.finish_active or _fx.fail_active)
 	_fx.update(delta)
 	var touch_info := _compute_touch_info()
+	if _tool_actions.pinch_brush != null and _tool_actions.pinch_brush.brush_id == "clip":
+		# クリップで固定中はその部位の自然回復・自然減衰を止める（他の継続効果と同じ扱い）。
+		touch_info["touched_sides"][String(_tool_actions.pinch_slime.side)] = true
 	_polish_this_tick_by_tool = {}
 	if not _fx.finish_active and not _fx.fail_active:
 		for brush in _brushes.brush_map.values():
