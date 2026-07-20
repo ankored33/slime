@@ -20,3 +20,6 @@ dist/
 # BGM聴き比べ用の一時置き場
 /bgm_candidates/
 /voice_candidates/
+
+# 画像加工の作業場（トリミング・書き出し前の素材置き場）
+/image_work/
