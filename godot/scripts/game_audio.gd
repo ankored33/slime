@@ -10,6 +10,8 @@ extends Node
 ##                                                 brush_soft / brush_mid / brush_strong / brush_pain /
 ##                                                 levelup）
 ##   ボイス: res://assets/audio/voice/<キャラid>/<表情id>.ogg
+##     同じ表情に複数候補を置くときは <表情id>_a.ogg, <表情id>_b.ogg, ... と
+##     a から連番で置く（再生のたびランダムに1つ選ぶ。単独ファイルとの併用も可）
 ## main.tscn に1ノード置くことで static 経由（GameAudio.play_se(...) 等）で
 ## どこからでも呼べる。ノードが無い環境（単体テスト等）では全呼び出しが no-op。
 
@@ -30,6 +32,7 @@ var _se_next := 0
 var _loop_channels: Dictionary = {}
 var _voice_player: AudioStreamPlayer
 var _voice_cooldown := 0.0
+var _voice_variant_cache: Dictionary = {}
 
 func _ready() -> void:
 	_instance = self
@@ -126,13 +129,29 @@ func _update_loop(channel: String, id: String) -> void:
 func _play_voice(chara_id: String, expression_id: String) -> void:
 	if _voice_cooldown > 0.0:
 		return
-	var stream := _load_stream(
-		"res://assets/audio/voice/%s/%s" % [chara_id, expression_id], false)
-	if stream == null:
+	var streams := _load_voice_variants(
+		"res://assets/audio/voice/%s/%s" % [chara_id, expression_id])
+	if streams.is_empty():
 		return
 	_voice_cooldown = VOICE_MIN_INTERVAL
-	_voice_player.stream = stream
+	_voice_player.stream = streams.pick_random()
 	_voice_player.play()
+
+## <表情id> 単独ファイルと <表情id>_a, _b, ... の連番候補をまとめて集める。
+func _load_voice_variants(base_path: String) -> Array:
+	if _voice_variant_cache.has(base_path):
+		return _voice_variant_cache[base_path]
+	var streams: Array = []
+	var single := _load_stream(base_path, false)
+	if single != null:
+		streams.append(single)
+	for suffix in "abcdefgh":
+		var stream := _load_stream("%s_%s" % [base_path, suffix], false)
+		if stream == null:
+			break
+		streams.append(stream)
+	_voice_variant_cache[base_path] = streams
+	return streams
 
 func _set_volume(category: String, linear: float) -> void:
 	_volumes[category] = clampf(linear, 0.0, 1.0)
