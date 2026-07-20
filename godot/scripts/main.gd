@@ -259,7 +259,7 @@ func _begin_day() -> void:
 
 ## 磨き画面に入る直前、毎回（初回の自己紹介オープニングの直後も含む）挟む
 ## 短い導入演出。黒い幕が中央から左右へ開いてリザルト用のキャラ画像を見せ、
-## クリック待ちのあと矯導確認ダイアログを挟んで、宣告してから磨き画面へ進む。
+## クリック待ちのあと矯正確認ダイアログを挟んで、宣告してから磨き画面へ進む。
 func _show_day_intro() -> void:
 	_hide_all_screens()
 	_showing_day_intro = true
@@ -273,11 +273,11 @@ func _show_day_intro() -> void:
 			"style": "curtain",
 			"portrait": intro_portrait_key,
 			"text": "",
-			"confirm_text": "%sを矯導しますか？" % prisoner_number
+			"confirm_text": "%sを矯正しますか？" % prisoner_number
 		},
 		{
 			"style": "blackout",
-			"text": "%s。\nこれより貴様の矯導を開始する。" % prisoner_number,
+			"text": "%s。\nこれより貴様の矯正を開始する。" % prisoner_number,
 			"auto_advance_delays": [1.0, 2.0]
 		}
 	])
@@ -321,11 +321,11 @@ func _render_result() -> void:
 	_date_label.text = "帝国暦%d年%d月%d日" % [int(today["year"]), int(today["month"]), int(today["day"])]
 	var level_after := int(chara["level"])
 	var level_before := int(_last_result.get("level_before", level_after))
-	var level_line := "レベル: %d / %d" % [level_after, GameRules.MAX_LEVEL]
+	var level_line := "矯正進度: %d / 100" % level_after
 	if level_after > level_before:
 		GameAudio.play_se("levelup")
-		level_line = "レベル: %d → [b][color=#ffd75e]%d[/color][/b] / %d　[color=#ffd75e]LEVEL UP! +%d[/color]" % [
-			level_before, level_after, GameRules.MAX_LEVEL, level_after - level_before]
+		level_line = "矯正進度: %d → [b][bgcolor=#ffd75e][color=#3a1208] %d [/color][/bgcolor][/b] / 100　[bgcolor=#ffd75e][color=#3a1208][b] LEVEL UP! +%d [/b][/color][/bgcolor]" % [
+			level_before, level_after, level_after - level_before]
 	var failed := bool(_last_result.get("failed_by_pain", false))
 	var status_line := "痛みが限界に達した。今日の成果は半減となった。\n" if failed else ""
 	var tool_lines := _format_finish_by_tool(_last_result.get("finish_count_by_tool", {}))
@@ -336,7 +336,7 @@ func _render_result() -> void:
 		+ "本日の絶頂回数: %s\n"
 		+ "%s"
 		+ "累計絶頂回数: %s\n"
-		+ "痛み失敗: %d"
+		+ "苦痛超過による矯正中断回数: %d"
 	) % [
 		str(_last_result.get("species_name", "？？？")),
 		level_line,

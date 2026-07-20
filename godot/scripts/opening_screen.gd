@@ -250,12 +250,11 @@ func _render_profile_card(force_original: bool = false) -> void:
 		return
 	_profile_body.text = (
 		profile_text
-		+ "\n\nレベル: [b]%d[/b] / %d"
-		+ "\n累計FINISH: %d"
-		+ "\n痛み失敗: %d"
+		+ "\n\n矯正進度: [b]%d[/b] / 100"
+		+ "\n累計絶頂回数: %d"
+		+ "\n苦痛超過による矯正中断回数: %d"
 	) % [
 		int(_character["level"]),
-		GameRules.MAX_LEVEL,
 		int(_character["finish_total"]),
 		int(_character["pain_fail_total"])
 	]

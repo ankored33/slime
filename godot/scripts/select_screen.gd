@@ -88,12 +88,11 @@ func refresh_character_card(index: int, force_original: bool = false) -> void:
 	if use_after_opening:
 		stats_text = (
 			"\n\n"
-			+ "レベル: [b]%d[/b] / %d\n"
-			+ "累計FINISH: %d\n"
-			+ "痛み失敗: %d"
+			+ "矯正進度: [b]%d[/b] / 100\n"
+			+ "累計絶頂回数: %d\n"
+			+ "苦痛超過による矯正中断回数: %d"
 		) % [
 			int(chara["level"]),
-			GameRules.MAX_LEVEL,
 			int(chara["finish_total"]),
 			int(chara["pain_fail_total"])
 		]

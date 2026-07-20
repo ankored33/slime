@@ -326,11 +326,11 @@ offset_left = 1010.0
 offset_top = 650.0
 offset_right = 1270.0
 offset_bottom = 690.0
-text = "本日の矯導を終える"
+text = "本日の矯正を終える"
 
 [node name="EndDayConfirmDialog" type="ConfirmationDialog" parent="."]
 title = "確認"
-dialog_text = "本日の矯導を終えますか？\n（本日のFINISHを確定します）"
+dialog_text = "本日の矯正を終えますか？\n（本日のFINISHを確定します）"
 
 [node name="CharaNameLabel" type="Label" parent="Hud" unique_id=1875689029]
 layout_mode = 0
