@@ -46,6 +46,19 @@ func show_characters() -> void:
 	visible = true
 	refresh_character_cards()
 
+## プロフィールカードは立ち絵を隠さないよう、カードにホバーしている間だけ出す。
+## ボタン子ノードに乗ると mouse_exited が飛ぶため、シグナルでなく矩形判定で追う。
+func _process(_delta: float) -> void:
+	if not visible:
+		return
+	for index in range(_characters.size()):
+		var card := get_card(index)
+		var hovered: bool = card.get_global_rect().has_point(card.get_global_mouse_position())
+		var overlay: Control = card.get_node("Margin/VBox/PortraitArea/InfoOverlay")
+		overlay.visible = hovered
+		var view_original_button: Button = card.get_node("InteractionLayer/ViewOriginalButton")
+		view_original_button.visible = hovered and bool(_characters[index]["opening_seen"])
+
 func get_card(index: int) -> Control:
 	return _cards.get_node("Card%d" % index)
 
@@ -64,9 +77,7 @@ func refresh_character_card(index: int, force_original: bool = false) -> void:
 	var profile_body: RichTextLabel = info.get_node("ProfileBody")
 	var portrait: TextureRect = card.get_node("Margin/VBox/PortraitArea/Portrait")
 	var placeholder: Label = card.get_node("Margin/VBox/PortraitArea/PortraitPlaceholder")
-	var view_original_button: Button = card.get_node("InteractionLayer/ViewOriginalButton")
 	var opening_seen := bool(chara["opening_seen"])
-	view_original_button.visible = opening_seen
 	var use_after_opening := opening_seen and not force_original
 	name_label.text = str(chara["name"]) if force_original else CharacterDefs.display_name(chara)
 	epithet_label.text = str(chara["epithet"]) if force_original else CharacterDefs.display_epithet(chara)

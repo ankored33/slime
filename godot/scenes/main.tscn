@@ -218,17 +218,17 @@ theme_override_constants/separation = 28
 layout_mode = 1
 anchors_preset = 10
 anchor_right = 1.0
-offset_left = 438.0
+offset_left = 490.0
 offset_top = 18.0
-offset_right = -438.0
-offset_bottom = 66.0
+offset_right = -490.0
+offset_bottom = 54.0
 grow_horizontal = 2
 theme_override_styles/panel = SubResource("StyleBoxFlat_select_info")
 
 [node name="Label" type="Label" parent="CanvasLayer/SelectScreen/InstructionOverlay"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "キャラクターを選択してください。"
+theme_override_font_sizes/font_size = 16
+text = "本日の矯罰対象を選択してください"
 horizontal_alignment = 1
 vertical_alignment = 1
 

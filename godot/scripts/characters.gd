@@ -167,7 +167,7 @@ static func create() -> Array[Dictionary]:
 			"game_background": "res://assets/chara/mage/game_background.png",
 			"expressions": {},
 			"dialogue": DialogueLoader.load_dialogue("mage"),
-			"profile": "エトリア魔導皇国 大賢者／宮廷魔術師団長\n\n能力評価：\n膂力　E\n技巧　A\n魔力　SSS\n策略　A\n戦略　B",
+			"profile": "イジラール魔導皇国 大賢者／宮廷魔術師団長\n\n能力評価：\n膂力　E\n技巧　A\n魔力　SSS\n策略　A\n戦略　B",
 			"profile_after_opening": "種族：魔女\n性別：女\n年齢：308（外見二十代）\n捕縛日：帝国暦2025年10月\n収監場所：帝国矯罰院",
 			"color": Color(0.72, 0.55, 0.95, 0.92),
 			# 仮座標。立ち絵素材が入ったら要再計測。

@@ -82,15 +82,15 @@ text = "立ち絵（未設定）"
 
 [node name="InfoOverlay" type="PanelContainer" parent="Margin/VBox/PortraitArea"]
 layout_mode = 1
-anchors_preset = 3
-anchor_left = 0.666667
+anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 14.0
 offset_top = -334.0
 offset_right = -14.0
 offset_bottom = -48.0
-grow_horizontal = 0
+grow_horizontal = 2
 grow_vertical = 0
 theme_override_styles/panel = SubResource("StyleBoxFlat_info")
 
